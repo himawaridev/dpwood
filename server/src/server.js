@@ -5,10 +5,19 @@ require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
 
+// Models
 const User = require("./models/user");
 const AuditLog = require("./models/auditLog");
+const Product = require("./models/product");
+const Order = require("./models/order");
+const OrderItem = require("./models/orderItem");
+const Address = require("./models/address");
+// Routers
 const authRoutes = require("./routers/auth");
 const userRoutes = require("./routers/user");
+const productRoutes = require("./routers/product");
+const orderRoutes = require("./routers/order");
+const addressRoutes = require("./routers/address");
 
 const app = express();
 
@@ -65,9 +74,31 @@ app.use(express.json());
 User.hasMany(AuditLog, { foreignKey: "userId" });
 AuditLog.belongsTo(User, { foreignKey: "userId" });
 
+User.hasMany(AuditLog, { foreignKey: "userId" });
+AuditLog.belongsTo(User, { foreignKey: "userId" });
+
+// 1. Một User có thể có nhiều Order
+User.hasMany(Order, { foreignKey: "userId" });
+Order.belongsTo(User, { foreignKey: "userId" });
+
+// 2. Một Order có nhiều OrderItem (nhiều món hàng)
+Order.hasMany(OrderItem, { foreignKey: "orderId" });
+OrderItem.belongsTo(Order, { foreignKey: "orderId" });
+
+// 3. Một OrderItem đại diện cho một Product
+Product.hasMany(OrderItem, { foreignKey: "productId" });
+OrderItem.belongsTo(Product, { foreignKey: "productId" });
+
+// Thêm quan hệ User - Address: 1 User có nhiều Address
+User.hasMany(Address, { foreignKey: "userId" });
+Address.belongsTo(User, { foreignKey: "userId" });
+
 // Khai báo các đường dẫn API
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/addresses", addressRoutes);
 // ==========================================
 
 // ==========================================

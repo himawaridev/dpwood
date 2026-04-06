@@ -29,6 +29,7 @@ import {
     LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
+    AppstoreAddOutlined, // Đã thêm icon này
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
@@ -42,7 +43,19 @@ const AdminSidebar = ({ collapsed }) => {
     const router = useRouter();
     const sidebarMenuItems = [
         { key: "dashboard", icon: <DashboardOutlined />, label: "Tổng quan (Sắp có)" },
-        { key: "users", icon: <TeamOutlined />, label: "Quản lý Người Dùng" },
+        {
+            key: "users",
+            icon: <TeamOutlined />,
+            label: "Quản lý Người Dùng",
+            onClick: () => router.push("/admin/users"),
+        },
+        // Thêm menu Quản lý Sản phẩm
+        {
+            key: "products",
+            icon: <AppstoreAddOutlined />,
+            label: "Quản lý Sản Phẩm",
+            onClick: () => router.push("/admin/products"),
+        },
         { type: "divider" },
         {
             key: "home",
@@ -450,11 +463,7 @@ export default function AdminUsersPage() {
             key: "3",
             label: "Nhật Ký Hoạt Động",
             children: (
-                <ActivityLogTab
-                    logs={logs}
-                    loadingLogs={loadingLogs}
-                    onFetchLogs={fetchLogs}
-                />
+                <ActivityLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />
             ),
         },
     ];
