@@ -6,6 +6,61 @@ const sendEmail = require("../utils/sendEmail");
 const { Op } = require("sequelize");
 const AuditLog = require("../models/auditLog");
 
+// --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL XÁC THỰC TÀI KHOẢN ---
+const generateVerificationHtml = (name, link) => `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #001529; color: white; padding: 20px; text-align: center;">
+        <h1 style="margin: 0; letter-spacing: 2px;">DPWOOD</h1>
+    </div>
+    <div style="padding: 30px 20px; text-align: center;">
+        <h2 style="color: #333;">Chào mừng bạn đến với DPWOOD!</h2>
+        <p style="color: #555; font-size: 16px; line-height: 1.5;">
+            Xin chào <strong>${name}</strong>,<br/>
+            Cảm ơn bạn đã đăng ký tài khoản tại hệ thống của chúng tôi. Để hoàn tất việc đăng ký và bắt đầu mua sắm, vui lòng xác thực địa chỉ email của bạn bằng cách nhấn vào nút bên dưới:
+        </p>
+        <a href="${link}" style="display: inline-block; margin: 25px 0; padding: 12px 30px; background-color: #1677ff; color: #fff; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 5px;">
+            Xác Thực Tài Khoản
+        </a>
+        <p style="color: #999; font-size: 13px;">
+            Hoặc bạn có thể copy và dán đường link này vào trình duyệt:<br/>
+            <a href="${link}" style="color: #1677ff;">${link}</a>
+        </p>
+    </div>
+    <div style="background-color: #f9f9f9; padding: 15px; text-align: center; color: #888; font-size: 12px; border-top: 1px solid #eee;">
+        Email này được gửi tự động từ hệ thống DPWOOD. Vui lòng không trả lời.
+    </div>
+</div>
+`;
+
+// --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL ĐỔI MẬT KHẨU ---
+const generateResetPasswordHtml = (link) => `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #001529; color: white; padding: 20px; text-align: center;">
+        <h1 style="margin: 0; letter-spacing: 2px;">DPWOOD</h1>
+    </div>
+    <div style="padding: 30px 20px; text-align: center;">
+        <h2 style="color: #333;">Yêu cầu đặt lại mật khẩu</h2>
+        <p style="color: #555; font-size: 16px; line-height: 1.5;">
+            Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản DPWOOD của bạn.<br/>
+            Nếu đây là yêu cầu của bạn, vui lòng nhấn vào nút bên dưới để tạo mật khẩu mới. Đường link này có hiệu lực trong vòng <strong>60 phút</strong>.
+        </p>
+        <a href="${link}" style="display: inline-block; margin: 25px 0; padding: 12px 30px; background-color: #ff4d4f; color: #fff; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 5px;">
+            Đặt Lại Mật Khẩu
+        </a>
+        <div style="margin-top: 20px; padding: 15px; background-color: #fff1f0; border-left: 4px solid #ff4d4f; text-align: left;">
+            <p style="margin: 0; color: #cf1322; font-size: 14px;">
+                <strong>Lưu ý bảo mật:</strong> Nếu bạn không yêu cầu đổi mật khẩu, vui lòng bỏ qua email này. Tài khoản của bạn vẫn an toàn.
+            </p>
+        </div>
+    </div>
+    <div style="background-color: #f9f9f9; padding: 15px; text-align: center; color: #888; font-size: 12px; border-top: 1px solid #eee;">
+        Email này được gửi tự động từ hệ thống DPWOOD. Vui lòng không trả lời.
+    </div>
+</div>
+`;
+
+// =========================================================================
+
 const register = async (req, res) => {
     try {
         const { name, username, email, phone, password } = req.body;
@@ -23,7 +78,12 @@ const register = async (req, res) => {
         const verifyToken = crypto.randomBytes(32).toString("hex");
         user.emailVerifyToken = verifyToken;
         await user.save();
-        await sendEmail(email, "Verify email: ", `http://localhost:3000/verify/${verifyToken}`);
+
+        // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
+        const verifyLink = `http://localhost:3000/verify/${verifyToken}`;
+        const emailContent = generateVerificationHtml(name, verifyLink);
+        await sendEmail(email, "[DPWOOD] Xác thực tài khoản của bạn", emailContent);
+
         res.status(201).json({ message: "Register succes. Please check your email" });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -98,6 +158,7 @@ const login = async (req, res) => {
             user: {
                 name: user.name,
                 role: user.role,
+                avatarUrl: user.avatarUrl,
             },
         });
     } catch (error) {
@@ -176,11 +237,12 @@ const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
         await user.save();
 
-        await sendEmail(
-            email,
-            "Reset password",
-            `Reset link: http://localhost:3000/reset/${resetToken}`,
-        );
+        // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
+        const resetLink = `http://localhost:3000/reset/${resetToken}`;
+        const emailContent = generateResetPasswordHtml(resetLink);
+
+        await sendEmail(email, "[DPWOOD] Yêu cầu đặt lại mật khẩu", emailContent);
+
         res.json({ message: "Check mail to reset password" });
     } catch (error) {
         res.status(500).json({ message: error.message });

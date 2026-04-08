@@ -28,6 +28,15 @@ const Product = sequelize.define("Product", {
         type: DataTypes.STRING, // Link ảnh sản phẩm
         allowNull: true,
     },
+    images: {
+        type: DataTypes.JSON, // Kiểu JSON hỗ trợ lưu trữ Mảng (Array) trong MySQL
+        allowNull: true,
+        defaultValue: [],
+    },
+    sold: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0, // Mặc định ban đầu bán được 0 chiếc
+    },
 });
 
 module.exports = Product;

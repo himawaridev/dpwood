@@ -9,6 +9,10 @@ const User = sequelize.define(
             defaultValue: DataTypes.UUIDV4,
             primaryKey: true,
         },
+        avatarUrl: {
+            type: DataTypes.STRING,
+            allowNull: true, // Có thể null nếu user chưa up ảnh
+        },
         name: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -16,7 +20,7 @@ const User = sequelize.define(
         username: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
+            unique: "unique_username_index",
         },
         password: {
             type: DataTypes.STRING,
@@ -25,7 +29,7 @@ const User = sequelize.define(
         email: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
+            unique: "unique_email_index",
             validate: {
                 isEmail: true,
             },

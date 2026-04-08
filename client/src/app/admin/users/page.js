@@ -5,139 +5,19 @@ import {
     Select,
     message,
     Typography,
-    Card,
     Tag,
     Tabs,
     Button,
     Popconfirm,
     Space,
     Input,
-    Layout,
-    Menu,
-    Avatar,
-    Dropdown,
-    theme,
 } from "antd";
-import {
-    DeleteOutlined,
-    LockOutlined,
-    UnlockOutlined,
-    TeamOutlined,
-    DashboardOutlined,
-    HomeOutlined,
-    UserOutlined,
-    LogoutOutlined,
-    MenuFoldOutlined,
-    MenuUnfoldOutlined,
-    AppstoreAddOutlined, // Đã thêm icon này
-} from "@ant-design/icons";
-import { useRouter } from "next/navigation";
+import { DeleteOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
-const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
-// --- SUB-COMPONENTS ---
-
-const AdminSidebar = ({ collapsed }) => {
-    const router = useRouter();
-    const sidebarMenuItems = [
-        { key: "dashboard", icon: <DashboardOutlined />, label: "Tổng quan (Sắp có)" },
-        {
-            key: "users",
-            icon: <TeamOutlined />,
-            label: "Quản lý Người Dùng",
-            onClick: () => router.push("/admin/users"),
-        },
-        // Thêm menu Quản lý Sản phẩm
-        {
-            key: "products",
-            icon: <AppstoreAddOutlined />,
-            label: "Quản lý Sản Phẩm",
-            onClick: () => router.push("/admin/products"),
-        },
-        { type: "divider" },
-        {
-            key: "home",
-            icon: <HomeOutlined />,
-            label: "Về Trang Chủ",
-            onClick: () => router.push("/"),
-        },
-    ];
-
-    return (
-        <Sider trigger={null} collapsible collapsed={collapsed} theme="dark" width={250}>
-            <div
-                style={{
-                    height: 64,
-                    margin: 16,
-                    color: "white",
-                    fontSize: collapsed ? "12px" : "20px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                }}
-            >
-                {collapsed ? "DP" : "DPWOOD ADMIN"}
-            </div>
-            <Menu
-                theme="dark"
-                mode="inline"
-                defaultSelectedKeys={["users"]}
-                items={sidebarMenuItems}
-            />
-        </Sider>
-    );
-};
-
-const AdminHeader = ({ collapsed, setCollapsed, adminName, onLogout, colorBgContainer }) => {
-    const userDropdownMenu = [
-        {
-            key: "logout",
-            danger: true,
-            icon: <LogoutOutlined />,
-            label: "Đăng xuất",
-            onClick: onLogout,
-        },
-    ];
-
-    return (
-        <Header
-            style={{
-                padding: 0,
-                background: colorBgContainer,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingRight: "24px",
-            }}
-        >
-            <Button
-                type="text"
-                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                onClick={() => setCollapsed(!collapsed)}
-                style={{ fontSize: "16px", width: 64, height: 64 }}
-            />
-
-            <Dropdown menu={{ items: userDropdownMenu }} placement="bottomRight" arrow>
-                <div
-                    style={{
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                    }}
-                >
-                    <Avatar style={{ backgroundColor: "#f56a00" }} icon={<UserOutlined />} />
-                    <span style={{ fontWeight: 500 }}>{adminName}</span>
-                </div>
-            </Dropdown>
-        </Header>
-    );
-};
+// --- SUB-COMPONENTS CHO CÁC TABS ---
 
 const RoleManagementTab = ({ users, loading, onRefresh, onChangeRole }) => {
     const columns = [
@@ -148,8 +28,7 @@ const RoleManagementTab = ({ users, loading, onRefresh, onChangeRole }) => {
             title: "Số điện thoại",
             dataIndex: "phone",
             key: "phone",
-            render: (phone) =>
-                phone ? phone : <Typography.Text type="secondary">Chưa cập nhật</Typography.Text>,
+            render: (phone) => (phone ? phone : <Text type="secondary">Chưa cập nhật</Text>),
         },
         {
             title: "Quyền hiện tại",
@@ -220,14 +99,12 @@ const StatusControlTab = ({ users, loading, onRefresh, onToggleBan, onDelete }) 
         {
             title: "Trạng thái",
             key: "status",
-            render: (_, record) => {
-                const isBanned = record.lockUntil && new Date(record.lockUntil) > new Date();
-                return isBanned ? (
+            render: (_, record) =>
+                record.lockUntil && new Date(record.lockUntil) > new Date() ? (
                     <Tag color="error">Bị khóa</Tag>
                 ) : (
                     <Tag color="processing">Hoạt động</Tag>
-                );
-            },
+                ),
         },
         {
             title: "Hành động",
@@ -281,7 +158,11 @@ const StatusControlTab = ({ users, loading, onRefresh, onToggleBan, onDelete }) 
     );
 };
 
-const ActivityLogTab = ({ logs, loadingLogs, onFetchLogs }) => {
+const AuthLogTab = ({ logs, loadingLogs, onFetchLogs }) => {
+    const authLogs = logs.filter((log) =>
+        ["LOGIN", "LOGOUT", "REGISTER", "BAN", "UNBAN", "ROLE_CHANGE"].includes(log.action),
+    );
+
     const columns = [
         {
             title: "Thời gian",
@@ -290,10 +171,9 @@ const ActivityLogTab = ({ logs, loadingLogs, onFetchLogs }) => {
             render: (date) => new Date(date).toLocaleString("vi-VN"),
         },
         {
-            title: "Người dùng",
+            title: "Email người dùng",
             key: "user",
-            render: (_, record) =>
-                record.User ? `${record.User.name} (${record.User.email})` : "Không xác định",
+            render: (_, record) => record.User?.email || "Không xác định",
         },
         {
             title: "Hành động",
@@ -310,27 +190,21 @@ const ActivityLogTab = ({ logs, loadingLogs, onFetchLogs }) => {
 
     return (
         <>
-            <div
-                style={{
-                    marginBottom: 16,
-                    display: "flex",
-                    justifyContent: "space-between",
-                }}
-            >
+            <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
                 <Input.Search
-                    placeholder="Nhập tên hoặc email cần tìm..."
+                    placeholder="Nhập email cần tìm..."
                     allowClear
-                    enterButton="Tìm"
+                    enterButton="Tìm kiếm"
                     size="large"
                     onSearch={(value) => onFetchLogs(value)}
-                    style={{ width: 400 }}
+                    style={{ maxWidth: 400 }}
                 />
                 <Button size="large" onClick={() => onFetchLogs("")} loading={loadingLogs}>
-                    Tải lại toàn bộ log
+                    Làm mới log
                 </Button>
             </div>
             <Table
-                dataSource={logs}
+                dataSource={authLogs}
                 columns={columns}
                 rowKey="id"
                 loading={loadingLogs}
@@ -340,23 +214,154 @@ const ActivityLogTab = ({ logs, loadingLogs, onFetchLogs }) => {
     );
 };
 
+const TransactionLogTab = ({ logs, loadingLogs, onFetchLogs }) => {
+    const transactionLogs = logs.filter((log) =>
+        ["ORDER_CREATED", "PAYMENT_RECEIVED", "ORDER_CANCELED", "ADMIN_UPDATE_ORDER"].includes(
+            log.action,
+        ),
+    );
+
+    const extractTransactionInfo = (details) => {
+        let orderCode = "-";
+        let method = "-";
+        let amount = "-";
+        let transId = "-";
+
+        const codeMatch = details.match(/#(\d+)/);
+        if (codeMatch) orderCode = codeMatch[1];
+
+        const methodMatch = details.match(/Phương thức: ([A-Z]+)/);
+        if (methodMatch) method = methodMatch[1];
+
+        const amountMatch = details.match(/(Tổng: |đã nhận )([\d.,]+đ)/);
+        if (amountMatch) amount = amountMatch[2];
+
+        const transMatch = details.match(/Mã GD: ([A-Za-z0-9]+)/);
+        if (transMatch) transId = transMatch[1];
+
+        return { orderCode, method, amount, transId };
+    };
+
+    const getCleanNote = (action) => {
+        switch (action) {
+            case "ORDER_CREATED":
+                return "Khách hàng tạo đơn mới";
+            case "PAYMENT_RECEIVED":
+                return "Hệ thống xác nhận nhận tiền tự động";
+            case "ADMIN_UPDATE_ORDER":
+                return "Quản trị viên cập nhật trạng thái đơn";
+            case "ORDER_CANCELED":
+                return "Hủy đơn hàng & hoàn lại tồn kho";
+            default:
+                return "Cập nhật hệ thống";
+        }
+    };
+
+    const columns = [
+        {
+            title: "Thời gian",
+            dataIndex: "createdAt",
+            key: "createdAt",
+            render: (date) => new Date(date).toLocaleString("vi-VN"),
+        },
+        {
+            title: "Email giao dịch",
+            key: "user",
+            render: (_, record) => record.User?.email || "Khách ẩn danh",
+        },
+        {
+            title: "Mã đơn hàng",
+            key: "orderCode",
+            render: (_, record) => (
+                <Text strong>#{extractTransactionInfo(record.details).orderCode}</Text>
+            ),
+        },
+        {
+            title: "Mã giao dịch",
+            key: "transId",
+            render: (_, record) => {
+                const transId = extractTransactionInfo(record.details).transId;
+                return transId !== "-" ? <Tag color="geekblue">{transId}</Tag> : "-";
+            },
+        },
+        {
+            title: "Phương thức",
+            key: "method",
+            render: (_, record) => {
+                const method = extractTransactionInfo(record.details).method;
+                return method !== "-" ? (
+                    <Tag color={method === "QR" ? "purple" : "default"}>{method}</Tag>
+                ) : (
+                    "-"
+                );
+            },
+        },
+        {
+            title: "Giá tiền",
+            key: "amount",
+            render: (_, record) => {
+                const amount = extractTransactionInfo(record.details).amount;
+                return amount !== "-" ? (
+                    <Text type="danger" strong>
+                        {amount}
+                    </Text>
+                ) : (
+                    "-"
+                );
+            },
+        },
+        {
+            title: "Hành động",
+            dataIndex: "action",
+            render: (action) => {
+                let color = "blue";
+                if (action === "ORDER_CREATED") color = "cyan";
+                if (action === "PAYMENT_RECEIVED") color = "green";
+                if (action === "ORDER_CANCELED") color = "red";
+                return <Tag color={color}>{action}</Tag>;
+            },
+        },
+        {
+            title: "Mô tả",
+            dataIndex: "action",
+            key: "cleanNote",
+            render: (action) => <Text type="secondary">{getCleanNote(action)}</Text>,
+        },
+    ];
+
+    return (
+        <>
+            <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
+                <Input.Search
+                    placeholder="Nhập email cần tìm..."
+                    allowClear
+                    enterButton="Tìm kiếm"
+                    size="large"
+                    onSearch={(value) => onFetchLogs(value)}
+                    style={{ maxWidth: 400 }}
+                />
+                <Button size="large" onClick={() => onFetchLogs("")} loading={loadingLogs}>
+                    Làm mới log
+                </Button>
+            </div>
+            <Table
+                dataSource={transactionLogs}
+                columns={columns}
+                rowKey="id"
+                loading={loadingLogs}
+                scroll={{ x: 1000 }}
+            />
+        </>
+    );
+};
+
 // --- MAIN PAGE COMPONENT ---
 
 export default function AdminUsersPage() {
-    const router = useRouter();
-    const [collapsed, setCollapsed] = useState(false);
-    const {
-        token: { colorBgContainer, borderRadiusLG },
-    } = theme.useToken();
-
-    // States cho dữ liệu
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingLogs, setLoadingLogs] = useState(false);
-
-    // State cho User đăng nhập
-    const [adminName, setAdminName] = useState("");
 
     const fetchUsers = async () => {
         try {
@@ -385,12 +390,8 @@ export default function AdminUsersPage() {
     useEffect(() => {
         fetchUsers();
         fetchLogs();
-        // Lấy tên admin để hiển thị trên Header
-        const name = typeof window !== "undefined" ? localStorage.getItem("userName") : "Admin";
-        setAdminName(name);
     }, []);
 
-    // --- CÁC HÀM XỬ LÝ HÀNH ĐỘNG ---
     const handleChangeRole = async (userId, newRole) => {
         try {
             await api.put(`/users/${userId}/role`, { role: newRole });
@@ -421,18 +422,6 @@ export default function AdminUsersPage() {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            const refreshToken = localStorage.getItem("refreshToken");
-            if (refreshToken) await api.post("/auth/logout", { refreshToken });
-        } catch (error) {
-            console.log("Lỗi đăng xuất backend");
-        } finally {
-            localStorage.clear(); // Xóa sạch local storage
-            router.push("/login");
-        }
-    };
-
     const tabItems = [
         {
             key: "1",
@@ -448,7 +437,7 @@ export default function AdminUsersPage() {
         },
         {
             key: "2",
-            label: "Trạng Thái & Kiểm Soát",
+            label: "Trạng Thái",
             children: (
                 <StatusControlTab
                     users={users}
@@ -461,41 +450,24 @@ export default function AdminUsersPage() {
         },
         {
             key: "3",
-            label: "Nhật Ký Hoạt Động",
+            label: "Lịch Sử Đăng Nhập",
+            children: <AuthLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />,
+        },
+        {
+            key: "4",
+            label: "Lịch Sử Giao Dịch",
             children: (
-                <ActivityLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />
+                <TransactionLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />
             ),
         },
     ];
 
     return (
-        <Layout style={{ minHeight: "100vh" }}>
-            <AdminSidebar collapsed={collapsed} />
-
-            <Layout>
-                <AdminHeader
-                    collapsed={collapsed}
-                    setCollapsed={setCollapsed}
-                    adminName={adminName}
-                    onLogout={handleLogout}
-                    colorBgContainer={colorBgContainer}
-                />
-
-                <Content
-                    style={{
-                        margin: "24px 16px",
-                        padding: 24,
-                        minHeight: 280,
-                        background: colorBgContainer,
-                        borderRadius: borderRadiusLG,
-                    }}
-                >
-                    <Title level={3} style={{ marginTop: 0, marginBottom: 20 }}>
-                        Quản Lý Người Dùng
-                    </Title>
-                    <Tabs defaultActiveKey="1" items={tabItems} />
-                </Content>
-            </Layout>
-        </Layout>
+        <>
+            <Title level={3} style={{ marginTop: 0, marginBottom: 20 }}>
+                Quản Lý Người Dùng & Hoạt Động
+            </Title>
+            <Tabs defaultActiveKey="1" items={tabItems} />
+        </>
     );
 }

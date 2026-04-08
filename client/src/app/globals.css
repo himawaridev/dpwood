@@ -47,3 +47,16 @@ a {
     color-scheme: dark;
   }
 }
+
+/* Ẩn thanh cuộn cho Chrome, Safari, Edge và các trình duyệt dùng nhân Webkit */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ẩn thanh cuộn cho IE, Edge cũ và Firefox */
+* {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}

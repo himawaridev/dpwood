@@ -25,6 +25,11 @@ export default function LoginPage() {
             }
             localStorage.setItem("userName", response.data.user.name);
             localStorage.setItem("userRole", response.data.user.role);
+            if (response.data.user.avatarUrl) {
+                localStorage.setItem("avatarUrl", response.data.user.avatarUrl);
+            } else {
+                localStorage.removeItem("avatarUrl"); // Xóa nếu không có để tránh dùng ảnh cũ của máy
+            }
 
             message.success("Đăng nhập thành công!");
             router.push("/"); // Chuyển hướng về trang chủ

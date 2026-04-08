@@ -101,10 +101,11 @@ const toggleBanUser = async (req, res) => {
 
 const getSystemLogs = async (req, res) => {
     try {
-        const { search } = req.query;
+        const { search, me } = req.query;
 
         // Khởi tạo cấu hình truy vấn cơ bản
         const queryOptions = {
+            where: {},
             include: [
                 {
                     model: User,
@@ -117,6 +118,15 @@ const getSystemLogs = async (req, res) => {
             order: [["createdAt", "DESC"]],
             limit: 200,
         };
+
+        if (me === "true") {
+            queryOptions.where.userId = req.user.id;
+        } else {
+            // Nếu không phải xem cá nhân, bắt buộc phải là Admin
+            if (req.user.role !== "admin" && req.user.role !== "root") {
+                return res.status(403).json({ message: "Bạn không có quyền truy cập nhật ký này" });
+            }
+        }
 
         // Nếu có từ khóa tìm kiếm, ta mới gán 'where' vào trong include
         if (search) {
@@ -137,4 +147,49 @@ const getSystemLogs = async (req, res) => {
     }
 };
 
-module.exports = { getAllUsers, updateRole, deleteUser, toggleBanUser, getSystemLogs };
+const getMe = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id, {
+            attributes: { exclude: ["password"] },
+        });
+
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+        res.status(200).json(user);
+    } catch (error) {
+        console.error("Lỗi getMe:", error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
+    }
+};
+
+// [PUT] Cập nhật thông tin cá nhân (Đổi thành const)
+const updateMe = async (req, res) => {
+    try {
+        const { name, avatarUrl } = req.body;
+        const user = await User.findByPk(req.user.id);
+
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+
+        if (name) user.name = name;
+        if (avatarUrl) user.avatarUrl = avatarUrl;
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Cập nhật thành công",
+            user: { name: user.name, avatarUrl: user.avatarUrl },
+        });
+    } catch (error) {
+        console.error("Lỗi updateMe:", error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
+    }
+};
+
+module.exports = {
+    getAllUsers,
+    updateRole,
+    deleteUser,
+    toggleBanUser,
+    getSystemLogs,
+    getMe,
+    updateMe,
+};

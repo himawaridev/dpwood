@@ -74,9 +74,6 @@ app.use(express.json());
 User.hasMany(AuditLog, { foreignKey: "userId" });
 AuditLog.belongsTo(User, { foreignKey: "userId" });
 
-User.hasMany(AuditLog, { foreignKey: "userId" });
-AuditLog.belongsTo(User, { foreignKey: "userId" });
-
 // 1. Một User có thể có nhiều Order
 User.hasMany(Order, { foreignKey: "userId" });
 Order.belongsTo(User, { foreignKey: "userId" });
