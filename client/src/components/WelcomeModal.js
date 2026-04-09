@@ -3,11 +3,32 @@ import { Modal, Button, Typography, Divider, Checkbox } from "antd";
 
 const { Text } = Typography;
 
-export default function WelcomeModal({ isOpen, onClose, userName, onCheckboxChange }) {
+export default function WelcomeModal({
+    isOpen,
+    onClose,
+    userName,
+    onCheckboxChange,
+    notifications = [],
+}) {
+    // 🔴 ĐÃ SỬA: Tách riêng từng màu sắc cho từng loại thông báo
+    const getNotificationStyle = (type) => {
+        switch (type) {
+            case "error": // Nghiêm trọng (Đỏ)
+                return { bg: "#fff1f0", border: "#ffa39e", text: "#cf1322" };
+            case "warning": // Cảnh báo (Vàng/Cam)
+                return { bg: "#fffbe6", border: "#ffe58f", text: "#d46b08" };
+            case "success": // Khuyến mãi (Xanh lá)
+                return { bg: "#f6ffed", border: "#b7eb8f", text: "#52c41a" };
+            case "info": // Thông tin (Xanh dương)
+            default:
+                return { bg: "#e6f4ff", border: "#91caff", text: "#1677ff" };
+        }
+    };
+
     return (
         <Modal
             title={<span style={{ fontSize: "20px", color: "#001529" }}>Thông báo hệ thống</span>}
-            open={isOpen} // Chuẩn Antd V5
+            open={isOpen}
             onCancel={onClose}
             centered
             footer={[
@@ -20,35 +41,34 @@ export default function WelcomeModal({ isOpen, onClose, userName, onCheckboxChan
                 <Text style={{ fontSize: 16 }}>
                     Xin chào, <strong style={{ color: "#1890ff" }}>{userName}</strong>!
                 </Text>
-                <div
-                    style={{
-                        marginTop: 24,
-                        padding: "12px",
-                        background: "#fff1f0", // Đổi màu nền cho cảnh báo đỏ
-                        border: "1px solid #ffa39e",
-                        borderRadius: "8px",
-                    }}
-                >
-                    <Text strong style={{ color: "#cf1322" }}>
-                        Thông báo:
-                    </Text>{" "}
-                    Yêu cầu tạm ngừng giao dịch với tính năng banking. Hệ thống đang bảo trì mất
-                    tiền không chịu trách nhiệm.
-                </div>
-                <div
-                    style={{
-                        marginTop: 24,
-                        padding: "12px",
-                        background: "#f6ffed", // Màu nền cho khuyến mãi xanh
-                        border: "1px solid #b7eb8f",
-                        borderRadius: "8px",
-                    }}
-                >
-                    <Text strong style={{ color: "#52c41a" }}>
-                        Khuyến mãi:
-                    </Text>{" "}
-                    Giảm ngay 10% cho đơn hàng đầu tiên!
-                </div>
+
+                {/* Render động các thông báo từ Database */}
+                {notifications.length > 0 ? (
+                    notifications.map((note) => {
+                        const style = getNotificationStyle(note.type);
+                        return (
+                            <div
+                                key={note.id}
+                                style={{
+                                    marginTop: 16,
+                                    padding: "12px",
+                                    background: style.bg,
+                                    border: `1px solid ${style.border}`,
+                                    borderRadius: "8px",
+                                }}
+                            >
+                                <Text strong style={{ color: style.text }}>
+                                    {note.title}:
+                                </Text>{" "}
+                                {note.content}
+                            </div>
+                        );
+                    })
+                ) : (
+                    <div style={{ marginTop: 16, color: "#8c8c8c" }}>
+                        Hiện tại không có thông báo mới nào. Chúc bạn một ngày tốt lành!
+                    </div>
+                )}
 
                 <Divider style={{ margin: "20px 0 10px 0" }} />
 

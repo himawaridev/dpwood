@@ -11,6 +11,7 @@ import {
     AppstoreAddOutlined,
     FileTextOutlined,
     HomeOutlined,
+    BellOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -71,6 +72,12 @@ export default function AdminLayout({ children }) {
             icon: <FileTextOutlined />,
             label: "Quản lý Đơn Hàng",
             onClick: () => router.push("/admin/orders"),
+        },
+        {
+            key: "/admin/notifications",
+            icon: <BellOutlined />,
+            label: "Quản lý Thông Báo",
+            onClick: () => router.push("/admin/notifications"),
         },
         { type: "divider" },
         {

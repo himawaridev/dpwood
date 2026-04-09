@@ -18,6 +18,7 @@ const userRoutes = require("./routers/user");
 const productRoutes = require("./routers/product");
 const orderRoutes = require("./routers/order");
 const addressRoutes = require("./routers/address");
+const notificationRoutes = require("./routers/notificationRoutes");
 
 const app = express();
 
@@ -96,6 +97,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
+app.use("/api/notifications", notificationRoutes);
 // ==========================================
 
 // ==========================================

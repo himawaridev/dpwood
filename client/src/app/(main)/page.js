@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { Spin } from "antd";
 import { useRouter } from "next/navigation";
 import LatestProducts from "@/components/LatestProducts";
+import api from "@/utils/axios";
 
-// 🔴 Import các Component Modal đã chia nhỏ
+// Import các Component Modal đã chia nhỏ
 import AuthModal from "@/components/AuthModal";
 import WelcomeModal from "@/components/WelcomeModal";
 
@@ -16,15 +17,27 @@ export default function HomePage() {
         loading: true,
     });
 
+    const [activeNotifications, setActiveNotifications] = useState([]);
+
     // States cho Modal
     const [isWelcomeModalVisible, setIsWelcomeModalVisible] = useState(false);
     const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
 
-    // States cho việc ẩn thông báo
     const [dontShowWelcomeAgain, setDontShowWelcomeAgain] = useState(false);
     const [dontShowAuthAgain, setDontShowAuthAgain] = useState(false);
 
     useEffect(() => {
+        // Lấy danh sách thông báo động
+        const fetchNotifications = async () => {
+            try {
+                const res = await api.get("/notifications/active");
+                setActiveNotifications(res.data);
+            } catch (error) {
+                console.error("Lỗi lấy thông báo:", error);
+            }
+        };
+        fetchNotifications();
+
         const checkAuthTimeout = setTimeout(() => {
             const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
             const name = typeof window !== "undefined" ? localStorage.getItem("userName") : "";
@@ -37,13 +50,11 @@ export default function HomePage() {
             });
 
             if (token) {
-                // LOGIC MODAL CHÀO MỪNG
                 const hideWelcomeUntil = localStorage.getItem("hideWelcomeModalUntil");
                 if (!hideWelcomeUntil || now > parseInt(hideWelcomeUntil, 10)) {
                     setIsWelcomeModalVisible(true);
                 }
             } else {
-                // LOGIC MODAL YÊU CẦU ĐĂNG NHẬP
                 const hideAuthUntil = localStorage.getItem("hideAuthModalUntil");
                 if (!hideAuthUntil || now > parseInt(hideAuthUntil, 10)) {
                     setIsAuthModalVisible(true);
@@ -54,7 +65,6 @@ export default function HomePage() {
         return () => clearTimeout(checkAuthTimeout);
     }, []);
 
-    // Xử lý đóng Modal Chào mừng
     const handleCloseWelcomeModal = () => {
         if (dontShowWelcomeAgain) {
             const expireTime = Date.now() + 6 * 60 * 60 * 1000;
@@ -63,7 +73,6 @@ export default function HomePage() {
         setIsWelcomeModalVisible(false);
     };
 
-    // Xử lý đóng Modal Yêu cầu đăng nhập
     const handleCloseAuthModal = () => {
         if (dontShowAuthAgain) {
             const expireTime = Date.now() + 6 * 60 * 60 * 1000;
@@ -86,7 +95,6 @@ export default function HomePage() {
                 <LatestProducts />
             </div>
 
-            {/* 🔴 Nhúng Component AuthModal */}
             <AuthModal
                 isOpen={isAuthModalVisible}
                 onClose={handleCloseAuthModal}
@@ -94,12 +102,12 @@ export default function HomePage() {
                 onCheckboxChange={setDontShowAuthAgain}
             />
 
-            {/* 🔴 Nhúng Component WelcomeModal */}
             <WelcomeModal
                 isOpen={isWelcomeModalVisible}
                 onClose={handleCloseWelcomeModal}
                 userName={authState.userName}
                 onCheckboxChange={setDontShowWelcomeAgain}
+                notifications={activeNotifications}
             />
         </div>
     );
