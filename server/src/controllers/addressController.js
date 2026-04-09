@@ -37,4 +37,27 @@ const createAddress = async (req, res) => {
     }
 };
 
-module.exports = { getAddresses, createAddress };
+const deleteAddress = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        // Chỉ cho phép xóa nếu địa chỉ tồn tại và thuộc về user đang đăng nhập
+        const address = await Address.findOne({
+            where: { id: id, userId: userId },
+        });
+
+        if (!address) {
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy địa chỉ hoặc không có quyền xóa" });
+        }
+
+        await address.destroy();
+        res.status(200).json({ message: "Xóa địa chỉ thành công" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { getAddresses, createAddress, deleteAddress };

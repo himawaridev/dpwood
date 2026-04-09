@@ -52,7 +52,7 @@ const BannedResult = ({ onGoHome }) => (
             <span style={{ color: "#555" }}>
                 Tài khoản của bạn vi phạm chính sách hoặc đã bị đình chỉ.
                 <br />
-                Vui lòng liên hệ <strong>admin@dpwood.com</strong> để được hỗ trợ.
+                Vui lòng liên hệ <strong>itokazukiqygnn@gmail.com</strong> để được hỗ trợ.
             </span>
         }
         extra={

@@ -4,9 +4,21 @@ const Order = require("../models/order");
 const OrderItem = require("../models/orderItem");
 const AuditLog = require("../models/auditLog");
 const User = require("../models/user");
-const sendEmail = require("../utils/sendEmail"); // 🔴 Import hàm gửi mail
+const sendEmail = require("../utils/sendEmail");
 
-// --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL HTML ---
+const PayOSModule = require("@payos/node");
+const PayOS = PayOSModule.PayOS || PayOSModule.default || PayOSModule;
+
+const CLIENT_ID = (process.env.PAYOS_CLIENT_ID || "").trim();
+const API_KEY = (process.env.PAYOS_API_KEY || "").trim();
+const CHECKSUM_KEY = (process.env.PAYOS_CHECKSUM_KEY || "").trim();
+
+const payos = new PayOS({
+    clientId: CLIENT_ID,
+    apiKey: API_KEY,
+    checksumKey: CHECKSUM_KEY,
+});
+
 const generateOrderHtml = (orderInfo, orderItems, isPaid) => {
     const itemsHtml = orderItems
         .map(
@@ -32,66 +44,37 @@ const generateOrderHtml = (orderInfo, orderItems, isPaid) => {
                 <h1 style="margin: 0;">DPWOOD</h1>
                 <p style="margin: 5px 0 0 0; color: #aaa;">Xác nhận đơn hàng #${orderInfo.orderCode}</p>
             </div>
-            
             <div style="padding: 20px;">
                 <p>Xin chào <strong>${orderInfo.customerName}</strong>,</p>
                 <p>Cảm ơn bạn đã mua sắm tại DPWOOD. Đơn hàng của bạn đã được ghi nhận thành công!</p>
-                
                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                    <h3 style="margin-top: 0;">Thông tin giao hàng:</h3>
                     <p style="margin: 5px 0;"><strong>Người nhận:</strong> ${orderInfo.shippingName} - ${orderInfo.shippingPhone}</p>
                     <p style="margin: 5px 0;"><strong>Địa chỉ:</strong> ${orderInfo.shippingAddress}</p>
                     <p style="margin: 5px 0;"><strong>Trạng thái:</strong> ${statusBadge}</p>
                 </div>
-
                 <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background-color: #fafafa;">
-                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Sản phẩm</th>
-                            <th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">SL</th>
-                            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">Thành tiền</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHtml}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="2" style="padding: 15px 10px; text-align: right; font-weight: bold;">Tổng thanh toán:</td>
-                            <td style="padding: 15px 10px; text-align: right; font-weight: bold; font-size: 18px; color: #cf1322;">
-                                ${new Intl.NumberFormat("vi-VN").format(orderInfo.totalAmount)}₫
-                            </td>
-                        </tr>
-                    </tfoot>
+                    <thead><tr style="background-color: #fafafa;"><th style="text-align: left;">Sản phẩm</th><th>SL</th><th style="text-align: right;">Thành tiền</th></tr></thead>
+                    <tbody>${itemsHtml}</tbody>
+                    <tfoot><tr><td colspan="2" style="text-align: right; font-weight: bold;">Tổng thanh toán:</td><td style="text-align: right; font-weight: bold; font-size: 18px; color: #cf1322;">${new Intl.NumberFormat("vi-VN").format(orderInfo.totalAmount)}₫</td></tr></tfoot>
                 </table>
-
-                <p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center;">
-                    Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua hotline hoặc email hỗ trợ.<br/>
-                    Trân trọng,<br/>Đội ngũ DPWOOD.
-                </p>
             </div>
         </div>
     `;
 };
 
-// --- 1. HÀM TẠO ĐƠN HÀNG ---
 const checkout = async (req, res) => {
     const t = await sequelize.transaction();
-
     try {
         const { items, paymentMethod, shippingInfo } = req.body;
         const userId = req.user.id;
-        const userEmail = req.user.email; // Đảm bảo middleware auth đã gắn email vào req.user
+        const userEmail = req.user.email;
 
-        if (!items || items.length === 0) {
-            return res.status(400).json({ message: "Giỏ hàng trống" });
-        }
+        if (!items || items.length === 0) throw new Error("Giỏ hàng trống");
 
         let totalAmount = 0;
         const orderItemsData = [];
-        const emailItemsInfo = []; // Mảng riêng để chứa Tên SP phục vụ cho Email
+        const emailItemsInfo = [];
 
-        // 1. Kiểm tra tồn kho & trừ tồn kho
         for (const item of items) {
             const product = await Product.findByPk(item.productId, {
                 transaction: t,
@@ -110,8 +93,6 @@ const checkout = async (req, res) => {
                 quantity: item.quantity,
                 priceAtPurchase: product.price,
             });
-
-            // Lưu tên SP để gửi mail
             emailItemsInfo.push({
                 name: product.name,
                 quantity: item.quantity,
@@ -119,10 +100,15 @@ const checkout = async (req, res) => {
             });
         }
 
-        // 2. Tạo mã đơn hàng ngẫu nhiên 6 số
-        const orderCode = Math.floor(100000 + Math.random() * 900000).toString();
+        if (paymentMethod === "QR" && totalAmount < 2000) {
+            throw new Error(
+                "PayOS yêu cầu giá trị đơn hàng phải từ 2,000 VNĐ trở lên để tạo mã QR. Vui lòng thêm sản phẩm!",
+            );
+        }
 
-        // 3. Tạo Đơn hàng
+        const orderCodeNum = Math.floor(100000 + Math.random() * 900000);
+        const orderCode = String(orderCodeNum);
+
         const order = await Order.create(
             {
                 userId,
@@ -143,20 +129,37 @@ const checkout = async (req, res) => {
         }));
         await OrderItem.bulkCreate(orderItemsWithOrderId, { transaction: t });
 
-        // 4. Ghi Log đặt hàng
         await AuditLog.create(
             {
                 userId,
                 action: "ORDER_CREATED",
-                details: `Tạo đơn hàng #${orderCode} - Phương thức: ${paymentMethod} - Tổng: ${new Intl.NumberFormat("vi-VN").format(totalAmount)}đ`,
+                details: `Tạo đơn hàng #${orderCode} - Tổng: ${new Intl.NumberFormat("vi-VN").format(totalAmount)}đ`,
             },
             { transaction: t },
         );
 
-        await t.commit(); // ✅ CHỐT DATABASE TRƯỚC KHI GỬI MAIL
+        let paymentLinkData = null;
 
-        // 🔴 5. GỬI EMAIL NẾU LÀ COD
-        // Nếu là QR, ta chờ Webhook xác nhận có tiền mới gửi
+        if (paymentMethod === "QR") {
+            const domain = process.env.FRONTEND_URL || "http://localhost:3000";
+            const body = {
+                orderCode: Number(orderCodeNum),
+                amount: totalAmount,
+                description: `DPWOOD${orderCodeNum}`,
+                items: emailItemsInfo.map((i) => ({
+                    name: String(i.name).substring(0, 50),
+                    quantity: i.quantity,
+                    price: Number(i.price),
+                })),
+                returnUrl: `${domain}/profile?status=PAID`,
+                cancelUrl: `${domain}/cart?cancel=true`,
+            };
+
+            paymentLinkData = await payos.paymentRequests.create(body);
+        }
+
+        await t.commit();
+
         if (paymentMethod === "COD") {
             const orderInfo = {
                 orderCode: order.orderCode,
@@ -166,16 +169,18 @@ const checkout = async (req, res) => {
                 shippingAddress: order.shippingAddress,
                 totalAmount: order.totalAmount,
             };
-
-            const emailHtml = generateOrderHtml(orderInfo, emailItemsInfo, false);
-            // Hàm này chạy ngầm, không block thời gian trả response
-            sendEmail(userEmail, `[DPWOOD] Xác nhận đặt hàng thành công #${orderCode}`, emailHtml);
+            sendEmail(
+                userEmail,
+                `[DPWOOD] Xác nhận đặt hàng #${orderCode}`,
+                generateOrderHtml(orderInfo, emailItemsInfo, false),
+            );
         }
 
         res.status(200).json({
-            message: "Đặt hàng thành công!",
+            message: "Thành công!",
             orderId: order.id,
             orderCode: order.orderCode,
+            paymentLink: paymentLinkData,
         });
     } catch (error) {
         await t.rollback();
@@ -183,101 +188,76 @@ const checkout = async (req, res) => {
     }
 };
 
-// --- 2. HÀM ĐÓN TÍN HIỆU TỪ NGÂN HÀNG (WEBHOOK) ---
 const handleWebhook = async (req, res) => {
-    res.status(200).json({ success: true });
-
     try {
-        const { amount, content, transactionId } = req.body;
-        const match = content.match(/DPWOOD(\d{6})/i);
-        if (!match) return;
+        const webhookData = req.body.data;
+        if (!webhookData || !webhookData.orderCode) return res.json({ success: true });
 
-        const orderCode = match[1];
-
-        // 🔴 Lấy thêm thông tin User và các Món hàng để gửi Email
+        const orderCode = String(webhookData.orderCode);
         const order = await Order.findOne({
             where: { orderCode, status: "PENDING" },
-            include: [
-                { model: User, attributes: ["email", "name"] }, // Cần setup relationship trong models
-            ],
+            include: [{ model: User, attributes: ["email", "name"] }],
         });
 
-        if (!order) return;
+        if (!order) return res.json({ success: true });
 
-        if (Number(amount) >= Number(order.totalAmount)) {
-            order.status = "PAID";
-            await order.save();
-            const items = await OrderItem.findAll({ where: { orderId: order.id } });
+        order.status = "PAID";
+        await order.save();
 
-            for (const item of items) {
-                const product = await Product.findByPk(item.productId);
-                if (product) {
-                    product.sold += item.quantity; // Cộng dồn số lượng vừa mua
-                    await product.save();
-                }
+        const items = await OrderItem.findAll({ where: { orderId: order.id } });
+        for (const item of items) {
+            const product = await Product.findByPk(item.productId);
+            if (product) {
+                product.sold += item.quantity;
+                await product.save();
             }
-
-            await AuditLog.create({
-                userId: order.userId,
-                action: "PAYMENT_RECEIVED",
-                details: `Hệ thống tự động xác nhận đã nhận ${new Intl.NumberFormat("vi-VN").format(amount)}đ cho đơn hàng #${orderCode}. Mã GD: ${transactionId}`,
-            });
-
-            console.log(`✅ [WEBHOOK] Đã tự động xác nhận thanh toán cho đơn hàng ${orderCode}`);
-
-            // 🔴 GỬI EMAIL KHI NHẬN ĐƯỢC TIỀN
-            if (order.User && order.User.email) {
-                // Truy xuất danh sách sản phẩm của đơn hàng
-                const items = await OrderItem.findAll({
-                    where: { orderId: order.id },
-                    include: [{ model: Product, attributes: ["name"] }],
-                });
-
-                const emailItemsInfo = items.map((i) => ({
-                    name: i.Product ? i.Product.name : "Sản phẩm",
-                    quantity: i.quantity,
-                    price: i.priceAtPurchase,
-                }));
-
-                const orderInfo = {
-                    orderCode: order.orderCode,
-                    customerName: order.User.name,
-                    shippingName: order.shippingName,
-                    shippingPhone: order.shippingPhone,
-                    shippingAddress: order.shippingAddress,
-                    totalAmount: order.totalAmount,
-                };
-
-                const emailHtml = generateOrderHtml(orderInfo, emailItemsInfo, true);
-                sendEmail(
-                    order.User.email,
-                    `[DPWOOD] Thanh toán thành công đơn hàng #${orderCode}`,
-                    emailHtml,
-                );
-            }
-        } else {
-            console.log(`❌ [WEBHOOK] Đơn hàng ${orderCode} chuyển thiếu tiền`);
         }
+
+        const transactionCode =
+            webhookData.transactionReference || webhookData.reference || "Giao dịch Online";
+        await AuditLog.create({
+            userId: order.userId,
+            action: "PAYMENT_RECEIVED",
+            details: `PayOS tự động xác nhận ${new Intl.NumberFormat("vi-VN").format(webhookData.amount)}đ cho đơn #${orderCode}. Mã GD: ${transactionCode}`,
+        });
+
+        if (order.User && order.User.email) {
+            const emailItemsInfo = items.map((i) => ({
+                name: "Sản phẩm",
+                quantity: i.quantity,
+                price: i.priceAtPurchase,
+            }));
+            const orderInfo = {
+                orderCode: order.orderCode,
+                customerName: order.User.name,
+                shippingName: order.shippingName,
+                shippingPhone: order.shippingPhone,
+                shippingAddress: order.shippingAddress,
+                totalAmount: order.totalAmount,
+            };
+            sendEmail(
+                order.User.email,
+                `[DPWOOD] Đã thanh toán đơn #${orderCode}`,
+                generateOrderHtml(orderInfo, emailItemsInfo, true),
+            );
+        }
+        return res.json({ success: true });
     } catch (error) {
-        console.error("Lỗi khi xử lý Webhook:", error);
+        return res.json({ success: false });
     }
 };
 
-// ... CÁC HÀM CÒN LẠI GIỮ NGUYÊN ...
-// --- 3. KIỂM TRA TRẠNG THÁI ĐƠN HÀNG ---
 const getOrderStatus = async (req, res) => {
     try {
         const { orderCode } = req.params;
         const order = await Order.findOne({ where: { orderCode } });
-        if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-
+        if (!order) return res.status(404).json({ message: "Không tìm thấy" });
         res.json({ status: order.status });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// --- 4. HỦY ĐƠN HÀNG VÀ HOÀN LẠI TỒN KHO ---
 const cancelOrder = async (req, res) => {
     const t = await sequelize.transaction();
     try {
@@ -286,10 +266,8 @@ const cancelOrder = async (req, res) => {
             where: { orderCode, status: "PENDING" },
             transaction: t,
         });
+        if (!order) throw new Error("Không thể hủy");
 
-        if (!order) throw new Error("Không thể hủy đơn hàng này");
-
-        // Tìm các món hàng trong đơn và cộng lại tồn kho
         const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
         for (const item of items) {
             const product = await Product.findByPk(item.productId, {
@@ -301,95 +279,65 @@ const cancelOrder = async (req, res) => {
                 await product.save({ transaction: t });
             }
         }
-
-        // Cập nhật trạng thái thành CANCELED
         order.status = "CANCELED";
         await order.save({ transaction: t });
 
-        // Ghi Log
         await AuditLog.create(
             {
                 userId: req.user.id,
                 action: "ORDER_CANCELED",
-                details: `Khách hàng hủy thanh toán đơn #${orderCode}, đã hoàn lại tồn kho.`,
+                details: `Hủy đơn #${orderCode}, đã hoàn tồn kho.`,
             },
             { transaction: t },
         );
 
         await t.commit();
-        res.json({ message: "Đã hủy giao dịch" });
+        res.json({ message: "Đã hủy" });
     } catch (error) {
         await t.rollback();
         res.status(400).json({ message: error.message });
     }
 };
 
-// --- 5. LẤY TOÀN BỘ ĐƠN HÀNG (DÀNH CHO ADMIN) ---
+// 🔴 ĐÃ BỔ SUNG: Include OrderItem và Product vào dữ liệu lấy ra
 const getAllOrdersAdmin = async (req, res) => {
     try {
         const orders = await Order.findAll({
+            order: [["createdAt", "DESC"]],
             include: [
                 { model: User, attributes: ["name", "email"] },
-                {
-                    model: OrderItem,
-                    include: [{ model: Product, attributes: ["name", "imageUrl"] }],
-                },
+                { model: OrderItem, include: [{ model: Product }] }, // Lấy chi tiết sản phẩm và Hình ảnh
             ],
-            order: [["createdAt", "DESC"]], // Đơn mới nhất xếp lên đầu
         });
-        res.json(orders);
+        res.status(200).json(orders);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// --- 6. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG (DÀNH CHO ADMIN) ---
 const updateOrderStatusAdmin = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        const order = await Order.findByPk(id);
-        if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-
-        if (status === "CANCELED" && order.status !== "CANCELED") {
-            const items = await OrderItem.findAll({ where: { orderId: order.id } });
-            for (const item of items) {
-                const product = await Product.findByPk(item.productId);
-                if (product) {
-                    product.stock += item.quantity;
-                    await product.save();
-                }
-            }
-        }
-
-        order.status = status;
+        const order = await Order.findByPk(req.params.id);
+        if (!order) return res.status(404).json({ message: "Không tìm thấy" });
+        order.status = req.body.status;
         await order.save();
-
-        await AuditLog.create({
-            userId: req.user.id,
-            action: "ADMIN_UPDATE_ORDER",
-            details: `Admin cập nhật đơn #${order.orderCode} sang trạng thái ${status}`,
-        });
-
-        res.json({ message: "Cập nhật trạng thái thành công" });
+        res.status(200).json({ message: "Cập nhật thành công", order });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// [GET] Lấy lịch sử đơn hàng của cá nhân
+// 🔴 ĐÃ BỔ SUNG: Cho trang Profile User cũng xem được chi tiết và Hình ảnh nếu cần
 const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.findAll({
             where: { userId: req.user.id },
             order: [["createdAt", "DESC"]],
+            include: [{ model: OrderItem, include: [{ model: Product }] }],
         });
-
         res.status(200).json(orders);
     } catch (error) {
-        console.error("Lỗi getMyOrders:", error);
-        res.status(500).json({ message: "Lỗi máy chủ" });
+        res.status(500).json({ message: error.message });
     }
 };
 

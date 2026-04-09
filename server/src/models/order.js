@@ -9,7 +9,7 @@ const Order = sequelize.define("Order", {
     },
     // Thêm mã đơn hàng ngắn (6 số) để dùng cho chuyển khoản
     orderCode: {
-        type: DataTypes.STRING,
+        type: DataTypes.BIGINT,
         allowNull: false,
         unique: true,
     },
@@ -40,6 +40,10 @@ const Order = sequelize.define("Order", {
     shippingAddress: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    status: {
+        type: DataTypes.ENUM("PENDING", "PAID", "CANCELLED"),
+        defaultValue: "PENDING",
     },
 });
 

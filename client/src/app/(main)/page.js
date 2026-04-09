@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Button, Typography, Modal, Checkbox, Spin, Space, Divider } from "antd";
+import { Spin } from "antd";
 import { useRouter } from "next/navigation";
-import { LoginOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import LatestProducts from "@/components/LatestProducts";
 
-const { Text } = Typography;
+// 🔴 Import các Component Modal đã chia nhỏ
+import AuthModal from "@/components/AuthModal";
+import WelcomeModal from "@/components/WelcomeModal";
 
 export default function HomePage() {
     const router = useRouter();
@@ -21,7 +22,7 @@ export default function HomePage() {
 
     // States cho việc ẩn thông báo
     const [dontShowWelcomeAgain, setDontShowWelcomeAgain] = useState(false);
-    const [dontShowAuthAgain, setDontShowAuthAgain] = useState(false); // 🔴 State cho modal Đăng nhập
+    const [dontShowAuthAgain, setDontShowAuthAgain] = useState(false);
 
     useEffect(() => {
         const checkAuthTimeout = setTimeout(() => {
@@ -42,7 +43,7 @@ export default function HomePage() {
                     setIsWelcomeModalVisible(true);
                 }
             } else {
-                // 🔴 LOGIC MODAL YÊU CẦU ĐĂNG NHẬP (Thêm kiểm tra thời gian ẩn)
+                // LOGIC MODAL YÊU CẦU ĐĂNG NHẬP
                 const hideAuthUntil = localStorage.getItem("hideAuthModalUntil");
                 if (!hideAuthUntil || now > parseInt(hideAuthUntil, 10)) {
                     setIsAuthModalVisible(true);
@@ -62,7 +63,7 @@ export default function HomePage() {
         setIsWelcomeModalVisible(false);
     };
 
-    // 🔴 Xử lý đóng Modal Yêu cầu đăng nhập
+    // Xử lý đóng Modal Yêu cầu đăng nhập
     const handleCloseAuthModal = () => {
         if (dontShowAuthAgain) {
             const expireTime = Date.now() + 6 * 60 * 60 * 1000;
@@ -85,90 +86,21 @@ export default function HomePage() {
                 <LatestProducts />
             </div>
 
-            {/* MODAL THÔNG BÁO CHƯA ĐĂNG NHẬP (Đã thêm tính năng ẩn 6h) */}
-            <Modal
-                title={
-                    <Space>
-                        <InfoCircleOutlined style={{ color: "#faad14" }} />
-                        <span style={{ fontSize: "18px" }}>Yêu cầu đăng nhập</span>
-                    </Space>
-                }
-                open={isAuthModalVisible}
-                onCancel={handleCloseAuthModal}
-                centered
-                footer={[
-                    <Button key="later" onClick={handleCloseAuthModal}>
-                        Để sau
-                    </Button>,
-                    <Button
-                        key="login"
-                        type="primary"
-                        icon={<LoginOutlined />}
-                        onClick={() => router.push("/login")}
-                    >
-                        Đăng nhập ngay
-                    </Button>,
-                ]}
-            >
-                <div style={{ padding: "10px 0" }}>
-                    <Text style={{ fontSize: "16px" }}>
-                        Bạn hiện đang truy cập với tư cách <b>Khách</b>.
-                    </Text>
-                    <br />
-                    <Text type="secondary">
-                        Vui lòng đăng nhập để đặt hàng và xem lịch sử giao dịch.
-                    </Text>
+            {/* 🔴 Nhúng Component AuthModal */}
+            <AuthModal
+                isOpen={isAuthModalVisible}
+                onClose={handleCloseAuthModal}
+                onLogin={() => router.push("/login")}
+                onCheckboxChange={setDontShowAuthAgain}
+            />
 
-                    <Divider style={{ margin: "20px 0 10px 0" }} />
-
-                    {/* 🔴 Checkbox ẩn 6h cho Modal Đăng nhập */}
-                    <Checkbox onChange={(e) => setDontShowAuthAgain(e.target.checked)}>
-                        Không hiển thị lại yêu cầu này trong 6 giờ
-                    </Checkbox>
-                </div>
-            </Modal>
-
-            {/* MODAL THÔNG BÁO CHÀO MỪNG */}
-            <Modal
-                title={
-                    <span style={{ fontSize: "20px", color: "#001529" }}>Thông báo hệ thống</span>
-                }
-                open={isWelcomeModalVisible}
-                onCancel={handleCloseWelcomeModal}
-                centered
-                footer={[
-                    <Button key="close" type="primary" onClick={handleCloseWelcomeModal}>
-                        Xác nhận
-                    </Button>,
-                ]}
-            >
-                <div style={{ padding: "16px 0" }}>
-                    <Text style={{ fontSize: 16 }}>
-                        Xin chào, <strong style={{ color: "#1890ff" }}>{authState.userName}</strong>
-                        !
-                    </Text>
-                    <div
-                        style={{
-                            marginTop: 24,
-                            padding: "12px",
-                            background: "#f6ffed",
-                            border: "1px solid #b7eb8f",
-                            borderRadius: "8px",
-                        }}
-                    >
-                        <Text strong style={{ color: "#52c41a" }}>
-                            Khuyến mãi:
-                        </Text>{" "}
-                        Giảm ngay 10% cho đơn hàng đầu tiên!
-                    </div>
-
-                    <Divider style={{ margin: "20px 0 10px 0" }} />
-
-                    <Checkbox onChange={(e) => setDontShowWelcomeAgain(e.target.checked)}>
-                        Không hiển thị lại thông báo này trong 6 giờ
-                    </Checkbox>
-                </div>
-            </Modal>
+            {/* 🔴 Nhúng Component WelcomeModal */}
+            <WelcomeModal
+                isOpen={isWelcomeModalVisible}
+                onClose={handleCloseWelcomeModal}
+                userName={authState.userName}
+                onCheckboxChange={setDontShowWelcomeAgain}
+            />
         </div>
     );
 }
