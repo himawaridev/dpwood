@@ -12,6 +12,10 @@ const Product = require("./models/product");
 const Order = require("./models/order");
 const OrderItem = require("./models/orderItem");
 const Address = require("./models/address");
+const Notification = require("./models/notification");
+const SupportTicket = require("./models/supportTicket");
+const TicketMessage = require("./models/ticketMessage");
+const Blog = require("./models/blog");
 // Routers
 const authRoutes = require("./routers/auth");
 const userRoutes = require("./routers/user");
@@ -19,6 +23,9 @@ const productRoutes = require("./routers/product");
 const orderRoutes = require("./routers/order");
 const addressRoutes = require("./routers/address");
 const notificationRoutes = require("./routers/notificationRoutes");
+const supportRoutes = require("./routers/supportRoutes");
+const blogRoutes = require("./routers/blogRoutes");
+const uploadRoutes = require("./routers/uploadRoutes");
 
 const app = express();
 
@@ -91,6 +98,14 @@ OrderItem.belongsTo(Product, { foreignKey: "productId" });
 User.hasMany(Address, { foreignKey: "userId" });
 Address.belongsTo(User, { foreignKey: "userId" });
 
+// 1. Một User có thể tạo nhiều Ticket
+User.hasMany(SupportTicket, { foreignKey: "userId" });
+SupportTicket.belongsTo(User, { foreignKey: "userId" });
+
+// 2. Một Ticket có chứa nhiều Tin nhắn
+SupportTicket.hasMany(TicketMessage, { foreignKey: "ticketId" });
+TicketMessage.belongsTo(SupportTicket, { foreignKey: "ticketId" });
+
 // Khai báo các đường dẫn API
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -98,6 +113,10 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/support", supportRoutes);
+app.use("/api/blogs", blogRoutes);
+app.use("/api/upload", uploadRoutes);
+
 // ==========================================
 
 // ==========================================
