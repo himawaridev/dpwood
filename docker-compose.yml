@@ -1,0 +1,46 @@
+
+services:
+  # 1. DATABASE (Ở đây tôi ví dụ MySQL, nếu bạn dùng PostgreSQL thì đổi image thành postgres)
+  db:
+    image: mysql:8.0
+    container_name: dpwood_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Dung22102003@@@ # Đổi mật khẩu này
+      MYSQL_DATABASE: dpwood_db   # Tên DB Sequelize sẽ connect
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql # Giữ lại dữ liệu DB ngay cả khi xóa container
+
+  # 2. BACKEND NODE.JS
+  server:
+    build: ./server
+    container_name: dpwood_server
+    restart: always
+    ports:
+      - "5000:5000"
+    # 🔴 BẢO DOCKER ĐỌC THẲNG FILE .ENV CỦA SERVER
+    env_file:
+      - ./server/.env
+    # Vẫn ghi đè lại Host của Database để trỏ sang Container DB
+    environment:
+      - DB_HOST=db
+    depends_on:
+      - db
+
+  # 3. FRONTEND NEXT.JS
+  client:
+    build: ./client
+    container_name: dpwood_client
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # URL để gọi API (Dùng cho Client Component thì vẫn gọi qua localhost)
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api 
+    depends_on:
+      - server
+
+volumes:
+  db_data: # Khai báo volume để lưu trữ Database vĩnh viễn
