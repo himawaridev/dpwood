@@ -4,7 +4,6 @@ import { message, Typography, Tabs, Input, Space, Button, Badge } from "antd";
 import { ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
-// 🔴 Import các Component đã bóc tách
 import OrderTable from "./components/OrderTable";
 import OrderDetailModal from "./components/OrderDetailModal";
 
@@ -46,7 +45,8 @@ export default function AdminOrdersPage() {
             await api.put(`/orders/admin/${orderId}/status`, { status: newStatus });
             message.success("Cập nhật trạng thái thành công");
         } catch (error) {
-            message.error("Lỗi cập nhật trạng thái, đang khôi phục dữ liệu...");
+            const errorMsg = error.response?.data?.message || "Lỗi cập nhật trạng thái";
+            message.error(`Thất bại: ${errorMsg}`);
             fetchOrders();
         }
     };
@@ -56,117 +56,65 @@ export default function AdminOrdersPage() {
         setIsDetailVisible(true);
     };
 
-    // Bộ lọc dữ liệu
     const getFilteredOrders = (statusFilter) => {
         let filtered = orders;
 
         if (statusFilter !== "ALL") {
-            if (statusFilter === "HISTORY") {
-                filtered = filtered.filter(
-                    (o) => o.status === "COMPLETED" || o.status === "CANCELED",
-                );
-            } else {
-                filtered = filtered.filter((o) => o.status === statusFilter);
-            }
+            filtered =
+                statusFilter === "HISTORY"
+                    ? filtered.filter((o) => ["COMPLETED", "CANCELED"].includes(o.status))
+                    : filtered.filter((o) => o.status === statusFilter);
         }
 
         if (searchText) {
-            // Loại bỏ khoảng trắng thừa ở đầu/cuối từ khóa tìm kiếm
             const lowerSearch = searchText.toLowerCase().trim();
-
             filtered = filtered.filter((o) => {
-                // 🔴 ÉP KIỂU VỀ STRING: Đảm bảo không bị lỗi nếu orderCode hay phone là dạng Số (Number)
-                const orderCode = String(o.orderCode || "").toLowerCase();
-                const phone = String(o.shippingPhone || "").toLowerCase();
-                const customerName = String(o.User?.name || "").toLowerCase();
-                const customerEmail = String(o.User?.email || "").toLowerCase(); // Bổ sung tìm kiếm Email
-                const shipName = String(o.shippingName || "").toLowerCase();
+                // Gom các trường cần tìm kiếm vào một mảng để check cho gọn
+                const searchableFields = [
+                    o.orderCode,
+                    o.shippingPhone,
+                    o.User?.name,
+                    o.User?.email,
+                    o.shippingName,
+                ].map((field) => String(field || "").toLowerCase());
 
-                return (
-                    orderCode.includes(lowerSearch) ||
-                    phone.includes(lowerSearch) ||
-                    customerName.includes(lowerSearch) ||
-                    customerEmail.includes(lowerSearch) ||
-                    shipName.includes(lowerSearch)
-                );
+                return searchableFields.some((field) => field.includes(lowerSearch));
             });
         }
 
         return filtered;
     };
 
-    // 🔴 TÍNH TOÁN SỐ LƯỢNG ĐƠN HÀNG MỚI ĐỂ HIỂN THỊ CHẤM ĐỎ
     const pendingCount = orders.filter((o) => o.status === "PENDING").length;
 
-    // 🔴 Cấu trúc Tabs gọn gàng tái sử dụng 1 component OrderTable
-    const tabItems = [
-        {
-            key: "ALL",
-            label: "Tất cả",
-            children: (
-                <OrderTable
-                    orders={getFilteredOrders("ALL")}
-                    loading={loading}
-                    onStatusChange={handleStatusChange}
-                    onViewDetails={viewDetails}
-                />
-            ),
-        },
+    const tabConfigs = [
+        { key: "ALL", label: "Tất cả" },
         {
             key: "PENDING",
-            // 🔴 HIỂN THỊ NÚT ĐỎ BÁO ĐƠN MỚI
             label: (
                 <Space size="small">
                     Chờ xử lý
                     <Badge count={pendingCount} style={{ backgroundColor: "#ff4d4f" }} />
                 </Space>
             ),
-            children: (
-                <OrderTable
-                    orders={getFilteredOrders("PENDING")}
-                    loading={loading}
-                    onStatusChange={handleStatusChange}
-                    onViewDetails={viewDetails}
-                />
-            ),
         },
-        {
-            key: "PAID",
-            label: "Đã thanh toán",
-            children: (
-                <OrderTable
-                    orders={getFilteredOrders("PAID")}
-                    loading={loading}
-                    onStatusChange={handleStatusChange}
-                    onViewDetails={viewDetails}
-                />
-            ),
-        },
-        {
-            key: "SHIPPING",
-            label: "Đang giao",
-            children: (
-                <OrderTable
-                    orders={getFilteredOrders("SHIPPING")}
-                    loading={loading}
-                    onStatusChange={handleStatusChange}
-                    onViewDetails={viewDetails}
-                />
-            ),
-        },
-        {
-            key: "HISTORY",
-            label: "Lịch sử",
-            children: (
-                <OrderTable
-                    orders={getFilteredOrders("HISTORY")}
-                    loading={loading}
-                    onStatusChange={handleStatusChange}
-                    onViewDetails={viewDetails}
-                />
-            ),
-        },
+        { key: "PAID", label: "Đã thanh toán" },
+        { key: "SHIPPING", label: "Đang giao" },
+        { key: "HISTORY", label: "Lịch sử" },
     ];
+
+    const tabItems = tabConfigs.map((tab) => ({
+        key: tab.key,
+        label: tab.label,
+        children: (
+            <OrderTable
+                orders={getFilteredOrders(tab.key)}
+                loading={loading}
+                onStatusChange={handleStatusChange}
+                onViewDetails={viewDetails}
+            />
+        ),
+    }));
 
     return (
         <>
@@ -187,7 +135,7 @@ export default function AdminOrdersPage() {
                     <Input.Search
                         placeholder="Tìm mã đơn, SĐT, tên..."
                         allowClear
-                        onSearch={(value) => setSearchText(value)}
+                        onSearch={setSearchText}
                         onChange={(e) => {
                             if (!e.target.value) setSearchText("");
                         }}
@@ -200,10 +148,8 @@ export default function AdminOrdersPage() {
                 </Space>
             </div>
 
-            {/* Render Tabs */}
             <Tabs defaultActiveKey="ALL" items={tabItems} />
 
-            {/* Render Modal */}
             <OrderDetailModal
                 isVisible={isDetailVisible}
                 onClose={() => setIsDetailVisible(false)}

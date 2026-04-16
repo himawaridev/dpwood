@@ -1,50 +1,51 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/connectSequelize").sequelize;
+const { sequelize } = require("../config/connectSequelize");
 
-const Order = sequelize.define("Order", {
-    id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
+const Order = sequelize.define(
+    "Order",
+    {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
+            primaryKey: true,
+        },
+        orderCode: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            unique: true,
+        },
+        userId: {
+            type: DataTypes.UUID,
+            allowNull: false,
+        },
+        totalAmount: {
+            type: DataTypes.DECIMAL(15, 0),
+            allowNull: false,
+        },
+        paymentMethod: {
+            type: DataTypes.STRING,
+            defaultValue: "COD",
+        },
+        shippingName: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        shippingPhone: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        shippingAddress: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        status: {
+            type: DataTypes.ENUM("PENDING", "PAID", "SHIPPING", "COMPLETED", "CANCELED"),
+            defaultValue: "PENDING",
+        },
     },
-    // Thêm mã đơn hàng ngắn (6 số) để dùng cho chuyển khoản
-    orderCode: {
-        type: DataTypes.BIGINT,
-        allowNull: false,
-        unique: true,
+    {
+        timestamps: true,
     },
-    userId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-    },
-    totalAmount: {
-        type: DataTypes.DECIMAL(15, 0),
-        allowNull: false,
-    },
-    paymentMethod: {
-        type: DataTypes.STRING,
-        defaultValue: "COD", // COD hoặc QR
-    },
-    status: {
-        type: DataTypes.STRING,
-        defaultValue: "PENDING", // PENDING (Chờ thanh toán/Giao hàng), PAID (Đã trả tiền), CANCELED (Đã hủy)
-    },
-    shippingName: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    shippingPhone: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    shippingAddress: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    status: {
-        type: DataTypes.ENUM("PENDING", "PAID", "CANCELLED"),
-        defaultValue: "PENDING",
-    },
-});
+);
 
 module.exports = Order;

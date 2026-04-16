@@ -11,7 +11,7 @@ const User = sequelize.define(
         },
         avatarUrl: {
             type: DataTypes.STRING,
-            allowNull: true, // Có thể null nếu user chưa up ảnh
+            allowNull: true,
         },
         name: {
             type: DataTypes.STRING,
@@ -49,30 +49,31 @@ const User = sequelize.define(
         isVerified: {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
-        }, // email verify
+        },
         emailVerifyToken: {
             type: DataTypes.STRING,
         },
         refreshToken: {
             type: DataTypes.STRING,
-        }, // lưu refresh token
+        },
         resetPasswordToken: {
             type: DataTypes.STRING,
-        }, // forgot password
+        },
         resetPasswordExpires: {
             type: DataTypes.DATE,
         },
         loginAttempts: {
             type: DataTypes.INTEGER,
             defaultValue: 0,
-        }, // rate limit
+        },
         lockUntil: {
             type: DataTypes.DATE,
-        }, // khóa tài khoản tạm thời
+        },
     },
     {
         tableName: "users",
         timestamps: true,
+        paranoid: true,
     },
 );
 

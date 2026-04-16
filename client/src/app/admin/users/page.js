@@ -66,6 +66,16 @@ export default function AdminUsersPage() {
         }
     };
 
+    const handleRestore = async (userId) => {
+        try {
+            await api.put(`/users/${userId}/restore`);
+            message.success("Đã khôi phục tài khoản");
+            fetchUsers();
+        } catch (error) {
+            message.error(error.response?.data?.message || "Lỗi khi khôi phục");
+        }
+    };
+
     const handleToggleBan = async (userId) => {
         try {
             const res = await api.put(`/users/${userId}/ban`);
@@ -100,6 +110,7 @@ export default function AdminUsersPage() {
                     onRefresh={fetchUsers}
                     onToggleBan={handleToggleBan}
                     onDelete={handleDelete}
+                    onRestore={handleRestore}
                 />
             ),
         },

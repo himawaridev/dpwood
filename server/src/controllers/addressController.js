@@ -1,5 +1,9 @@
 const Address = require("../models/address");
 
+// ==========================================
+// [CLIENT] QUẢN LÝ ĐỊA CHỈ
+// ==========================================
+
 const getAddresses = async (req, res) => {
     try {
         const addresses = await Address.findAll({
@@ -7,11 +11,12 @@ const getAddresses = async (req, res) => {
             order: [
                 ["isDefault", "DESC"],
                 ["createdAt", "DESC"],
-            ], // Mặc định xếp lên đầu
+            ],
         });
-        res.json(addresses);
+        res.status(200).json(addresses);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Lỗi getAddresses:", error);
+        res.status(500).json({ message: "Lỗi máy chủ khi lấy địa chỉ", error: error.message });
     }
 };
 
@@ -19,7 +24,6 @@ const createAddress = async (req, res) => {
     try {
         const { recipientName, phoneNumber, fullAddress, isDefault } = req.body;
 
-        // Nếu chọn làm mặc định, phải gỡ mặc định của các địa chỉ cũ
         if (isDefault) {
             await Address.update({ isDefault: false }, { where: { userId: req.user.id } });
         }
@@ -33,19 +37,15 @@ const createAddress = async (req, res) => {
         });
         res.status(201).json(newAddress);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Lỗi createAddress:", error);
+        res.status(500).json({ message: "Lỗi máy chủ khi tạo địa chỉ", error: error.message });
     }
 };
 
 const deleteAddress = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.id;
-
-        // Chỉ cho phép xóa nếu địa chỉ tồn tại và thuộc về user đang đăng nhập
-        const address = await Address.findOne({
-            where: { id: id, userId: userId },
-        });
+        const address = await Address.findOne({ where: { id: id, userId: req.user.id } });
 
         if (!address) {
             return res
@@ -56,7 +56,8 @@ const deleteAddress = async (req, res) => {
         await address.destroy();
         res.status(200).json({ message: "Xóa địa chỉ thành công" });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Lỗi deleteAddress:", error);
+        res.status(500).json({ message: "Lỗi máy chủ khi xóa địa chỉ", error: error.message });
     }
 };
 

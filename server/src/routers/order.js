@@ -1,21 +1,26 @@
 const express = require("express");
 const router = express.Router();
+
 const orderController = require("../controllers/orderController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const roleMiddleware = require("../middlewares/roleMiddleware");
 
-// Route Webhook Public cho bên thứ 3 (Cổng thanh toán PayOS) gọi vào
+// ==========================================
+// [PUBLIC] ROUTES - Khách vãng lai & Hệ thống thứ 3
+// ==========================================
 router.post("/webhook", orderController.handleWebhook);
+router.get("/:orderCode/status", orderController.getOrderStatus);
 
-// Route của Khách hàng (Bắt buộc đăng nhập)
+// ==========================================
+// [CLIENT] ROUTES - Khách hàng
+// ==========================================
 router.get("/me", authMiddleware, orderController.getMyOrders);
 router.post("/checkout", authMiddleware, orderController.checkout);
-
-// Route Public để kiểm tra trạng thái khi đang quét QR
-router.get("/:orderCode/status", orderController.getOrderStatus);
 router.put("/:orderCode/cancel", authMiddleware, orderController.cancelOrder);
 
-// Route của Admin (Bắt buộc có quyền root hoặc admin)
+// ==========================================
+// [ADMIN] ROUTES - Quản lý đơn hàng
+// ==========================================
 router.get(
     "/admin",
     authMiddleware,

@@ -7,6 +7,7 @@ const getAllUsers = async (req, res) => {
     try {
         const users = await User.findAll({
             attributes: { exclude: ["password", "refreshToken"] },
+            paranoid: false,
         });
         res.json(users);
     } catch (error) {
@@ -43,6 +44,23 @@ const deleteUser = async (req, res) => {
 
         await user.destroy();
         res.json({ message: "Đã xóa tài khoản thành công" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const restoreUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Bắt buộc phải có paranoid: false để tìm được cả những user đã bị xóa mềm
+        const user = await User.findByPk(id, { paranoid: false });
+
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+
+        // Lệnh thần thánh của Sequelize: Phục hồi tài khoản
+        await user.restore();
+
+        res.json({ message: "Đã khôi phục tài khoản thành công" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -192,4 +210,5 @@ module.exports = {
     getSystemLogs,
     getMe,
     updateMe,
+    restoreUser,
 };

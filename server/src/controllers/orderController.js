@@ -337,6 +337,7 @@ const getMyOrders = async (req, res) => {
         });
         res.status(200).json(orders);
     } catch (error) {
+        console.error("🔥 LỖI CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG:", error);
         res.status(500).json({ message: error.message });
     }
 };

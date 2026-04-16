@@ -1,8 +1,15 @@
 import React, { useState } from "react";
 import { Table, Tag, Button, Popconfirm, Space, Input, Flex } from "antd";
-import { DeleteOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
+import { DeleteOutlined, LockOutlined, UnlockOutlined, ReloadOutlined } from "@ant-design/icons";
 
-export default function StatusControlTab({ users, loading, onRefresh, onToggleBan, onDelete }) {
+export default function StatusControlTab({
+    users,
+    loading,
+    onRefresh,
+    onToggleBan,
+    onDelete,
+    onRestore,
+}) {
     const [searchText, setSearchText] = useState("");
 
     const filteredUsers = users.filter((u) => {
@@ -36,18 +43,22 @@ export default function StatusControlTab({ users, loading, onRefresh, onToggleBa
         {
             title: "Trạng thái",
             key: "status",
-            render: (_, record) =>
-                record.lockUntil && new Date(record.lockUntil) > new Date() ? (
+            render: (_, record) => {
+                if (record.deletedAt) return <Tag color="default">Đã bị xóa</Tag>;
+
+                return record.lockUntil && new Date(record.lockUntil) > new Date() ? (
                     <Tag color="error">Bị khóa</Tag>
                 ) : (
                     <Tag color="processing">Hoạt động</Tag>
-                ),
+                );
+            },
         },
         {
             title: "Hành động",
             key: "actions",
             render: (_, record) => {
                 const isBanned = record.lockUntil && new Date(record.lockUntil) > new Date();
+                const isDeleted = !!record.deletedAt;
                 return (
                     <Space>
                         <Button
@@ -59,18 +70,33 @@ export default function StatusControlTab({ users, loading, onRefresh, onToggleBa
                         >
                             {isBanned ? "Mở khóa" : "Khóa"}
                         </Button>
-                        <Popconfirm
-                            title="Xóa tài khoản?"
-                            onConfirm={() => onDelete(record.id)}
-                            okText="Xóa"
-                            cancelText="Hủy"
-                        >
-                            <Button
-                                danger
-                                icon={<DeleteOutlined />}
-                                disabled={record.role === "root"}
-                            />
-                        </Popconfirm>
+                        {isDeleted ? (
+                            <Popconfirm
+                                title="Khôi phục tài khoản này?"
+                                onConfirm={() => onRestore(record.id)}
+                                okText="Khôi phục"
+                                cancelText="Hủy"
+                            >
+                                <Button
+                                    type="primary"
+                                    style={{ background: "#52c41a" }}
+                                    icon={<ReloadOutlined />}
+                                ></Button>
+                            </Popconfirm>
+                        ) : (
+                            <Popconfirm
+                                title="Xóa tài khoản?"
+                                onConfirm={() => onDelete(record.id)}
+                                okText="Xóa"
+                                cancelText="Hủy"
+                            >
+                                <Button
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    disabled={record.role === "root"}
+                                />
+                            </Popconfirm>
+                        )}
                     </Space>
                 );
             },

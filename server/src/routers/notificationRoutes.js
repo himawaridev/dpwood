@@ -1,16 +1,18 @@
 const express = require("express");
 const router = express.Router();
+
 const notificationController = require("../controllers/notificationController");
 const authMiddleware = require("../middlewares/authMiddleware");
-
-// 🔴 SỬA TẠI ĐÂY: Import đúng file roleMiddleware của bạn
 const roleMiddleware = require("../middlewares/roleMiddleware");
 
-// Public API cho trang chủ
+// ==========================================
+// [PUBLIC] ROUTES
+// ==========================================
 router.get("/active", notificationController.getActiveNotifications);
 
-// Admin API
-// 🔴 SỬA TẠI ĐÂY: Dùng roleMiddleware("admin", "root") thay vì checkRole(["admin", "root"])
+// ==========================================
+// [ADMIN] ROUTES - Quản trị thông báo
+// ==========================================
 router.get(
     "/",
     authMiddleware,

@@ -1,16 +1,21 @@
 const express = require("express");
 const router = express.Router();
+
 const supportController = require("../controllers/supportController");
 const authMiddleware = require("../middlewares/authMiddleware");
-const roleMiddleware = require("../middlewares/roleMiddleware"); // Dùng roleMiddleware của bạn
+const roleMiddleware = require("../middlewares/roleMiddleware");
 
-// Client API
+// ==========================================
+// [CLIENT] ROUTES - Yêu cầu hỗ trợ của khách
+// ==========================================
 router.post("/", authMiddleware, supportController.createTicket);
 router.get("/my-tickets", authMiddleware, supportController.getMyTickets);
 router.get("/:id/messages", authMiddleware, supportController.getTicketMessages);
 router.post("/:id/reply", authMiddleware, supportController.replyTicket);
 
-// Admin API
+// ==========================================
+// [ADMIN] ROUTES - Xử lý yêu cầu hỗ trợ
+// ==========================================
 router.get(
     "/admin/all",
     authMiddleware,

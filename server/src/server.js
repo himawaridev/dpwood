@@ -1,11 +1,12 @@
 const express = require("express");
 const cors = require("cors");
-const { connectDB, sequelize } = require("./config/connectSequelize");
-require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
+require("dotenv").config();
 
-// Models
+const { connectDB, sequelize } = require("./config/connectSequelize");
+
+// Tách riêng file nạp Models để server.js sạch sẽ hơn
 const User = require("./models/user");
 const AuditLog = require("./models/auditLog");
 const Product = require("./models/product");
@@ -16,6 +17,7 @@ const Notification = require("./models/notification");
 const SupportTicket = require("./models/supportTicket");
 const TicketMessage = require("./models/ticketMessage");
 const Blog = require("./models/blog");
+
 // Routers
 const authRoutes = require("./routers/auth");
 const userRoutes = require("./routers/user");
@@ -28,99 +30,103 @@ const blogRoutes = require("./routers/blogRoutes");
 const uploadRoutes = require("./routers/uploadRoutes");
 
 const app = express();
-
-// ==========================================
-// 1. CẤU HÌNH SOCKET.IO
-// ==========================================
-// Khởi tạo HTTP Server bọc lấy Express App
 const server = http.createServer(app);
 
-// Khởi tạo máy chủ Socket.io, cấu hình CORS để Frontend (port 3000) có thể gọi tới
-const io = new Server(server, {
-    cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-    },
-});
+// ==========================================
+// 1. HÀM CẤU HÌNH DATABASE ASSOCIATIONS
+// ==========================================
+const setupDatabaseAssociations = () => {
+    // Quan hệ User - AuditLog
+    User.hasMany(AuditLog, { foreignKey: "userId" });
+    AuditLog.belongsTo(User, { foreignKey: "userId" });
 
-// Tạo một Map (sổ ghi chép) để theo dõi userId nào đang dùng socketId nào
-const userSockets = new Map();
+    // Quan hệ User - Order - OrderItem - Product
+    User.hasMany(Order, { foreignKey: "userId" });
+    Order.belongsTo(User, { foreignKey: "userId" });
 
-io.on("connection", (socket) => {
-    console.log("🟢 Một thiết bị kết nối Socket, ID:", socket.id);
+    Order.hasMany(OrderItem, { foreignKey: "orderId" });
+    OrderItem.belongsTo(Order, { foreignKey: "orderId" });
 
-    // Lắng nghe sự kiện báo danh từ Frontend gửi lên
-    socket.on("register_user", (userId) => {
-        userSockets.set(userId, socket.id);
-        console.log(`👤 User [${userId}] đang online với Socket ID [${socket.id}]`);
+    Product.hasMany(OrderItem, { foreignKey: "productId" });
+    OrderItem.belongsTo(Product, { foreignKey: "productId" });
+
+    // Quan hệ User - Address
+    User.hasMany(Address, { foreignKey: "userId" });
+    Address.belongsTo(User, { foreignKey: "userId" });
+
+    // Quan hệ User - SupportTicket - TicketMessage
+    User.hasMany(SupportTicket, { foreignKey: "userId" });
+    SupportTicket.belongsTo(User, { foreignKey: "userId" });
+
+    SupportTicket.hasMany(TicketMessage, { foreignKey: "ticketId" });
+    TicketMessage.belongsTo(SupportTicket, { foreignKey: "ticketId" });
+};
+
+// ==========================================
+// 2. HÀM CẤU HÌNH SOCKET.IO
+// ==========================================
+const setupSocketIO = () => {
+    const io = new Server(server, {
+        cors: {
+            origin: "http://localhost:3000",
+            methods: ["GET", "POST", "PUT", "DELETE"],
+        },
     });
 
-    // Khi người dùng tắt tab trình duyệt hoặc mất mạng
-    socket.on("disconnect", () => {
-        for (let [userId, socketId] of userSockets.entries()) {
-            if (socketId === socket.id) {
-                userSockets.delete(userId);
-                console.log(`🔴 User [${userId}] đã ngắt kết nối`);
-                break;
+    const userSockets = new Map();
+
+    io.on("connection", (socket) => {
+        console.log("🟢 Một thiết bị kết nối Socket, ID:", socket.id);
+
+        socket.on("register_user", (userId) => {
+            userSockets.set(userId, socket.id);
+            console.log(`👤 User [${userId}] đang online với Socket ID [${socket.id}]`);
+        });
+
+        socket.on("disconnect", () => {
+            for (let [userId, socketId] of userSockets.entries()) {
+                if (socketId === socket.id) {
+                    userSockets.delete(userId);
+                    console.log(`🔴 User [${userId}] đã ngắt kết nối`);
+                    break;
+                }
             }
-        }
+        });
     });
-});
 
-// Chia sẻ biến io và userSockets cho toàn bộ app (để userController có thể lôi ra dùng)
-app.set("io", io);
-app.set("userSockets", userSockets);
-// ==========================================
+    app.set("io", io);
+    app.set("userSockets", userSockets);
+};
 
 // ==========================================
-// 2. CẤU HÌNH MIDDLEWARE & ROUTERS
+// 3. KHỞI CHẠY MIDDLEWARE & ROUTERS
 // ==========================================
 app.use(cors());
 app.use(express.json());
 
-// Khai báo quan hệ cơ sở dữ liệu
-User.hasMany(AuditLog, { foreignKey: "userId" });
-AuditLog.belongsTo(User, { foreignKey: "userId" });
+// Kích hoạt các cấu hình
+setupDatabaseAssociations();
+setupSocketIO();
 
-// 1. Một User có thể có nhiều Order
-User.hasMany(Order, { foreignKey: "userId" });
-Order.belongsTo(User, { foreignKey: "userId" });
+// Kích hoạt Routers
+const routes = {
+    "/api/auth": authRoutes,
+    "/api/users": userRoutes,
+    "/api/products": productRoutes,
+    "/api/orders": orderRoutes,
+    "/api/addresses": addressRoutes,
+    "/api/notifications": notificationRoutes,
+    "/api/support": supportRoutes,
+    "/api/blogs": blogRoutes,
+    "/api/upload": uploadRoutes,
+};
 
-// 2. Một Order có nhiều OrderItem (nhiều món hàng)
-Order.hasMany(OrderItem, { foreignKey: "orderId" });
-OrderItem.belongsTo(Order, { foreignKey: "orderId" });
-
-// 3. Một OrderItem đại diện cho một Product
-Product.hasMany(OrderItem, { foreignKey: "productId" });
-OrderItem.belongsTo(Product, { foreignKey: "productId" });
-
-// Thêm quan hệ User - Address: 1 User có nhiều Address
-User.hasMany(Address, { foreignKey: "userId" });
-Address.belongsTo(User, { foreignKey: "userId" });
-
-// 1. Một User có thể tạo nhiều Ticket
-User.hasMany(SupportTicket, { foreignKey: "userId" });
-SupportTicket.belongsTo(User, { foreignKey: "userId" });
-
-// 2. Một Ticket có chứa nhiều Tin nhắn
-SupportTicket.hasMany(TicketMessage, { foreignKey: "ticketId" });
-TicketMessage.belongsTo(SupportTicket, { foreignKey: "ticketId" });
-
-// Khai báo các đường dẫn API
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/addresses", addressRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/support", supportRoutes);
-app.use("/api/blogs", blogRoutes);
-app.use("/api/upload", uploadRoutes);
+Object.entries(routes).forEach(([path, route]) => {
+    app.use(path, route);
+});
 
 // ==========================================
-
-// ==========================================
-// 3. KHỞI ĐỘNG SERVER
+// 4. KHỞI ĐỘNG SERVER
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
@@ -129,13 +135,12 @@ const startServer = async () => {
         await connectDB();
         await sequelize.sync();
 
-        // QUAN TRỌNG: Phải dùng server.listen thay vì app.listen
         server.listen(PORT, () => {
             console.log(`🚀 Server running at http://localhost:${PORT}`);
             console.log(`⚡ Socket.io is ready to connect`);
         });
     } catch (error) {
-        console.log("❌ Can't run server: ", error);
+        console.error("❌ Can't run server: ", error);
         process.exit(1);
     }
 };

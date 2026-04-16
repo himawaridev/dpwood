@@ -11,62 +11,114 @@ const { Text, Title } = Typography;
 export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false); // Trạng thái cuộn để tải thêm
     const [replyText, setReplyText] = useState("");
     const [sending, setSending] = useState(false);
-    const messagesEndRef = useRef(null);
 
-    // 1. Tải lịch sử tin nhắn khi mở Drawer
-    const fetchMessages = async () => {
-        if (!selectedTicket) return;
+    // Quản lý phân trang
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null); // Ref để theo dõi vị trí cuộn
+
+    // 1. Hàm tải tin nhắn (Hỗ trợ phân trang)
+    const fetchMessages = async (currentPage = 1) => {
+        if (!selectedTicket || !hasMore) return;
         try {
-            setLoading(true);
-            const res = await api.get(`/support/${selectedTicket.id}/messages`);
-            setMessages(res.data);
+            if (currentPage === 1) setLoading(true);
+            else setLoadingMore(true);
+
+            // Truyền page và limit (20) lên Backend
+            const res = await api.get(
+                `/support/${selectedTicket.id}/messages?page=${currentPage}&limit=20`,
+            );
+            const newMessages = res.data;
+
+            // Nếu Backend trả về ít hơn 20 tin, nghĩa là đã hết sạch tin cũ
+            if (newMessages.length < 20) {
+                setHasMore(false);
+            }
+
+            if (currentPage === 1) {
+                setMessages(newMessages);
+            } else {
+                // Giữ vị trí thanh cuộn khi load thêm tin cũ để màn hình không bị giật lên nóc
+                const container = chatContainerRef.current;
+                const prevScrollHeight = container.scrollHeight;
+
+                setMessages((prev) => [...newMessages, ...prev]);
+
+                setTimeout(() => {
+                    if (container) {
+                        container.scrollTop = container.scrollHeight - prevScrollHeight;
+                    }
+                }, 0);
+            }
         } catch (error) {
             message.error("Không thể tải chi tiết yêu cầu");
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
+    // 2. Lắng nghe sự kiện Cuộn chuột chạm nóc
+    const handleScroll = (e) => {
+        if (e.target.scrollTop === 0 && !loadingMore && hasMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchMessages(nextPage);
+        }
+    };
+
+    // 3. Reset state và tải dữ liệu khi mở Drawer
     useEffect(() => {
         if (isVisible) {
-            fetchMessages();
+            setPage(1);
+            setHasMore(true);
+            fetchMessages(1);
         } else {
+            // Dọn dẹp dữ liệu khi đóng Drawer
             setMessages([]);
             setReplyText("");
+            setPage(1);
+            setHasMore(true);
         }
     }, [isVisible, selectedTicket]);
 
-    // 2. LẮNG NGHE SOCKET REAL-TIME
+    // 4. LẮNG NGHE SOCKET REAL-TIME
     useEffect(() => {
-        const socket = io("http://localhost:5000"); // Đảm bảo đúng URL Backend
+        const socket = io("http://localhost:5000");
 
         socket.on("receive_message", (newMessage) => {
-            // Chỉ thêm tin nhắn vào màn hình nếu nó thuộc về Ticket đang mở
             if (selectedTicket && String(newMessage.ticketId) === String(selectedTicket.id)) {
                 setMessages((prev) => {
                     const isExist = prev.some((m) => m.id === newMessage.id);
                     return isExist ? prev : [...prev, newMessage];
                 });
+                // Cuộn xuống dòng cuối khi có tin mới
+                setTimeout(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
             }
         });
 
         return () => socket.disconnect();
     }, [selectedTicket]);
 
-    // 3. Cuộn xuống tin nhắn mới nhất
+    // Cuộn xuống tin nhắn mới nhất khi lần đầu tiên tải xong (Page 1)
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        if (page === 1) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages, page]);
 
-    // 4. Hàm gửi tin nhắn
+    // 5. Hàm gửi tin nhắn
     const handleReply = async () => {
         if (!replyText.trim()) return;
         try {
             setSending(true);
-            // Sau khi gọi API này, Backend sẽ phát Socket "receive_message"
-            // và useEffect ở trên sẽ tự cập nhật tin nhắn vào UI mà không cần fetch lại.
             await api.post(`/support/${selectedTicket.id}/reply`, { message: replyText });
             setReplyText("");
         } catch (error) {
@@ -93,12 +145,11 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
             onClose={onClose}
             destroyOnClose
         >
-            {/* Header thông tin yêu cầu */}
             <div style={{ marginBottom: 20, padding: 16, background: "#fafafa", borderRadius: 8 }}>
                 <Title level={5} style={{ marginTop: 0 }}>
                     {selectedTicket.title}
                 </Title>
-                <Text type="secondary">Khách hàng: {selectedTicket.User?.email}</Text>
+                <Text type="secondary">Khách hàng: {selectedTicket.User?.email || "N/A"}</Text>
                 {selectedTicket.orderCode && (
                     <div style={{ marginTop: 8 }}>
                         <Text strong>Mã đơn hàng liên quan: </Text>
@@ -107,7 +158,6 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
                 )}
             </div>
 
-            {/* Khung nội dung chat */}
             <div style={{ display: "flex", flexDirection: "column", height: "calc(100% - 140px)" }}>
                 {loading ? (
                     <Flex justify="center" align="center" style={{ flex: 1 }}>
@@ -115,11 +165,19 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
                     </Flex>
                 ) : (
                     <div
+                        ref={chatContainerRef}
+                        onScroll={handleScroll}
                         style={{ flex: 1, overflowY: "auto", padding: "0 10px", marginBottom: 20 }}
                     >
+                        {/* Biểu tượng loading khi cuộn lên tải tin nhắn cũ */}
+                        {loadingMore && (
+                            <Flex justify="center" style={{ marginBottom: 16 }}>
+                                <Spin size="small" />
+                            </Flex>
+                        )}
+
                         {messages.map((msg) => {
                             const isSenderAdmin = msg.isAdmin;
-                            // Lưu ý: Logic UI (trái/phải) bạn có thể tùy chỉnh tùy theo đây là trang Admin hay User
                             return (
                                 <div
                                     key={msg.id}
@@ -154,6 +212,8 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
                                                     borderRadius: isSenderAdmin
                                                         ? "8px 0px 8px 8px"
                                                         : "0px 8px 8px 8px",
+                                                    wordWrap: "break-word",
+                                                    whiteSpace: "pre-wrap",
                                                 }}
                                             >
                                                 {msg.message}
@@ -179,7 +239,6 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
                     </div>
                 )}
 
-                {/* Ô nhập tin nhắn */}
                 <Flex gap="small" style={{ marginTop: "auto" }}>
                     <Input.TextArea
                         value={replyText}
