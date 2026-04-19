@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, Descriptions, Divider, Table, Flex, Typography, Tag } from "antd";
-import { InfoCircleOutlined, MailOutlined } from "@ant-design/icons";
+import { InfoCircleOutlined, MailOutlined, GiftOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
@@ -13,8 +13,11 @@ export default function ConfirmOrderModal({
     paymentMethod,
     cartItems,
     totalPrice,
+    appliedCoupon,
+    discountAmount,
+    finalPrice,
 }) {
-    // 🔴 Chuẩn Ant Design V5: Dùng mảng items
+    // Chuẩn Ant Design V5: Dùng mảng items
     const descriptionItems = [
         {
             key: "1",
@@ -98,7 +101,67 @@ export default function ConfirmOrderModal({
                     ]}
                 />
 
-                <Flex justify="flex-end" style={{ marginTop: 16 }}>
+                {/* Hiển thị giảm giá nếu có */}
+                {appliedCoupon && (
+                    <div
+                        style={{
+                            marginTop: 16,
+                            padding: "12px 16px",
+                            background: "#f6ffed",
+                            borderRadius: 8,
+                            border: "1px solid #b7eb8f",
+                        }}
+                    >
+                        <Flex justify="space-between" align="center">
+                            <Flex align="center" gap="small">
+                                <GiftOutlined style={{ color: "#52c41a" }} />
+                                <Text strong style={{ color: "#389e0d" }}>
+                                    Mã giảm giá: {appliedCoupon.couponCode}
+                                </Text>
+                            </Flex>
+                            <Text strong style={{ color: "#52c41a", fontSize: 16 }}>
+                                -{new Intl.NumberFormat("vi-VN").format(discountAmount)}₫
+                            </Text>
+                        </Flex>
+                    </div>
+                )}
+
+                <Flex
+                    justify="flex-end"
+                    vertical
+                    align="flex-end"
+                    gap="small"
+                    style={{ marginTop: 16 }}
+                >
+                    {appliedCoupon && (
+                        <>
+                            <div>
+                                <Text style={{ color: "#8c8c8c", marginRight: 8 }}>Tạm tính:</Text>
+                                <Text
+                                    style={{
+                                        fontSize: "16px",
+                                        fontVariantNumeric: "tabular-nums",
+                                        color: "#595959",
+                                    }}
+                                >
+                                    {new Intl.NumberFormat("vi-VN").format(totalPrice)}₫
+                                </Text>
+                            </div>
+                            <div>
+                                <Text style={{ color: "#52c41a", marginRight: 8 }}>Giảm giá:</Text>
+                                <Text
+                                    strong
+                                    style={{
+                                        fontSize: "16px",
+                                        fontVariantNumeric: "tabular-nums",
+                                        color: "#52c41a",
+                                    }}
+                                >
+                                    -{new Intl.NumberFormat("vi-VN").format(discountAmount)}₫
+                                </Text>
+                            </div>
+                        </>
+                    )}
                     <Title level={4} style={{ margin: 0, color: "#262626" }}>
                         Tổng cộng:{" "}
                         <Text
@@ -108,7 +171,7 @@ export default function ConfirmOrderModal({
                                 fontVariantNumeric: "tabular-nums",
                             }}
                         >
-                            {new Intl.NumberFormat("vi-VN").format(totalPrice)}₫
+                            {new Intl.NumberFormat("vi-VN").format(finalPrice)}₫
                         </Text>
                     </Title>
                 </Flex>

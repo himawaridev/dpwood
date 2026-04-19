@@ -17,6 +17,8 @@ const Notification = require("./models/notification");
 const SupportTicket = require("./models/supportTicket");
 const TicketMessage = require("./models/ticketMessage");
 const Blog = require("./models/blog");
+const Coupon = require("./models/coupon");
+const UserCoupon = require("./models/userCoupon");
 
 // Routers
 const authRoutes = require("./routers/auth");
@@ -28,6 +30,7 @@ const notificationRoutes = require("./routers/notificationRoutes");
 const supportRoutes = require("./routers/supportRoutes");
 const blogRoutes = require("./routers/blogRoutes");
 const uploadRoutes = require("./routers/uploadRoutes");
+const couponRoutes = require("./routers/couponRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -60,6 +63,13 @@ const setupDatabaseAssociations = () => {
 
     SupportTicket.hasMany(TicketMessage, { foreignKey: "ticketId" });
     TicketMessage.belongsTo(SupportTicket, { foreignKey: "ticketId" });
+
+    // Quan hệ User - UserCoupon - Coupon
+    User.hasMany(UserCoupon, { foreignKey: "userId" });
+    UserCoupon.belongsTo(User, { foreignKey: "userId" });
+
+    Coupon.hasMany(UserCoupon, { foreignKey: "couponId" });
+    UserCoupon.belongsTo(Coupon, { foreignKey: "couponId" });
 };
 
 // ==========================================
@@ -119,6 +129,7 @@ const routes = {
     "/api/support": supportRoutes,
     "/api/blogs": blogRoutes,
     "/api/upload": uploadRoutes,
+    "/api/coupons": couponRoutes,
 };
 
 Object.entries(routes).forEach(([path, route]) => {
@@ -133,7 +144,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     try {
         await connectDB();
-        await sequelize.sync();
+        await sequelize.sync({ alter: true });
 
         server.listen(PORT, () => {
             console.log(`🚀 Server running at http://localhost:${PORT}`);

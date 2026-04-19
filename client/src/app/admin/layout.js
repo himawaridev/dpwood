@@ -14,6 +14,7 @@ import {
     BellOutlined,
     CustomerServiceOutlined,
     EditOutlined,
+    GiftOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -92,6 +93,12 @@ export default function AdminLayout({ children }) {
             icon: <EditOutlined />,
             label: "Quản lý Bài viết",
             onClick: () => router.push("/admin/blogs"),
+        },
+        {
+            key: "/admin/coupons",
+            icon: <GiftOutlined />,
+            label: "Quản lý Mã giảm giá",
+            onClick: () => router.push("/admin/coupons"),
         },
         { type: "divider" },
         {

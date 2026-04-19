@@ -5,7 +5,7 @@ import { ShoppingCartOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
 
-// 🔴 Import các Component đã chia nhỏ
+// Import các Component đã chia nhỏ
 import SuccessResult from "./components/SuccessResult";
 import AddressSection from "./components/AddressSection";
 import CartTable from "./components/CartTable";
@@ -35,7 +35,22 @@ export default function CartPage() {
     const [isAddingAddress, setIsAddingAddress] = useState(false);
     const [addressForm] = Form.useForm();
 
+    // Coupon states
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [myCoupons, setMyCoupons] = useState([]);
+
     const router = useRouter();
+
+    const fetchMyCoupons = async () => {
+        try {
+            const res = await api.get("/coupons/my");
+            setMyCoupons(res.data);
+        } catch (error) {
+            console.error("Lỗi tải mã giảm giá:", error);
+        }
+    };
 
     useEffect(() => {
         const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -46,6 +61,7 @@ export default function CartPage() {
             setIsAuth(true);
             setUserEmail(localStorage.getItem("userEmail") || "Email của bạn");
             fetchAddresses();
+            fetchMyCoupons();
         }
     }, []);
 
@@ -83,6 +99,12 @@ export default function CartPage() {
     const saveCart = (newCart) => {
         setCartItems(newCart);
         localStorage.setItem("cart", JSON.stringify(newCart));
+        // Reset coupon khi thay đổi giỏ hàng vì tổng tiền thay đổi
+        if (appliedCoupon) {
+            setAppliedCoupon(null);
+            setCouponCode("");
+            message.info("Giỏ hàng đã thay đổi, vui lòng áp dụng lại mã giảm giá.");
+        }
     };
 
     const handleQuantityChange = (value, productId) => {
@@ -99,6 +121,42 @@ export default function CartPage() {
     };
 
     const totalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+    // ===== COUPON LOGIC =====
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) {
+            message.warning("Vui lòng nhập mã giảm giá");
+            return;
+        }
+        if (!isAuth) {
+            message.warning("Vui lòng đăng nhập để sử dụng mã giảm giá!");
+            return;
+        }
+
+        try {
+            setCouponLoading(true);
+            const res = await api.post("/coupons/apply", {
+                code: couponCode.trim(),
+                totalAmount: totalPrice,
+            });
+            setAppliedCoupon(res.data);
+            message.success(res.data.message || "Áp dụng mã giảm giá thành công!");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Mã giảm giá không hợp lệ");
+            setAppliedCoupon(null);
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode("");
+        message.info("Đã hủy mã giảm giá");
+    };
+
+    const discountAmount = appliedCoupon?.discountAmount || 0;
+    const finalPrice = totalPrice - discountAmount;
 
     const handleCheckoutClick = () => {
         if (!isAuth) {
@@ -127,6 +185,7 @@ export default function CartPage() {
                     phoneNumber: selectedAddress.phoneNumber,
                     fullAddress: selectedAddress.fullAddress,
                 },
+                couponCode: appliedCoupon?.couponCode || null,
             };
 
             const response = await api.post("/orders/checkout", payload);
@@ -215,6 +274,15 @@ export default function CartPage() {
                     totalPrice={totalPrice}
                     loading={loading}
                     handleCheckoutClick={handleCheckoutClick}
+                    couponCode={couponCode}
+                    setCouponCode={setCouponCode}
+                    appliedCoupon={appliedCoupon}
+                    couponLoading={couponLoading}
+                    handleApplyCoupon={handleApplyCoupon}
+                    handleRemoveCoupon={handleRemoveCoupon}
+                    discountAmount={discountAmount}
+                    finalPrice={finalPrice}
+                    myCoupons={myCoupons}
                 />
             </div>
 
@@ -227,6 +295,9 @@ export default function CartPage() {
                 paymentMethod={paymentMethod}
                 cartItems={cartItems}
                 totalPrice={totalPrice}
+                appliedCoupon={appliedCoupon}
+                discountAmount={discountAmount}
+                finalPrice={finalPrice}
             />
 
             <PaymentQRModal

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Spin } from "antd";
 import { useRouter } from "next/navigation";
 import LatestProducts from "@/components/LatestProducts";
+import CouponBanner from "@/components/CouponBanner";
 import api from "@/utils/axios";
 
 // Import các Component Modal đã chia nhỏ
@@ -93,6 +94,7 @@ export default function HomePage() {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div style={{ width: "100%", maxWidth: 1200 }}>
                 <LatestProducts />
+                <CouponBanner />
             </div>
 
             <AuthModal

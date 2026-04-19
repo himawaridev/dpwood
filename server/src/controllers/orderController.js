@@ -4,6 +4,8 @@ const Order = require("../models/order");
 const OrderItem = require("../models/orderItem");
 const AuditLog = require("../models/auditLog");
 const User = require("../models/user");
+const Coupon = require("../models/coupon");
+const UserCoupon = require("../models/userCoupon");
 const sendEmail = require("../utils/sendEmail");
 
 const PayOSModule = require("@payos/node");
@@ -65,7 +67,7 @@ const generateOrderHtml = (orderInfo, orderItems, isPaid) => {
 const checkout = async (req, res) => {
     const t = await sequelize.transaction();
     try {
-        const { items, paymentMethod, shippingInfo } = req.body;
+        const { items, paymentMethod, shippingInfo, couponCode } = req.body;
         const userId = req.user.id;
         const userEmail = req.user.email;
 
@@ -100,7 +102,63 @@ const checkout = async (req, res) => {
             });
         }
 
-        if (paymentMethod === "QR" && totalAmount < 2000) {
+        // ===== XỬ LÝ MÃ GIẢM GIÁ (SERVER-SIDE) =====
+        let discountAmount = 0;
+        let appliedCouponCode = null;
+
+        if (couponCode) {
+            const coupon = await Coupon.findOne({
+                where: { code: couponCode.toUpperCase() },
+                transaction: t,
+            });
+
+            if (!coupon) throw new Error("Mã giảm giá không tồn tại");
+
+            const now = new Date();
+            if (!coupon.isActive) throw new Error("Mã giảm giá đã bị vô hiệu hóa");
+            if (coupon.startDate > now) throw new Error("Mã giảm giá chưa đến ngày sử dụng");
+            if (coupon.expiryDate <= now) throw new Error("Mã giảm giá đã hết hạn");
+            if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit)
+                throw new Error("Mã giảm giá đã hết lượt sử dụng");
+
+            const userCoupon = await UserCoupon.findOne({
+                where: { userId, couponId: coupon.id },
+                transaction: t,
+            });
+            if (!userCoupon) throw new Error("Bạn chưa nhận mã giảm giá này");
+            if (userCoupon.isUsed) throw new Error("Bạn đã sử dụng mã này rồi");
+
+            if (totalAmount < coupon.minOrderAmount) {
+                throw new Error(
+                    `Đơn hàng tối thiểu ${new Intl.NumberFormat("vi-VN").format(coupon.minOrderAmount)}₫ để áp dụng mã này`,
+                );
+            }
+
+            if (coupon.discountType === "percent") {
+                discountAmount = Math.floor((totalAmount * coupon.discountValue) / 100);
+                if (coupon.maxDiscountAmount && discountAmount > coupon.maxDiscountAmount) {
+                    discountAmount = Number(coupon.maxDiscountAmount);
+                }
+            } else {
+                discountAmount = Number(coupon.discountValue);
+            }
+
+            if (discountAmount > totalAmount) discountAmount = totalAmount;
+
+            // Đánh dấu đã sử dụng
+            userCoupon.isUsed = true;
+            userCoupon.usedAt = new Date();
+            await userCoupon.save({ transaction: t });
+
+            coupon.usedCount += 1;
+            await coupon.save({ transaction: t });
+
+            appliedCouponCode = coupon.code;
+        }
+
+        const finalAmount = totalAmount - discountAmount;
+
+        if (paymentMethod === "QR" && finalAmount < 2000) {
             throw new Error(
                 "PayOS yêu cầu giá trị đơn hàng phải từ 2,000 VNĐ trở lên để tạo mã QR. Vui lòng thêm sản phẩm!",
             );
@@ -113,7 +171,9 @@ const checkout = async (req, res) => {
             {
                 userId,
                 orderCode,
-                totalAmount,
+                totalAmount: finalAmount,
+                couponCode: appliedCouponCode,
+                discountAmount,
                 paymentMethod: paymentMethod || "COD",
                 status: "PENDING",
                 shippingName: shippingInfo?.recipientName,
@@ -133,7 +193,7 @@ const checkout = async (req, res) => {
             {
                 userId,
                 action: "ORDER_CREATED",
-                details: `Tạo đơn hàng #${orderCode} - Tổng: ${new Intl.NumberFormat("vi-VN").format(totalAmount)}đ`,
+                details: `Tạo đơn hàng #${orderCode} - Tổng: ${new Intl.NumberFormat("vi-VN").format(finalAmount)}đ${appliedCouponCode ? ` (Giảm ${new Intl.NumberFormat("vi-VN").format(discountAmount)}đ với mã ${appliedCouponCode})` : ""}`,
             },
             { transaction: t },
         );
@@ -144,7 +204,7 @@ const checkout = async (req, res) => {
             const domain = process.env.FRONTEND_URL || "http://localhost:3000";
             const body = {
                 orderCode: Number(orderCodeNum),
-                amount: totalAmount,
+                amount: finalAmount,
                 description: `DPWOOD${orderCodeNum}`,
                 items: emailItemsInfo.map((i) => ({
                     name: String(i.name).substring(0, 50),
@@ -250,8 +310,64 @@ const handleWebhook = async (req, res) => {
 const getOrderStatus = async (req, res) => {
     try {
         const { orderCode } = req.params;
-        const order = await Order.findOne({ where: { orderCode } });
+        const order = await Order.findOne({ 
+            where: { orderCode },
+            include: [{ model: User, attributes: ["email", "name"] }],
+        });
+        
         if (!order) return res.status(404).json({ message: "Không tìm thấy" });
+
+        // Tự động kiểm tra trạng thái trên PayOS nếu đang PENDING 
+        // (đặc biệt hữu ích khi Dev ở localhost không nhận được webhook)
+        if (order.status === "PENDING" && order.paymentMethod === "QR") {
+            try {
+                const paymentInfo = await payos.paymentRequests.get(Number(orderCode));
+                const paymentStatus = paymentInfo?.status || paymentInfo?.data?.status;
+                if (paymentStatus === "PAID") {
+                    order.status = "PAID";
+                    await order.save();
+
+                    const items = await OrderItem.findAll({ where: { orderId: order.id } });
+                    for (const item of items) {
+                        const product = await Product.findByPk(item.productId);
+                        if (product) {
+                            product.sold += item.quantity;
+                            await product.save();
+                        }
+                    }
+
+                    await AuditLog.create({
+                        userId: order.userId,
+                        action: "PAYMENT_RECEIVED",
+                        details: `Hệ thống tự đồng bộ trạng thái PAID từ PayOS. Đơn #${orderCode}.`,
+                    });
+
+                    if (order.User && order.User.email) {
+                        const emailItemsInfo = items.map((i) => ({
+                            name: "Sản phẩm",
+                            quantity: i.quantity,
+                            price: i.priceAtPurchase,
+                        }));
+                        const orderInfo = {
+                            orderCode: order.orderCode,
+                            customerName: order.User.name,
+                            shippingName: order.shippingName,
+                            shippingPhone: order.shippingPhone,
+                            shippingAddress: order.shippingAddress,
+                            totalAmount: order.totalAmount,
+                        };
+                        sendEmail(
+                            order.User.email,
+                            `[DPWOOD] Đã thanh toán đơn #${orderCode}`,
+                            generateOrderHtml(orderInfo, emailItemsInfo, true),
+                        );
+                    }
+                }
+            } catch (payosError) {
+                console.error("Lỗi đồng bộ PayOS:", payosError.message);
+            }
+        }
+
         res.json({ status: order.status });
     } catch (error) {
         res.status(500).json({ message: error.message });
