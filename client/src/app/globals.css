@@ -55,8 +55,51 @@ a {
 
 /* Ẩn thanh cuộn cho IE, Edge cũ và Firefox */
 * {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* KHÔI PHỤC LẠI THANH CUỘN CHO BẢNG (TABLE) ANTD ĐỂ CHỐNG LỖI KHUẤT CỘT */
+.ant-table-content::-webkit-scrollbar,
+.ant-table-body::-webkit-scrollbar,
+.ant-table-header::-webkit-scrollbar {
+  display: block !important;
+  height: 8px !important;
+  width: 8px !important;
+}
+
+.ant-table-content::-webkit-scrollbar-track,
+.ant-table-body::-webkit-scrollbar-track,
+.ant-table-header::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 8px;
+}
+
+.ant-table-content::-webkit-scrollbar-thumb,
+.ant-table-body::-webkit-scrollbar-thumb,
+.ant-table-header::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+.ant-table-content::-webkit-scrollbar-thumb:hover,
+.ant-table-body::-webkit-scrollbar-thumb:hover,
+.ant-table-header::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.ant-table-content, .ant-table-body, .ant-table-header {
+  scrollbar-width: thin !important; /* Dành cho Firefox */
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent !important; /* Dành cho Firefox */
+}
+
+.main-content {
+  padding: 24px 50px;
+  margin-top: 64px; /* Default height of Antd Header */
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 12px;
+  }
 }

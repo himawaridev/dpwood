@@ -242,7 +242,7 @@ export default function CartPage() {
     if (isSuccess) return <SuccessResult orderCode={orderCode} />;
 
     return (
-        <div style={{ padding: "40px 20px", background: "#f0f2f5", minHeight: "100vh" }}>
+        <div style={{ minHeight: "100vh" }}>
             <div style={{ maxWidth: 1000, margin: "0 auto", width: "100%" }}>
                 <Title level={2} style={{ color: "#001529", marginBottom: 24 }}>
                     <ShoppingCartOutlined style={{ color: "#1677ff", marginRight: 12 }} />

@@ -107,7 +107,7 @@ export default function ProductTable({ products, loading, onAdd, onEdit, onDelet
                 columns={columns}
                 rowKey="id"
                 loading={loading}
-                scroll={{ x: 800 }}
+                scroll={{ x: "max-content" }}
             />
         </>
     );

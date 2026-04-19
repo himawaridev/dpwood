@@ -37,7 +37,7 @@ export default function ClientBlogPage() {
     }
 
     return (
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 20px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
             <Title level={2} style={{ textAlign: "center", marginBottom: 40 }}>
                 Cẩm Nang & Tin Tức
             </Title>

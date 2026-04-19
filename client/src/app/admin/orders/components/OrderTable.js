@@ -101,7 +101,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
             columns={columns}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 1000 }}
+            scroll={{ x: "max-content" }}
         />
     );
 }

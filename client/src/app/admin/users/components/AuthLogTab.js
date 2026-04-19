@@ -51,7 +51,7 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
                 columns={columns}
                 rowKey="id"
                 loading={loadingLogs}
-                scroll={{ x: 800 }}
+                scroll={{ x: "max-content" }}
             />
         </>
     );

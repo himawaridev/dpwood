@@ -106,7 +106,7 @@ export default function SupportPage() {
     ];
 
     return (
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
             <Title level={2} style={{ textAlign: "center", marginBottom: 40 }}>
                 Trung Tâm Hỗ Trợ
             </Title>

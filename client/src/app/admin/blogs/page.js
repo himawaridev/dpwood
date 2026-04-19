@@ -115,7 +115,7 @@ export default function AdminBlogPage() {
                 columns={columns}
                 rowKey="id"
                 loading={loading}
-                scroll={{ x: 800 }}
+                scroll={{ x: "max-content" }}
             />
         </>
     );

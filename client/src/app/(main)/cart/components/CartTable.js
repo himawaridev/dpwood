@@ -16,6 +16,7 @@ import {
     List,
     Empty,
 } from "antd";
+import useBreakpoint from "antd/lib/grid/hooks/useBreakpoint";
 import {
     DeleteOutlined,
     CreditCardOutlined,
@@ -52,6 +53,9 @@ export default function CartTable({
     finalPrice,
     myCoupons,
 }) {
+    const screens = useBreakpoint();
+    const isMobile = screens.xs || screens.sm && !screens.md;
+
     const [walletOpen, setWalletOpen] = useState(false);
 
     // Lọc mã có thể dùng từ ví
@@ -259,14 +263,14 @@ export default function CartTable({
                 columns={columns}
                 rowKey="productId"
                 pagination={false}
-                scroll={{ x: 600 }}
+                scroll={{ x: "max-content" }}
                 locale={{ emptyText: "Giỏ hàng đang trống" }}
                 style={{ borderBottom: cartItems.length > 0 ? "1px solid #f0f0f0" : "none" }}
             />
             {cartItems.length > 0 && (
                 <div
                     style={{
-                        padding: "24px 32px",
+                        padding: isMobile ? "20px 16px" : "24px 32px",
                         background: "#fafafa",
                         borderBottomLeftRadius: 12,
                         borderBottomRightRadius: 12,
@@ -275,7 +279,7 @@ export default function CartTable({
                     {/* Mã giảm giá */}
                     <div
                         style={{
-                            padding: "16px 20px",
+                            padding: isMobile ? "12px 16px" : "16px 20px",
                             background: "#fff",
                             borderRadius: 10,
                             border: appliedCoupon
@@ -324,7 +328,7 @@ export default function CartTable({
                                 </Button>
                             </Flex>
                         ) : (
-                            <Flex gap="small" align="center">
+                            <Flex gap="small" align="center" wrap="wrap">
                                 <Input
                                     placeholder="Nhập mã giảm giá..."
                                     value={couponCode}
@@ -391,11 +395,11 @@ export default function CartTable({
 
                     <Flex
                         justify="space-between"
-                        align="flex-start"
-                        wrap="wrap"
+                        align={isMobile ? "flex-start" : "flex-start"}
+                        vertical={isMobile}
                         gap="large"
                     >
-                        <div>
+                        <div style={{ width: isMobile ? "100%" : "auto" }}>
                             <Title
                                 level={5}
                                 style={{ color: "#595959", marginBottom: 16 }}
@@ -421,9 +425,9 @@ export default function CartTable({
                                 </Flex>
                             </Radio.Group>
                         </div>
-                        <Flex vertical align="flex-end" gap="small">
+                        <Flex vertical align={isMobile ? "flex-start" : "flex-end"} gap="small" style={{ width: isMobile ? "100%" : "auto", paddingTop: isMobile ? 12 : 0, borderTop: isMobile ? "1px solid #e8e8e8" : "none" }}>
                             {/* Tạm tính */}
-                            <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                                 <Text
                                     style={{
                                         fontSize: "14px",
@@ -449,7 +453,7 @@ export default function CartTable({
 
                             {/* Giảm giá */}
                             {appliedCoupon && (
-                                <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                                     <Text
                                         style={{
                                             fontSize: "14px",
@@ -480,6 +484,7 @@ export default function CartTable({
                             <div
                                 style={{
                                     marginTop: appliedCoupon ? 4 : 0,
+                                    display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'
                                 }}
                             >
                                 <Text
@@ -510,6 +515,7 @@ export default function CartTable({
                             <Button
                                 type="primary"
                                 size="large"
+                                block={isMobile}
                                 icon={<CreditCardOutlined />}
                                 onClick={handleCheckoutClick}
                                 loading={loading}
@@ -518,7 +524,7 @@ export default function CartTable({
                                     fontSize: "16px",
                                     padding: "0 32px",
                                     borderRadius: 8,
-                                    marginTop: 8,
+                                    marginTop: isMobile ? 16 : 8,
                                 }}
                             >
                                 Tiến hành Đặt hàng

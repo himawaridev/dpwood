@@ -91,7 +91,7 @@ export default function UserProfilePage() {
     }
 
     return (
-        <div style={{ padding: "30px 50px", minHeight: "100vh", background: "#f0f2f5" }}>
+        <div style={{ minHeight: "100vh" }}>
             <div style={{ maxWidth: 1200, margin: "0 auto" }}>
                 {/* Component 1: Cụm thông tin người dùng */}
                 <Card

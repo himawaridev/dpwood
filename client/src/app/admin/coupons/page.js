@@ -244,7 +244,7 @@ export default function AdminCouponsPage() {
                     rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10, showSizeChanger: false }}
-                    scroll={{ x: 900 }}
+                    scroll={{ x: "max-content" }}
                 />
             </Card>
 

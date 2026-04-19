@@ -56,7 +56,7 @@ export default function ProductsPage() {
     };
 
     return (
-        <div style={{ padding: "40px 20px", background: "#f0f2f5", minHeight: "100vh" }}>
+        <div style={{ minHeight: "100vh" }}>
             <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
                 <Title
                     level={2}

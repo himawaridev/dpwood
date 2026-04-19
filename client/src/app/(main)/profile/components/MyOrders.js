@@ -85,7 +85,7 @@ export default function MyOrders({ orders, onRefresh }) {
             dataSource={orders}
             rowKey="id"
             pagination={{ pageSize: 5 }}
-            scroll={{ x: 800 }}
+            scroll={{ x: "max-content" }}
             columns={columns}
         />
     );

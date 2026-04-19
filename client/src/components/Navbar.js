@@ -33,9 +33,11 @@ import {
     StopOutlined,
     PercentageOutlined,
     TagOutlined,
+    MenuOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import dayjs from "dayjs";
+import useBreakpoint from "antd/lib/grid/hooks/useBreakpoint";
 import api from "@/utils/axios";
 
 const { Header } = Layout;
@@ -57,6 +59,11 @@ export default function Navbar() {
     const [couponDrawerVisible, setCouponDrawerVisible] = useState(false);
     const [myCoupons, setMyCoupons] = useState([]);
     const [couponLoading, setCouponLoading] = useState(false);
+
+    // Mobile Menu Drawer
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const screens = useBreakpoint();
+    const isMobile = screens.xs || screens.sm && !screens.md;
 
     // Hàm load dữ liệu (có thể được gọi lại khi có event)
     const loadUserData = () => {
@@ -178,21 +185,32 @@ export default function Navbar() {
                     alignItems: "center",
                     justifyContent: "space-between",
                     background: "#ffffff",
-                    padding: "0 50px",
-                    position: "sticky",
+                    padding: isMobile ? "0 20px" : "0 50px",
+                    position: "fixed",
                     top: 0,
+                    left: 0,
+                    width: "100%",
                     zIndex: 1000,
                     borderBottom: "1px solid #f0f0f0",
                     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
                 }}
             >
+                {isMobile && (
+                    <Button
+                        type="text"
+                        icon={<MenuOutlined style={{ fontSize: 20 }} />}
+                        onClick={() => setMobileMenuOpen(true)}
+                        style={{ marginRight: 12 }}
+                    />
+                )}
+
                 <div
                     style={{
                         color: "#1890ff",
-                        fontSize: 24,
+                        fontSize: isMobile ? 20 : 24,
                         fontWeight: "bold",
                         cursor: "pointer",
-                        marginRight: 40,
+                        marginRight: isMobile ? "auto" : 40,
                         letterSpacing: 1,
                     }}
                     onClick={() => router.push("/")}
@@ -200,21 +218,24 @@ export default function Navbar() {
                     DPWOOD
                 </div>
 
-                <Menu
-                    theme="light"
-                    mode="horizontal"
-                    selectedKeys={[pathname]}
-                    items={navItems}
-                    style={{
-                        flex: 1,
-                        borderBottom: "none",
-                        justifyContent: "center",
-                        fontWeight: 500,
-                    }}
-                    onClick={(e) => router.push(e.key)}
-                />
+                {!isMobile && (
+                    <Menu
+                        theme="light"
+                        mode="horizontal"
+                        selectedKeys={[pathname]}
+                        items={navItems}
+                        style={{
+                            flex: 1,
+                            borderBottom: "none",
+                            justifyContent: "center",
+                            fontWeight: 500,
+                            minWidth: 0,
+                        }}
+                        onClick={(e) => router.push(e.key)}
+                    />
+                )}
 
-                <div style={{ display: "flex", alignItems: "center", gap: "24px", marginLeft: 40 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "12px" : "24px", marginLeft: isMobile ? 0 : 40 }}>
                     {/* Nút Mã giảm giá */}
                     {authState.isAuth && (
                         <GiftOutlined
@@ -258,7 +279,7 @@ export default function Navbar() {
                                 <span
                                     style={{
                                         fontWeight: 500,
-                                        maxWidth: "200px",
+                                        maxWidth: isMobile ? "90px" : "200px",
                                         overflow: "hidden",
                                         whiteSpace: "nowrap",
                                         textOverflow: "ellipsis",
@@ -277,12 +298,34 @@ export default function Navbar() {
                             icon={<LoginOutlined />}
                             onClick={() => router.push("/login")}
                             style={{ borderRadius: "6px" }}
+                            size={isMobile ? "middle" : "middle"}
                         >
-                            Đăng Nhập
+                            {!isMobile && "Đăng Nhập"}
                         </Button>
                     )}
                 </div>
             </Header>
+
+            {/* Mobile Menu Drawer */}
+            <Drawer
+                title="Menu"
+                placement="left"
+                onClose={() => setMobileMenuOpen(false)}
+                open={mobileMenuOpen}
+                width={280}
+                styles={{ body: { padding: 0 } }}
+            >
+                <Menu
+                    mode="inline"
+                    selectedKeys={[pathname]}
+                    items={navItems}
+                    onClick={(e) => {
+                        router.push(e.key);
+                        setMobileMenuOpen(false);
+                    }}
+                    style={{ borderRight: "none" }}
+                />
+            </Drawer>
 
             {/* Drawer Ví mã giảm giá */}
             <Drawer

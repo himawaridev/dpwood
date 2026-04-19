@@ -179,7 +179,7 @@ export default function AdminNotificationsPage() {
                 columns={columns}
                 rowKey="id"
                 loading={loading}
-                scroll={{ x: 1000 }}
+                scroll={{ x: "max-content" }}
             />
             <NotificationModal
                 isVisible={isModalVisible}

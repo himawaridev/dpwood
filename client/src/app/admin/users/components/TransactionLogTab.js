@@ -138,7 +138,7 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
                 columns={columns}
                 rowKey="id"
                 loading={loadingLogs}
-                scroll={{ x: 1000 }}
+                scroll={{ x: "max-content" }}
             />
         </>
     );

@@ -123,7 +123,7 @@ export default function AdminSupportPage() {
                 columns={columns}
                 rowKey="id"
                 loading={loading}
-                scroll={{ x: 900 }}
+                scroll={{ x: "max-content" }}
             />
 
             {/* Gọi Ngăn kéo ra ở đây */}

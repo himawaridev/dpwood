@@ -15,7 +15,7 @@ export default function MainLayout({ children }) {
             <Navbar />
 
             {/* Nội dung chính của trang web */}
-            <Content style={{ background: "#f0f2f5", padding: "24px 50px" }}>{children}</Content>
+            <Content className="main-content" style={{ background: "#f0f2f5" }}>{children}</Content>
 
             {/* Footer */}
             <AppFooter />

@@ -124,7 +124,7 @@ export default function StatusControlTab({
                 columns={columns}
                 rowKey="id"
                 loading={loading}
-                scroll={{ x: 800 }}
+                scroll={{ x: "max-content" }}
             />
         </>
     );

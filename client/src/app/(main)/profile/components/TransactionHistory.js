@@ -104,7 +104,7 @@ export default function TransactionHistory({ logs }) {
             dataSource={logs}
             rowKey="id"
             pagination={{ pageSize: 5 }}
-            scroll={{ x: 1000 }}
+            scroll={{ x: "max-content" }}
             columns={columns}
         />
     );

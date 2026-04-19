@@ -11,6 +11,7 @@ import {
     ThunderboltOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import useBreakpoint from "antd/lib/grid/hooks/useBreakpoint";
 import api from "@/utils/axios";
 
 const { Title, Text } = Typography;
@@ -21,6 +22,8 @@ export default function LatestProducts() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const carouselRef = useRef(null);
     const router = useRouter();
+    const screens = useBreakpoint();
+    const isMobile = screens.xs || screens.sm && !screens.md;
 
     useEffect(() => {
         const fetchLatestProducts = async () => {
@@ -127,7 +130,7 @@ export default function LatestProducts() {
                                         overflow: "hidden",
                                         borderRadius: 16,
                                         cursor: "pointer",
-                                        height: 480,
+                                        height: isMobile ? 320 : 480,
                                         boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
                                     }}
                                     onClick={() => router.push(`/products/${data.id}`)}
@@ -194,21 +197,24 @@ export default function LatestProducts() {
                                             right: 0,
                                             background:
                                                 "linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%)",
-                                            padding: "80px 40px 32px 40px",
+                                            padding: isMobile ? "40px 20px 20px 20px" : "80px 40px 32px 40px",
                                             display: "flex",
                                             justifyContent: "space-between",
                                             alignItems: "flex-end",
+                                            flexDirection: isMobile ? "column" : "row",
                                         }}
                                     >
                                         {/* Left info */}
                                         <div
                                             style={{
-                                                maxWidth: "60%",
+                                                maxWidth: isMobile ? "100%" : "60%",
+                                                width: "100%",
+                                                marginBottom: isMobile ? 8 : 0,
                                             }}
                                         >
                                             <div
                                                 style={{
-                                                    fontSize: 28,
+                                                    fontSize: isMobile ? 20 : 28,
                                                     fontWeight: 700,
                                                     color: "#fff",
                                                     lineHeight: 1.3,
@@ -286,11 +292,12 @@ export default function LatestProducts() {
                                             style={{
                                                 textAlign: "right",
                                                 flexShrink: 0,
+                                                alignSelf: isMobile ? "flex-end" : "auto",
                                             }}
                                         >
                                             <div
                                                 style={{
-                                                    fontSize: 30,
+                                                    fontSize: isMobile ? 22 : 30,
                                                     fontWeight: 800,
                                                     color: "#fff",
                                                     lineHeight: 1,
@@ -323,14 +330,14 @@ export default function LatestProducts() {
                                                 style={{
                                                     borderRadius: 10,
                                                     fontWeight: 600,
-                                                    height: 44,
-                                                    padding: "0 24px",
+                                                    height: isMobile ? 36 : 44,
+                                                    padding: isMobile ? "0 16px" : "0 24px",
                                                     fontSize: 14,
                                                     boxShadow:
                                                         "0 4px 12px rgba(22,119,255,0.35)",
                                                 }}
                                             >
-                                                Xem chi tiết
+                                                {!isMobile && "Xem chi tiết"}
                                             </Button>
                                         </div>
                                     </div>
