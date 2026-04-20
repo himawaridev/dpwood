@@ -11,6 +11,9 @@ importers:
       '@ant-design/icons':
         specifier: ^6.1.1
         version: 6.1.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@react-oauth/google':
+        specifier: ^0.12.1
+        version: 0.12.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       antd:
         specifier: ^6.3.5
         version: 6.3.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -766,6 +769,12 @@ packages:
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
+
+  '@react-oauth/google@0.12.2':
+    resolution: {integrity: sha512-d1GVm2uD4E44EJft2RbKtp8Z1fp/gK8Lb6KHgs3pHlM0PxCXGLaq8LLYQYENnN4xPWO1gkL4apBtlPKzpLvZwg==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   '@reduxjs/toolkit@2.11.2':
     resolution: {integrity: sha512-Kd6kAHTA6/nUpp8mySPqj3en3dm0tdMIgbttnQ1xFMVpufoj+ADi8pXLBsd4xzTRHQa7t/Jv8W5UnCuW4kuWMQ==}
@@ -3135,6 +3144,11 @@ snapshots:
       '@rc-component/resize-observer': 1.1.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@rc-component/util': 1.10.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       clsx: 2.1.1
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
+  '@react-oauth/google@0.12.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
