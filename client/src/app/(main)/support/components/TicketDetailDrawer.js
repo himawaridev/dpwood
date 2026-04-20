@@ -89,7 +89,7 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
 
     // 4. LẮNG NGHE SOCKET REAL-TIME
     useEffect(() => {
-        const socket = io("http://localhost:5000");
+        const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000");
 
         socket.on("receive_message", (newMessage) => {
             if (selectedTicket && String(newMessage.ticketId) === String(selectedTicket.id)) {

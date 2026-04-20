@@ -18,7 +18,7 @@ const storage = {
 };
 
 const api = axios.create({
-    baseURL: "http://localhost:5000/api",
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
     headers: {
         "Content-Type": "application/json",
     },
@@ -55,7 +55,7 @@ api.interceptors.response.use(
                 const refreshToken = storage.get("refreshToken");
                 if (!refreshToken) throw new Error("Không có refresh token");
 
-                const res = await axios.post("http://localhost:5000/api/auth/refresh", {
+                const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/auth/refresh`, {
                     refreshToken,
                 });
                 const newToken = res.data.token;

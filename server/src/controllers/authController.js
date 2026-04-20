@@ -82,7 +82,7 @@ const register = async (req, res) => {
         await user.save();
 
         // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
-        const verifyLink = `http://localhost:3000/verify/${verifyToken}`;
+        const verifyLink = `${process.env.CLIENT_URL || "http://localhost:3000"}/verify/${verifyToken}`;
         const emailContent = generateVerificationHtml(name, verifyLink);
         await sendEmail(email, "[DPWOOD] Xác thực tài khoản của bạn", emailContent);
 
@@ -240,7 +240,7 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
-        const resetLink = `http://localhost:3000/reset/${resetToken}`;
+        const resetLink = `${process.env.CLIENT_URL || "http://localhost:3000"}/reset/${resetToken}`;
         const emailContent = generateResetPasswordHtml(resetLink);
 
         await sendEmail(email, "[DPWOOD] Yêu cầu đặt lại mật khẩu", emailContent);
