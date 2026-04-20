@@ -6,6 +6,13 @@ const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, proces
     dialect: "mysql",
     port: process.env.DB_PORT || 3306,
     logging: false,
+    timezone: '+07:00',
+    dialectOptions: {
+        ssl: {
+            minVersion: 'TLSv1.2',
+            rejectUnauthorized: true
+        }
+    }
 });
 
 const connectDB = async () => {
