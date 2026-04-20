@@ -9,6 +9,7 @@ const {
     resetPassword,
     verifyEmail,
     logout,
+    googleLogin,
 } = require("../controllers/authController");
 const authMiddleware = require("../middlewares/authMiddleware");
 
@@ -17,6 +18,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 // ==========================================
 router.post("/register", register);
 router.post("/login", login);
+router.post("/google", googleLogin);
 router.post("/refresh", refresh);
 router.post("/forgot", forgotPassword);
 router.post("/reset", resetPassword);

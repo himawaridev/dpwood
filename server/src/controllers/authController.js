@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const User = require("../models/user");
 const sendEmail = require("../utils/sendEmail");
 const { Op } = require("sequelize");
@@ -284,4 +286,105 @@ const verifyEmail = async (req, res) => {
     }
 };
 
-module.exports = { register, login, refresh, forgotPassword, resetPassword, verifyEmail, logout };
+const googleLogin = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ message: "Thiếu token Google." });
+
+        let ticket;
+        try {
+            ticket = await googleClient.verifyIdToken({
+                idToken: token,
+                audience: process.env.GOOGLE_CLIENT_ID,
+            });
+        } catch (e) {
+            return res.status(400).json({ message: "Token Google không hợp lệ hoặc đã hết hạn." });
+        }
+
+        const payload = ticket.getPayload();
+        const { email, name, picture, sub: googleId } = payload;
+
+        let user = await User.findOne({
+            where: { [Op.or]: [{ email }, { googleId }] },
+        });
+
+        if (!user) {
+            let baseUsername = email.split("@")[0].toLowerCase();
+            let newUsername = baseUsername;
+            let count = 1;
+            while (await User.findOne({ where: { username: newUsername } })) {
+                newUsername = `${baseUsername}${count}`;
+                count++;
+            }
+
+            user = await User.create({
+                name,
+                username: newUsername,
+                email,
+                avatarUrl: picture,
+                googleId,
+                authProvider: "google",
+                isVerified: true,
+                role: "user",
+                password: null, 
+                phone: null,
+            });
+
+            await AuditLog.create({
+                userId: user.id,
+                action: "REGISTER",
+                details: "Đăng ký thành viên thông qua Google",
+            });
+        } else {
+            if (!user.googleId) {
+                user.googleId = googleId;
+                if (!user.isVerified) user.isVerified = true;
+                await user.save();
+            }
+        }
+
+        if (user.lockUntil && user.lockUntil > Date.now()) {
+            const timeLock = user.lockUntil - Date.now();
+            const timeLeftMinutes = Math.ceil(timeLock / (1000 * 60));
+            return res.status(403).json({
+                message: `Account locked. Please try again after: ${timeLeftMinutes} min`,
+                timeLeftMinutes: timeLeftMinutes,
+            });
+        }
+
+        user.loginAttempts = 0;
+        user.lockUntil = null;
+
+        const jwtToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+            expiresIn: "15m",
+        });
+        const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
+            expiresIn: "7d",
+        });
+
+        user.refreshToken = refreshToken;
+        user.avatarUrl = user.avatarUrl || picture; 
+        await user.save();
+
+        await AuditLog.create({
+            userId: user.id,
+            action: "LOGIN",
+            details: "Đăng nhập tự động bằng Google OAuth2",
+        });
+
+        res.json({
+            token: jwtToken,
+            refreshToken,
+            user: {
+                name: user.name,
+                role: user.role,
+                avatarUrl: user.avatarUrl,
+            },
+        });
+    } catch (error) {
+        console.error("Google Auth Error:", error);
+        res.status(500).json({ message: "Lỗi hệ thống khi xử lý đăng nhập Google." });
+    }
+};
+
+module.exports = { register, login, refresh, forgotPassword, resetPassword, verifyEmail, logout, googleLogin };

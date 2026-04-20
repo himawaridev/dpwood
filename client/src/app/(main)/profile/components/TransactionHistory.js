@@ -17,6 +17,8 @@ export default function TransactionHistory({ logs }) {
                 return <Tag color="cyan">THANH TOÁN</Tag>;
             case "ORDER_CANCELED":
                 return <Tag color="magenta">HỦY ĐƠN</Tag>;
+            case "ADMIN_UPDATE_ORDER":
+                return <Tag color="purple">QTV CẬP NHẬT</Tag>;
             case "SYSTEM":
                 return <Tag color="purple">HỆ THỐNG</Tag>;
             default:

@@ -6,6 +6,26 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
         ["LOGIN", "LOGOUT", "REGISTER", "BAN", "UNBAN", "ROLE_CHANGE"].includes(log.action),
     );
 
+    const getActionTag = (action) => {
+        const a = action?.toUpperCase();
+        switch (a) {
+            case "LOGIN":
+                return <Tag color="green">ĐĂNG NHẬP</Tag>;
+            case "LOGOUT":
+                return <Tag color="volcano">ĐĂNG XUẤT</Tag>;
+            case "REGISTER":
+                return <Tag color="gold">ĐĂNG KÝ</Tag>;
+            case "BAN":
+                return <Tag color="red">KHÓA TÀI KHOẢN</Tag>;
+            case "UNBAN":
+                return <Tag color="success">MỞ KHÓA</Tag>;
+            case "ROLE_CHANGE":
+                return <Tag color="purple">PHÂN QUYỀN</Tag>;
+            default:
+                return <Tag color="default">{a}</Tag>;
+        }
+    };
+
     const columns = [
         {
             title: "Thời gian",
@@ -22,11 +42,7 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
             title: "Hành động",
             dataIndex: "action",
             key: "action",
-            render: (action) => (
-                <Tag color={action === "LOGIN" ? "green" : action === "LOGOUT" ? "orange" : "blue"}>
-                    {action}
-                </Tag>
-            ),
+            render: (action) => getActionTag(action),
         },
         { title: "Chi tiết", dataIndex: "details", key: "details" },
     ];

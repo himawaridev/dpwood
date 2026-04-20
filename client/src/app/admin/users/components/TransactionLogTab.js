@@ -46,6 +46,22 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
         }
     };
 
+    const getActionTag = (action) => {
+        const a = action?.toUpperCase();
+        switch (a) {
+            case "ORDER_CREATED":
+                return <Tag color="blue">TẠO ĐƠN HÀNG</Tag>;
+            case "PAYMENT_RECEIVED":
+                return <Tag color="cyan">THANH TOÁN</Tag>;
+            case "ORDER_CANCELED":
+                return <Tag color="magenta">HỦY ĐƠN</Tag>;
+            case "ADMIN_UPDATE_ORDER":
+                return <Tag color="purple">QTV CẬP NHẬT</Tag>;
+            default:
+                return <Tag color="default">{a}</Tag>;
+        }
+    };
+
     const columns = [
         {
             title: "Thời gian",
@@ -102,13 +118,7 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
         {
             title: "Hành động",
             dataIndex: "action",
-            render: (action) => {
-                let color = "blue";
-                if (action === "ORDER_CREATED") color = "cyan";
-                if (action === "PAYMENT_RECEIVED") color = "green";
-                if (action === "ORDER_CANCELED") color = "red";
-                return <Tag color={color}>{action}</Tag>;
-            },
+            render: (action) => getActionTag(action),
         },
         {
             title: "Mô tả",

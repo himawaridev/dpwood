@@ -7,235 +7,13 @@ const User = require("../models/user");
 const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
 const sendEmail = require("../utils/sendEmail");
-
-const PayOSModule = require("@payos/node");
-const PayOS = PayOSModule.PayOS || PayOSModule.default || PayOSModule;
-
-const CLIENT_ID = (process.env.PAYOS_CLIENT_ID || "").trim();
-const API_KEY = (process.env.PAYOS_API_KEY || "").trim();
-const CHECKSUM_KEY = (process.env.PAYOS_CHECKSUM_KEY || "").trim();
-
-const payos = new PayOS({
-    clientId: CLIENT_ID,
-    apiKey: API_KEY,
-    checksumKey: CHECKSUM_KEY,
-});
-
-const generateOrderHtml = (orderInfo, orderItems, isPaid) => {
-    const itemsHtml = orderItems
-        .map(
-            (item) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: #cf1322;">
-                ${new Intl.NumberFormat("vi-VN").format(item.price * item.quantity)}₫
-            </td>
-        </tr>
-    `,
-        )
-        .join("");
-
-    const statusBadge = isPaid
-        ? `<span style="background: #52c41a; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">ĐÃ THANH TOÁN (QR)</span>`
-        : `<span style="background: #1677ff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">CHỜ THANH TOÁN KHI NHẬN HÀNG (COD)</span>`;
-
-    return `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-            <div style="background-color: #001529; color: white; padding: 20px; text-align: center;">
-                <h1 style="margin: 0;">DPWOOD</h1>
-                <p style="margin: 5px 0 0 0; color: #aaa;">Xác nhận đơn hàng #${orderInfo.orderCode}</p>
-            </div>
-            <div style="padding: 20px;">
-                <p>Xin chào <strong>${orderInfo.customerName}</strong>,</p>
-                <p>Cảm ơn bạn đã mua sắm tại DPWOOD. Đơn hàng của bạn đã được ghi nhận thành công!</p>
-                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                    <p style="margin: 5px 0;"><strong>Người nhận:</strong> ${orderInfo.shippingName} - ${orderInfo.shippingPhone}</p>
-                    <p style="margin: 5px 0;"><strong>Địa chỉ:</strong> ${orderInfo.shippingAddress}</p>
-                    <p style="margin: 5px 0;"><strong>Trạng thái:</strong> ${statusBadge}</p>
-                </div>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead><tr style="background-color: #fafafa;"><th style="text-align: left;">Sản phẩm</th><th>SL</th><th style="text-align: right;">Thành tiền</th></tr></thead>
-                    <tbody>${itemsHtml}</tbody>
-                    <tfoot><tr><td colspan="2" style="text-align: right; font-weight: bold;">Tổng thanh toán:</td><td style="text-align: right; font-weight: bold; font-size: 18px; color: #cf1322;">${new Intl.NumberFormat("vi-VN").format(orderInfo.totalAmount)}₫</td></tr></tfoot>
-                </table>
-            </div>
-        </div>
-    `;
-};
+const paymentService = require("../services/paymentService");
+const orderService = require("../services/orderService");
+const { generateOrderHtml } = require("../templates/emailTemplates");
 
 const checkout = async (req, res) => {
-    const t = await sequelize.transaction();
     try {
-        const { items, paymentMethod, shippingInfo, couponCode } = req.body;
-        const userId = req.user.id;
-        const userEmail = req.user.email;
-
-        if (!items || items.length === 0) throw new Error("Giỏ hàng trống");
-
-        let totalAmount = 0;
-        const orderItemsData = [];
-        const emailItemsInfo = [];
-
-        for (const item of items) {
-            const product = await Product.findByPk(item.productId, {
-                transaction: t,
-                lock: t.LOCK.UPDATE,
-            });
-            if (!product) throw new Error(`Sản phẩm không tồn tại`);
-            if (product.stock < item.quantity)
-                throw new Error(`"${product.name}" chỉ còn ${product.stock} kiện.`);
-
-            totalAmount += product.price * item.quantity;
-            product.stock -= item.quantity;
-            await product.save({ transaction: t });
-
-            orderItemsData.push({
-                productId: product.id,
-                quantity: item.quantity,
-                priceAtPurchase: product.price,
-            });
-            emailItemsInfo.push({
-                name: product.name,
-                quantity: item.quantity,
-                price: product.price,
-            });
-        }
-
-        // ===== XỬ LÝ MÃ GIẢM GIÁ (SERVER-SIDE) =====
-        let discountAmount = 0;
-        let appliedCouponCode = null;
-
-        if (couponCode) {
-            const coupon = await Coupon.findOne({
-                where: { code: couponCode.toUpperCase() },
-                transaction: t,
-            });
-
-            if (!coupon) throw new Error("Mã giảm giá không tồn tại");
-
-            const now = new Date();
-            if (!coupon.isActive) throw new Error("Mã giảm giá đã bị vô hiệu hóa");
-            if (coupon.startDate > now) throw new Error("Mã giảm giá chưa đến ngày sử dụng");
-            if (coupon.expiryDate <= now) throw new Error("Mã giảm giá đã hết hạn");
-            if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit)
-                throw new Error("Mã giảm giá đã hết lượt sử dụng");
-
-            const userCoupon = await UserCoupon.findOne({
-                where: { userId, couponId: coupon.id },
-                transaction: t,
-            });
-            if (!userCoupon) throw new Error("Bạn chưa nhận mã giảm giá này");
-            if (userCoupon.isUsed) throw new Error("Bạn đã sử dụng mã này rồi");
-
-            if (totalAmount < coupon.minOrderAmount) {
-                throw new Error(
-                    `Đơn hàng tối thiểu ${new Intl.NumberFormat("vi-VN").format(coupon.minOrderAmount)}₫ để áp dụng mã này`,
-                );
-            }
-
-            if (coupon.discountType === "percent") {
-                discountAmount = Math.floor((totalAmount * coupon.discountValue) / 100);
-                if (coupon.maxDiscountAmount && discountAmount > coupon.maxDiscountAmount) {
-                    discountAmount = Number(coupon.maxDiscountAmount);
-                }
-            } else {
-                discountAmount = Number(coupon.discountValue);
-            }
-
-            if (discountAmount > totalAmount) discountAmount = totalAmount;
-
-            // Đánh dấu đã sử dụng
-            userCoupon.isUsed = true;
-            userCoupon.usedAt = new Date();
-            await userCoupon.save({ transaction: t });
-
-            coupon.usedCount += 1;
-            await coupon.save({ transaction: t });
-
-            appliedCouponCode = coupon.code;
-        }
-
-        const finalAmount = totalAmount - discountAmount;
-
-        if (paymentMethod === "QR" && finalAmount < 2000) {
-            throw new Error(
-                "PayOS yêu cầu giá trị đơn hàng phải từ 2,000 VNĐ trở lên để tạo mã QR. Vui lòng thêm sản phẩm!",
-            );
-        }
-
-        const orderCodeNum = Math.floor(100000 + Math.random() * 900000);
-        const orderCode = String(orderCodeNum);
-
-        const order = await Order.create(
-            {
-                userId,
-                orderCode,
-                totalAmount: finalAmount,
-                couponCode: appliedCouponCode,
-                discountAmount,
-                paymentMethod: paymentMethod || "COD",
-                status: "PENDING",
-                shippingName: shippingInfo?.recipientName,
-                shippingPhone: shippingInfo?.phoneNumber,
-                shippingAddress: shippingInfo?.fullAddress,
-            },
-            { transaction: t },
-        );
-
-        const orderItemsWithOrderId = orderItemsData.map((item) => ({
-            ...item,
-            orderId: order.id,
-        }));
-        await OrderItem.bulkCreate(orderItemsWithOrderId, { transaction: t });
-
-        await AuditLog.create(
-            {
-                userId,
-                action: "ORDER_CREATED",
-                details: `Tạo đơn hàng #${orderCode} - Tổng: ${new Intl.NumberFormat("vi-VN").format(finalAmount)}đ${appliedCouponCode ? ` (Giảm ${new Intl.NumberFormat("vi-VN").format(discountAmount)}đ với mã ${appliedCouponCode})` : ""}`,
-            },
-            { transaction: t },
-        );
-
-        let paymentLinkData = null;
-
-        if (paymentMethod === "QR") {
-            const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-            const body = {
-                orderCode: Number(orderCodeNum),
-                amount: finalAmount,
-                description: `DPWOOD${orderCodeNum}`,
-                items: emailItemsInfo.map((i) => ({
-                    name: String(i.name).substring(0, 50),
-                    quantity: i.quantity,
-                    price: Number(i.price),
-                })),
-                returnUrl: `${domain}/profile?status=PAID`,
-                cancelUrl: `${domain}/cart?cancel=true`,
-            };
-
-            paymentLinkData = await payos.paymentRequests.create(body);
-        }
-
-        await t.commit();
-
-        if (paymentMethod === "COD") {
-            const orderInfo = {
-                orderCode: order.orderCode,
-                customerName: req.user.name || "Quý khách",
-                shippingName: order.shippingName,
-                shippingPhone: order.shippingPhone,
-                shippingAddress: order.shippingAddress,
-                totalAmount: order.totalAmount,
-            };
-            sendEmail(
-                userEmail,
-                `[DPWOOD] Xác nhận đặt hàng #${orderCode}`,
-                generateOrderHtml(orderInfo, emailItemsInfo, false),
-            );
-        }
-
+        const { order, paymentLinkData } = await orderService.processCheckout(req.user, req.body);
         res.status(200).json({
             message: "Thành công!",
             orderId: order.id,
@@ -243,14 +21,13 @@ const checkout = async (req, res) => {
             paymentLink: paymentLinkData,
         });
     } catch (error) {
-        await t.rollback();
         res.status(400).json({ message: error.message });
     }
 };
 
 const handleWebhook = async (req, res) => {
     try {
-        const webhookData = req.body.data;
+        const webhookData = paymentService.verifyPaymentWebhookData(req.body);
         if (!webhookData || !webhookData.orderCode) return res.json({ success: true });
 
         const orderCode = String(webhookData.orderCode);
@@ -319,9 +96,9 @@ const getOrderStatus = async (req, res) => {
 
         // Tự động kiểm tra trạng thái trên PayOS nếu đang PENDING 
         // (đặc biệt hữu ích khi Dev ở localhost không nhận được webhook)
-        if (order.status === "PENDING" && order.paymentMethod === "QR") {
+        if (order.paymentMethod === "QR" && order.status === "PENDING") {
             try {
-                const paymentInfo = await payos.paymentRequests.get(Number(orderCode));
+                const paymentInfo = await paymentService.getPaymentLinkInfo(Number(orderCode));
                 const paymentStatus = paymentInfo?.status || paymentInfo?.data?.status;
                 if (paymentStatus === "PAID") {
                     order.status = "PAID";

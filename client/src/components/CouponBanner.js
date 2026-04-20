@@ -10,40 +10,16 @@ import {
     CopyOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import api from "@/utils/axios";
+import { useCoupons } from "@/hooks/useCoupons";
 
 const { Text } = Typography;
 
 export default function CouponBanner() {
-    const [coupons, setCoupons] = useState([]);
-    const [claimedIds, setClaimedIds] = useState(new Set());
-    const [loading, setLoading] = useState(true);
-    const [claimingId, setClaimingId] = useState(null);
+    const { coupons, claimedIds, loading, claimingId, claimCoupon } = useCoupons();
+    
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
     const scrollRef = useRef(null);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const couponRes = await api.get("/coupons/active");
-                setCoupons(couponRes.data);
-
-                const token =
-                    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-                if (token) {
-                    const myRes = await api.get("/coupons/my");
-                    const ids = new Set(myRes.data.map((uc) => uc.couponId));
-                    setClaimedIds(ids);
-                }
-            } catch (error) {
-                console.error("Lỗi tải mã giảm giá:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
 
     const checkScroll = () => {
         const el = scrollRef.current;
@@ -64,21 +40,7 @@ export default function CouponBanner() {
     }, [coupons]);
 
     const handleClaim = async (couponId) => {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        if (!token) {
-            message.warning("Vui lòng đăng nhập để nhận mã giảm giá!");
-            return;
-        }
-        try {
-            setClaimingId(couponId);
-            await api.post("/coupons/claim", { couponId });
-            message.success("Nhận mã giảm giá thành công! 🎉");
-            setClaimedIds((prev) => new Set([...prev, couponId]));
-        } catch (error) {
-            message.error(error.response?.data?.message || "Không thể nhận mã giảm giá");
-        } finally {
-            setClaimingId(null);
-        }
+        await claimCoupon(couponId);
     };
 
     const scroll = (direction) => {

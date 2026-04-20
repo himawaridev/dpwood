@@ -12,35 +12,18 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import useBreakpoint from "antd/lib/grid/hooks/useBreakpoint";
-import api from "@/utils/axios";
+import { useProducts } from "@/hooks/useProducts";
 
 const { Title, Text } = Typography;
 
 export default function LatestProducts() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { products, loading } = useProducts();
     const [currentSlide, setCurrentSlide] = useState(0);
+
     const carouselRef = useRef(null);
     const router = useRouter();
     const screens = useBreakpoint();
     const isMobile = screens.xs || screens.sm && !screens.md;
-
-    useEffect(() => {
-        const fetchLatestProducts = async () => {
-            try {
-                const res = await api.get("/products");
-                const sortedProducts = res.data.sort(
-                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-                );
-                setProducts(sortedProducts.slice(0, 5));
-            } catch (error) {
-                message.error("Lỗi khi tải sản phẩm mới: " + error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchLatestProducts();
-    }, []);
 
     if (loading) {
         return (

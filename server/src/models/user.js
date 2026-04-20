@@ -24,7 +24,7 @@ const User = sequelize.define(
         },
         password: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         email: {
             type: DataTypes.STRING,
@@ -36,7 +36,7 @@ const User = sequelize.define(
         },
         phone: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
             unique: true,
             validate: {
                 is: /^[0-9]{10,11}$/i,
@@ -45,6 +45,15 @@ const User = sequelize.define(
         role: {
             type: DataTypes.ENUM("root", "admin", "user", "seller"),
             defaultValue: "user",
+        },
+        authProvider: {
+            type: DataTypes.ENUM("local", "google"),
+            defaultValue: "local",
+        },
+        googleId: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            unique: true,
         },
         isVerified: {
             type: DataTypes.BOOLEAN,

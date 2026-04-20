@@ -4,11 +4,26 @@ import { Form, Input, Button, Card, message, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/utils/axios";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function RegisterPage() {
     const router = useRouter();
+
+    const handleLoginSuccess = (data) => {
+        localStorage.setItem("token", data.token);
+        if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+        localStorage.setItem("userName", data.user.name);
+        localStorage.setItem("userRole", data.user.role);
+        if (data.user.avatarUrl) {
+            localStorage.setItem("avatarUrl", data.user.avatarUrl);
+        } else {
+            localStorage.removeItem("avatarUrl");
+        }
+        message.success("Đăng ký & Đăng nhập thành công!");
+        router.push("/");
+    };
 
     const onFinish = async (values) => {
         try {
@@ -16,9 +31,18 @@ export default function RegisterPage() {
             message.success(
                 response.data?.message || "Đăng ký thành công! Vui lòng kiểm tra email.",
             );
-            router.push("/login"); // Chuyển về trang đăng nhập
+            router.push("/login");
         } catch (error) {
             message.error(error.response?.data?.message || "Đăng ký thất bại!");
+        }
+    };
+
+    const onGoogleSuccess = async (credentialResponse) => {
+        try {
+            const res = await api.post("/auth/google", { token: credentialResponse.credential });
+            handleLoginSuccess(res.data);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Google OAuth thất bại.");
         }
     };
 
@@ -83,6 +107,20 @@ export default function RegisterPage() {
                             Đăng Ký
                         </Button>
                     </Form.Item>
+
+                    <div style={{ textAlign: "center", marginBottom: "16px" }}>
+                        <Text type="secondary">Hoặc đăng ký nhanh bằng</Text>
+                    </div>
+
+                    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "GOCSPX-placeholder"}>
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                            <GoogleLogin
+                                onSuccess={onGoogleSuccess}
+                                onError={() => message.error("Google OAuth thất bại")}
+                                useOneTap
+                            />
+                        </div>
+                    </GoogleOAuthProvider>
 
                     <div style={{ textAlign: "center" }}>
                         Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
