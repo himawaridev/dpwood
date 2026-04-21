@@ -56,9 +56,9 @@ export default function CouponBanner() {
     return (
         <div
             style={{
-                margin: "0 auto 28px auto",
-                maxWidth: 1300,
-                padding: "0 20px",
+                margin: "0 auto",
+                maxWidth: 1200,
+                padding: "0 24px",
                 position: "relative",
             }}
         >

@@ -23,9 +23,14 @@ services:
     # 🔴 BẢO DOCKER ĐỌC THẲNG FILE .ENV CỦA SERVER
     env_file:
       - ./server/.env
-    # Vẫn ghi đè lại Host của Database để trỏ sang Container DB
+    # Ghi đè các biến DB để trỏ sang Container DB local thay vì TiDB Cloud
     environment:
       - DB_HOST=db
+      - DB_PORT=3306
+      - DB_SSL=false
+      - DB_NAME=dpwood_db
+      - DB_USER=root
+      - DB_PASSWORD=Dung22102003@@@
     depends_on:
       - db
 

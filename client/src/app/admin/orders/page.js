@@ -148,7 +148,7 @@ export default function AdminOrdersPage() {
                 </Space>
             </div>
 
-            <Tabs defaultActiveKey="ALL" items={tabItems} />
+            <Tabs defaultActiveKey="ALL" items={tabItems} destroyInactiveTabPane />
 
             <OrderDetailModal
                 isVisible={isDetailVisible}

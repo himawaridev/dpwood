@@ -209,13 +209,76 @@ const getAllOrdersAdmin = async (req, res) => {
 };
 
 const updateOrderStatusAdmin = async (req, res) => {
+    const t = await sequelize.transaction();
     try {
-        const order = await Order.findByPk(req.params.id);
+        const { status: newStatus } = req.body;
+        const validStatuses = ["PENDING", "PAID", "SHIPPING", "COMPLETED", "CANCELED"];
+        if (!validStatuses.includes(newStatus)) {
+            return res.status(400).json({ message: "Trạng thái không hợp lệ" });
+        }
+
+        const order = await Order.findByPk(req.params.id, { transaction: t });
         if (!order) return res.status(404).json({ message: "Không tìm thấy" });
-        order.status = req.body.status;
-        await order.save();
+
+        const oldStatus = order.status;
+        if (oldStatus === newStatus) {
+            await t.rollback();
+            return res.status(200).json({ message: "Trạng thái không thay đổi", order });
+        }
+
+        // Nếu khôi phục từ CANCELED → trừ lại tồn kho (vì khi hủy đã hoàn kho)
+        if (oldStatus === "CANCELED" && newStatus !== "CANCELED") {
+            const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
+            for (const item of items) {
+                const product = await Product.findByPk(item.productId, {
+                    transaction: t,
+                    lock: t.LOCK.UPDATE,
+                });
+                if (product) {
+                    if (product.stock < item.quantity) {
+                        await t.rollback();
+                        return res.status(400).json({
+                            message: `Không đủ tồn kho cho sản phẩm "${product.name}" (còn ${product.stock}, cần ${item.quantity})`,
+                        });
+                    }
+                    product.stock -= item.quantity;
+                    await product.save({ transaction: t });
+                }
+            }
+        }
+
+        // Nếu chuyển sang CANCELED → hoàn tồn kho
+        if (newStatus === "CANCELED" && oldStatus !== "CANCELED") {
+            const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
+            for (const item of items) {
+                const product = await Product.findByPk(item.productId, {
+                    transaction: t,
+                    lock: t.LOCK.UPDATE,
+                });
+                if (product) {
+                    product.stock += item.quantity;
+                    await product.save({ transaction: t });
+                }
+            }
+        }
+
+        order.status = newStatus;
+        await order.save({ transaction: t });
+
+        await AuditLog.create(
+            {
+                userId: req.user.id,
+                action: "ORDER_STATUS_CHANGED",
+                details: `Admin đổi trạng thái đơn #${order.orderCode}: ${oldStatus} → ${newStatus}`,
+            },
+            { transaction: t },
+        );
+
+        await t.commit();
         res.status(200).json({ message: "Cập nhật thành công", order });
     } catch (error) {
+        await t.rollback();
+        console.error("🔥 LỖI CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG:", error);
         res.status(500).json({ message: error.message });
     }
 };

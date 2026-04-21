@@ -206,16 +206,32 @@ export default function Navbar() {
 
                 <div
                     style={{
-                        color: "#1890ff",
-                        fontSize: isMobile ? 20 : 24,
-                        fontWeight: "bold",
                         cursor: "pointer",
                         marginRight: isMobile ? "auto" : 40,
-                        letterSpacing: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
                     }}
                     onClick={() => router.push("/")}
                 >
-                    DPWOOD
+                    <img
+                        src="/logo.png"
+                        alt="DPWOOD"
+                        style={{
+                            height: isMobile ? 32 : 38,
+                            objectFit: "contain",
+                        }}
+                    />
+                    <span
+                        style={{
+                            color: "#1890ff",
+                            fontSize: isMobile ? 18 : 22,
+                            fontWeight: "bold",
+                            letterSpacing: 1,
+                        }}
+                    >
+                        DPWOOD
+                    </span>
                 </div>
 
                 {!isMobile && (
