@@ -112,8 +112,16 @@ const setupSocketIO = () => {
 // ==========================================
 // 3. KHỞI CHẠY MIDDLEWARE & ROUTERS
 // ==========================================
+// app.use(cors({
+//     origin: process.env.CLIENT_URL || "http://localhost:3000",
+//     credentials: true,
+// }));
+const allowedOrigins = process.env.CLIENT_URL 
+    ? process.env.CLIENT_URL.split(',') 
+    : ["http://localhost:3000"];
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: allowedOrigins, // Truyền hẳn một danh sách (mảng) vào đây
     credentials: true,
 }));
 app.use(express.json());
