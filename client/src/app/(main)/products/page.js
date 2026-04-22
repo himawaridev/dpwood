@@ -4,6 +4,7 @@ import { Typography, message } from "antd";
 import { AppstoreOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
+import { useCart } from "@/hooks/useCart";
 
 // 🔴 Import component đã chia nhỏ
 import ProductGrid from "./components/ProductGrid";
@@ -14,6 +15,7 @@ export default function ProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const { buyNow } = useCart();
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -28,32 +30,6 @@ export default function ProductsPage() {
         };
         fetchProducts();
     }, []);
-
-    // Hàm xử lý Thêm vào giỏ hàng (Giữ nguyên logic tuyệt đối an toàn)
-    const addToCartLogic = (product) => {
-        let cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const existingItemIndex = cart.findIndex((item) => item.productId === product.id);
-
-        if (existingItemIndex > -1) {
-            cart[existingItemIndex].quantity += 1;
-        } else {
-            cart.push({
-                productId: product.id,
-                name: product.name,
-                price: product.price,
-                imageUrl: product.imageUrl,
-                quantity: 1,
-            });
-        }
-        localStorage.setItem("cart", JSON.stringify(cart));
-    };
-
-    // Hàm Xử lý MUA NGAY: Thêm vào giỏ và đi tới trang thanh toán
-    const handleBuyNow = (product) => {
-        addToCartLogic(product);
-        message.success(`Đã thêm ${product.name} vào giỏ hàng. Đang chuyển hướng...`);
-        router.push("/cart");
-    };
 
     return (
         <div style={{ minHeight: "100vh" }}>
@@ -70,7 +46,7 @@ export default function ProductsPage() {
                 <ProductGrid
                     loading={loading}
                     products={products}
-                    onBuyNow={handleBuyNow}
+                    onBuyNow={buyNow}
                     onClickDetail={(productId) => router.push(`/products/${productId}`)}
                 />
             </div>

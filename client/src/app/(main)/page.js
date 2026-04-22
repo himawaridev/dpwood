@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Spin, message } from "antd";
+import { Spin } from "antd";
 import { TrophyOutlined, AppstoreOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import useBreakpoint from "antd/lib/grid/hooks/useBreakpoint";
@@ -10,33 +9,14 @@ import CouponBanner from "@/components/CouponBanner";
 import TrustBadges from "@/components/TrustBadges";
 import ProductSection from "@/components/ProductSection";
 import { useProducts } from "@/hooks/useProducts";
+import { useCart } from "@/hooks/useCart";
 
 export default function HomePage() {
     const { products, loading } = useProducts();
     const router = useRouter();
     const screens = useBreakpoint();
     const isMobile = screens.xs || (screens.sm && !screens.md);
-
-    // Logic Mua ngay / Thêm vào giỏ đồng nhất
-    const handleBuyNow = (product) => {
-        let cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const existingItemIndex = cart.findIndex((item) => item.productId === product.id);
-
-        if (existingItemIndex > -1) {
-            cart[existingItemIndex].quantity += 1;
-        } else {
-            cart.push({
-                productId: product.id,
-                name: product.name,
-                price: product.price,
-                imageUrl: product.imageUrl || (product.images && product.images[0]),
-                quantity: 1,
-            });
-        }
-        localStorage.setItem("cart", JSON.stringify(cart));
-        message.success(`Đã thêm ${product.name} vào giỏ hàng`);
-        router.push("/cart");
-    };
+    const { buyNow } = useCart();
 
     if (loading) return <div style={{ textAlign: "center", padding: "100px 0" }}><Spin size="large" /></div>;
 
@@ -69,7 +49,7 @@ export default function HomePage() {
                         title="Bán chạy nhất"
                         icon={<TrophyOutlined style={{ color: '#faad14' }} />}
                         products={bestSellers}
-                        onBuyNow={handleBuyNow}
+                        onBuyNow={buyNow}
                         isMobile={isMobile}
                     />
                 </div>
@@ -81,7 +61,7 @@ export default function HomePage() {
                     title="Khám phá sản phẩm"
                     icon={<AppstoreOutlined style={{ color: '#1677ff' }} />}
                     products={allProducts}
-                    onBuyNow={handleBuyNow}
+                    onBuyNow={buyNow}
                     isMobile={isMobile}
                 />
             </div>
