@@ -44,15 +44,13 @@ export default function HomePage() {
     // 1. DANH SÁCH BÁN CHẠY: Lọc trên TOÀN BỘ kho hàng (Độc lập)
     // Dùng Number() để an toàn với các sản phẩm cũ bị null sold
     // ==============================================================
-    const bestSellers = products
-        .filter(p => (Number(p.sold) || 0) >= 20)
+    // bestSellers: ngưỡng sold >= 20 đồng nhất với badge "Bán chạy" trong ProductCard
+    const bestSellers = [...products]
         .sort((a, b) => (Number(b.sold) || 0) - (Number(a.sold) || 0))
+        .filter(p => (Number(p.sold) || 0) >= 20)
         .slice(0, 8);
 
-    // ==============================================================
-    // 2. DANH SÁCH KHÁM PHÁ: Lấy 8 sản phẩm mới nhất (Độc lập)
-    // Không quan tâm đã lọt top Bán chạy hay chưa
-    // ==============================================================
+    // products đã sort theo createdAt desc từ hook → lấy 8 mới nhất
     const allProducts = products.slice(0, 8);
 
     return (

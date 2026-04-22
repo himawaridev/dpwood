@@ -14,7 +14,7 @@ export const useProducts = () => {
             const sortedProducts = res.data.sort(
                 (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
             );
-            setProducts(sortedProducts.slice(0, 5));
+            setProducts(sortedProducts);
             setError(null);
         } catch (err) {
             const msg = err.response?.data?.message || err.message || "Lỗi tải sản phẩm mới";
