@@ -1,8 +1,12 @@
+"use client";
 import React from "react";
 import { Row, Col, Spin } from "antd";
-import ProductCard from "./ProductCard";
+import ProductCard from "@/components/ProductCard";
+import { useRouter } from "next/navigation";
 
 export default function ProductGrid({ loading, products, onBuyNow, onClickDetail }) {
+    const router = useRouter();
+
     if (loading) {
         return (
             <div style={{ textAlign: "center", marginTop: 100 }}>
@@ -12,13 +16,16 @@ export default function ProductGrid({ loading, products, onBuyNow, onClickDetail
     }
 
     return (
-        <Row gutter={[24, 24]}>
+        <Row gutter={[16, 24]}>
             {products.map((product) => (
-                <Col xs={24} sm={12} md={12} lg={8} xl={6} key={product.id}>
+                <Col xs={12} sm={12} md={8} lg={6} key={product.id}>
                     <ProductCard
                         product={product}
                         onBuyNow={onBuyNow}
-                        onClickDetail={() => onClickDetail(product.id)}
+                        onClickDetail={() => {
+                            if (onClickDetail) onClickDetail(product.id);
+                            else router.push(`/products/${product.id}`);
+                        }}
                     />
                 </Col>
             ))}

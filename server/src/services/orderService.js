@@ -35,6 +35,7 @@ class OrderService {
 
                 totalAmount += product.price * item.quantity;
                 product.stock -= item.quantity;
+                product.sold = (product.sold || 0) + item.quantity;
                 await product.save({ transaction: t });
 
                 orderItemsData.push({

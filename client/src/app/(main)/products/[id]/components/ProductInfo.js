@@ -1,7 +1,7 @@
 import React from "react";
 import { Typography, Flex, Tag, InputNumber, Button } from "antd";
 import {
-    FireOutlined,
+    TrophyOutlined,
     SafetyCertificateOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
+
 
 export default function ProductInfo({
     product,
@@ -29,7 +30,7 @@ export default function ProductInfo({
             >
                 <Flex gap="small" align="center" style={{ marginBottom: "12px" }}>
                     {product.sold >= bestSellerThreshold && (
-                        <Tag color="red" variant="solid" icon={<FireOutlined />}>
+                        <Tag color="gold" variant="solid" icon={<TrophyOutlined />}>
                             Bán chạy ({product.sold} đã bán)
                         </Tag>
                     )}

@@ -4,8 +4,6 @@ const Order = require("../models/order");
 const OrderItem = require("../models/orderItem");
 const AuditLog = require("../models/auditLog");
 const User = require("../models/user");
-const Coupon = require("../models/coupon");
-const UserCoupon = require("../models/userCoupon");
 const sendEmail = require("../utils/sendEmail");
 const paymentService = require("../services/paymentService");
 const orderService = require("../services/orderService");
@@ -41,14 +39,7 @@ const handleWebhook = async (req, res) => {
         order.status = "PAID";
         await order.save();
 
-        const items = await OrderItem.findAll({ where: { orderId: order.id } });
-        for (const item of items) {
-            const product = await Product.findByPk(item.productId);
-            if (product) {
-                product.sold += item.quantity;
-                await product.save();
-            }
-        }
+        // 🔴 ĐÃ SỬA: Bỏ vòng lặp cập nhật sold ở đây đi vì đã làm lúc đặt hàng rồi
 
         const transactionCode =
             webhookData.transactionReference || webhookData.reference || "Giao dịch Online";
@@ -58,6 +49,7 @@ const handleWebhook = async (req, res) => {
             details: `PayOS tự động xác nhận ${new Intl.NumberFormat("vi-VN").format(webhookData.amount)}đ cho đơn #${orderCode}. Mã GD: ${transactionCode}`,
         });
 
+        const items = await OrderItem.findAll({ where: { orderId: order.id } });
         if (order.User && order.User.email) {
             const emailItemsInfo = items.map((i) => ({
                 name: "Sản phẩm",
@@ -87,15 +79,13 @@ const handleWebhook = async (req, res) => {
 const getOrderStatus = async (req, res) => {
     try {
         const { orderCode } = req.params;
-        const order = await Order.findOne({ 
+        const order = await Order.findOne({
             where: { orderCode },
             include: [{ model: User, attributes: ["email", "name"] }],
         });
-        
+
         if (!order) return res.status(404).json({ message: "Không tìm thấy" });
 
-        // Tự động kiểm tra trạng thái trên PayOS nếu đang PENDING 
-        // (đặc biệt hữu ích khi Dev ở localhost không nhận được webhook)
         if (order.paymentMethod === "QR" && order.status === "PENDING") {
             try {
                 const paymentInfo = await paymentService.getPaymentLinkInfo(Number(orderCode));
@@ -104,14 +94,7 @@ const getOrderStatus = async (req, res) => {
                     order.status = "PAID";
                     await order.save();
 
-                    const items = await OrderItem.findAll({ where: { orderId: order.id } });
-                    for (const item of items) {
-                        const product = await Product.findByPk(item.productId);
-                        if (product) {
-                            product.sold += item.quantity;
-                            await product.save();
-                        }
-                    }
+                    // 🔴 ĐÃ SỬA: Bỏ vòng lặp cập nhật sold ở đây đi
 
                     await AuditLog.create({
                         userId: order.userId,
@@ -119,6 +102,7 @@ const getOrderStatus = async (req, res) => {
                         details: `Hệ thống tự đồng bộ trạng thái PAID từ PayOS. Đơn #${orderCode}.`,
                     });
 
+                    const items = await OrderItem.findAll({ where: { orderId: order.id } });
                     if (order.User && order.User.email) {
                         const emailItemsInfo = items.map((i) => ({
                             name: "Sản phẩm",
@@ -168,7 +152,9 @@ const cancelOrder = async (req, res) => {
                 lock: t.LOCK.UPDATE,
             });
             if (product) {
-                product.stock += item.quantity;
+                product.stock += item.quantity; // Hoàn tồn kho
+                // 🔴 ĐÃ THÊM: Trừ đi số lượng đã bán do hủy đơn
+                product.sold = Math.max(0, (product.sold || 0) - item.quantity);
                 await product.save({ transaction: t });
             }
         }
@@ -192,14 +178,13 @@ const cancelOrder = async (req, res) => {
     }
 };
 
-// 🔴 ĐÃ BỔ SUNG: Include OrderItem và Product vào dữ liệu lấy ra
 const getAllOrdersAdmin = async (req, res) => {
     try {
         const orders = await Order.findAll({
             order: [["createdAt", "DESC"]],
             include: [
                 { model: User, attributes: ["name", "email"] },
-                { model: OrderItem, include: [{ model: Product }] }, // Lấy chi tiết sản phẩm và Hình ảnh
+                { model: OrderItem, include: [{ model: Product }] },
             ],
         });
         res.status(200).json(orders);
@@ -226,7 +211,7 @@ const updateOrderStatusAdmin = async (req, res) => {
             return res.status(200).json({ message: "Trạng thái không thay đổi", order });
         }
 
-        // Nếu khôi phục từ CANCELED → trừ lại tồn kho (vì khi hủy đã hoàn kho)
+        // Nếu khôi phục từ CANCELED → trừ lại tồn kho và cộng lại số lượng đã bán
         if (oldStatus === "CANCELED" && newStatus !== "CANCELED") {
             const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
             for (const item of items) {
@@ -242,12 +227,13 @@ const updateOrderStatusAdmin = async (req, res) => {
                         });
                     }
                     product.stock -= item.quantity;
+                    product.sold = (product.sold || 0) + item.quantity; // 🔴 ĐÃ THÊM
                     await product.save({ transaction: t });
                 }
             }
         }
 
-        // Nếu chuyển sang CANCELED → hoàn tồn kho
+        // Nếu chuyển sang CANCELED → hoàn tồn kho và trừ số lượng đã bán
         if (newStatus === "CANCELED" && oldStatus !== "CANCELED") {
             const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
             for (const item of items) {
@@ -257,6 +243,7 @@ const updateOrderStatusAdmin = async (req, res) => {
                 });
                 if (product) {
                     product.stock += item.quantity;
+                    product.sold = Math.max(0, (product.sold || 0) - item.quantity); // 🔴 ĐÃ THÊM
                     await product.save({ transaction: t });
                 }
             }
@@ -283,7 +270,6 @@ const updateOrderStatusAdmin = async (req, res) => {
     }
 };
 
-// 🔴 ĐÃ BỔ SUNG: Cho trang Profile User cũng xem được chi tiết và Hình ảnh nếu cần
 const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.findAll({
@@ -293,7 +279,7 @@ const getMyOrders = async (req, res) => {
         });
         res.status(200).json(orders);
     } catch (error) {
-        console.error("🔥 LỖI CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG:", error);
+        console.error("🔥 LỖI LẤY ĐƠN HÀNG CÁ NHÂN:", error);
         res.status(500).json({ message: error.message });
     }
 };
