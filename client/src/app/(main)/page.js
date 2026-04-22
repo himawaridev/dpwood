@@ -29,7 +29,7 @@ export default function HomePage() {
                 productId: product.id,
                 name: product.name,
                 price: product.price,
-                imageUrl: product.imageUrl,
+                imageUrl: product.imageUrl || (product.images && product.images[0]),
                 quantity: 1,
             });
         }
@@ -40,7 +40,19 @@ export default function HomePage() {
 
     if (loading) return <div style={{ textAlign: "center", padding: "100px 0" }}><Spin size="large" /></div>;
 
-    const bestSellers = products.filter(p => p.sold >= 20).slice(0, 8);
+    // ==============================================================
+    // 1. DANH SÁCH BÁN CHẠY: Lọc trên TOÀN BỘ kho hàng (Độc lập)
+    // Dùng Number() để an toàn với các sản phẩm cũ bị null sold
+    // ==============================================================
+    const bestSellers = products
+        .filter(p => (Number(p.sold) || 0) >= 20)
+        .sort((a, b) => (Number(b.sold) || 0) - (Number(a.sold) || 0))
+        .slice(0, 8);
+
+    // ==============================================================
+    // 2. DANH SÁCH KHÁM PHÁ: Lấy 8 sản phẩm mới nhất (Độc lập)
+    // Không quan tâm đã lọt top Bán chạy hay chưa
+    // ==============================================================
     const allProducts = products.slice(0, 8);
 
     return (
