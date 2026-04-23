@@ -22,7 +22,7 @@ const getAddresses = async (req, res) => {
 
 const createAddress = async (req, res) => {
     try {
-        const { recipientName, phoneNumber, fullAddress, isDefault } = req.body;
+        const { recipientName, phoneNumber, email, fullAddress, isDefault } = req.body;
 
         if (isDefault) {
             await Address.update({ isDefault: false }, { where: { userId: req.user.id } });
@@ -32,6 +32,7 @@ const createAddress = async (req, res) => {
             userId: req.user.id,
             recipientName,
             phoneNumber,
+            email,
             fullAddress,
             isDefault,
         });

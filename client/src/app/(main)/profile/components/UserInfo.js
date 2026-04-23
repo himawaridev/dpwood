@@ -1,5 +1,5 @@
 import React from "react";
-import { Row, Col, Avatar, Button, Typography, Space, Tag, Divider, Descriptions } from "antd";
+import { Row, Col, Avatar, Button, Typography, Space, Tag, Divider, Descriptions, Card, Flex } from "antd";
 import {
     UserOutlined,
     SettingOutlined,
@@ -7,127 +7,108 @@ import {
     IdcardOutlined,
     CalendarOutlined,
     SafetyCertificateOutlined,
+    CheckCircleFilled,
 } from "@ant-design/icons";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function UserInfo({ user, onOpenEdit }) {
     const renderRoleTag = (role) => {
         const r = role?.toLowerCase();
         switch (r) {
             case "root":
-                return (
-                    <Tag
-                        color="red"
-                        icon={<SafetyCertificateOutlined />}
-                        style={{ fontWeight: "bold" }}
-                    >
-                        ROOT
-                    </Tag>
-                );
+                return <Tag color="red" icon={<SafetyCertificateOutlined />} style={{ fontWeight: "600", padding: "2px 10px", borderRadius: 12 }}>ROOT</Tag>;
             case "admin":
-                return (
-                    <Tag color="gold" icon={<IdcardOutlined />} style={{ fontWeight: "bold" }}>
-                        ADMIN
-                    </Tag>
-                );
+                return <Tag color="gold" icon={<IdcardOutlined />} style={{ fontWeight: "600", padding: "2px 10px", borderRadius: 12 }}>ADMIN</Tag>;
             case "seller":
-                return (
-                    <Tag color="green" icon={<UserOutlined />} style={{ fontWeight: "bold" }}>
-                        SELLER
-                    </Tag>
-                );
+                return <Tag color="green" icon={<UserOutlined />} style={{ fontWeight: "600", padding: "2px 10px", borderRadius: 12 }}>SELLER</Tag>;
             default:
-                return (
-                    <Tag color="blue" icon={<UserOutlined />} style={{ fontWeight: "bold" }}>
-                        USER
-                    </Tag>
-                );
+                return <Tag color="blue" icon={<UserOutlined />} style={{ fontWeight: "600", padding: "2px 10px", borderRadius: 12 }}>USER</Tag>;
         }
     };
 
     const profileDescriptions = [
         {
             key: "1",
-            label: (
-                <span>
-                    <MailOutlined /> Email
-                </span>
-            ),
-            children: <div style={{ whiteSpace: "nowrap" }}>{user?.email}</div>,
+            label: <span style={{ color: "#8c8c8c", fontWeight: 500 }}><MailOutlined style={{ marginRight: 6 }}/>Email</span>,
+            children: <Text strong>{user?.email}</Text>,
         },
         {
             key: "2",
-            label: (
-                <span>
-                    <IdcardOutlined /> Quyền hạn
-                </span>
-            ),
+            label: <span style={{ color: "#8c8c8c", fontWeight: 500 }}><IdcardOutlined style={{ marginRight: 6 }}/>Quyền hạn</span>,
             children: renderRoleTag(user?.role),
         },
         {
             key: "3",
-            label: (
-                <span>
-                    <CalendarOutlined /> Ngày gia nhập
-                </span>
-            ),
-            children: user?.createdAt
-                ? new Date(user.createdAt).toLocaleDateString("vi-VN")
-                : "N/A",
+            label: <span style={{ color: "#8c8c8c", fontWeight: 500 }}><CalendarOutlined style={{ marginRight: 6 }}/>Ngày tham gia</span>,
+            children: <Text strong>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "N/A"}</Text>,
         },
     ];
 
     return (
-        <Row gutter={[24, 24]} align="middle">
-            <Col xs={24} md={6} lg={4} style={{ textAlign: "center" }}>
-                <Avatar
-                    size={120}
-                    icon={!user?.avatarUrl ? <UserOutlined /> : null}
-                    {...(user?.avatarUrl ? { src: user.avatarUrl } : {})}
-                    style={{ border: "4px solid #e6f7ff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                />
-            </Col>
-            <Col xs={24} md={18} lg={20}>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        flexWrap: "wrap",
-                    }}
-                >
-                    <div>
-                        <Title level={2} style={{ margin: 0 }}>
-                            {user?.name}
-                        </Title>
-                        <Space style={{ marginTop: 8 }}>
-                            {renderRoleTag(user?.role)}
-                            <Tag color="green" icon={<SafetyCertificateOutlined />}>
-                                Tài khoản tin cậy
-                            </Tag>
-                        </Space>
-                    </div>
+        <div style={{ borderRadius: 16, background: "#fff", border: "1px solid #f0f0f0" }}>
+            {/* Ảnh bìa (Cover background) */}
+            <div style={{
+                height: 160,
+                background: "linear-gradient(120deg, #1677ff 0%, #003a8c 100%)",
+                width: "100%",
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16
+            }} />
+            
+            <div style={{ padding: "0 32px 24px", position: "relative", marginTop: -65 }}>
+                <Flex align="flex-end" justify="space-between" wrap="wrap" gap="large">
+                    <Flex align="flex-end" gap={24} wrap="wrap" style={{ flex: 1 }}>
+                        <Avatar
+                            size={130}
+                            icon={!user?.avatarUrl ? <UserOutlined /> : null}
+                            {...(user?.avatarUrl ? { src: user.avatarUrl } : {})}
+                            style={{
+                                border: "5px solid #ffffff",
+                                boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+                                backgroundColor: "#f0f2f5"
+                            }}
+                        />
+                        <div style={{ paddingBottom: 12 }}>
+                            <Title level={2} style={{ margin: 0, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                                {user?.name}
+                                <CheckCircleFilled style={{ color: "#1677ff", fontSize: 20 }} title="Đã xác minh" />
+                            </Title>
+                            <Space style={{ marginTop: 12 }} size="middle" wrap>
+                                {renderRoleTag(user?.role)}
+                                <Tag color="success" style={{ padding: "2px 10px", borderRadius: 12, fontWeight: 500, border: "none", background: "#f6ffed" }}>
+                                    <SafetyCertificateOutlined style={{ marginRight: 4 }}/> Tài khoản an toàn
+                                </Tag>
+                            </Space>
+                        </div>
+                    </Flex>
+                    
                     <Button
                         type="primary"
                         size="large"
-                        icon={<SettingOutlined style={{ fontSize: "20px" }} />}
+                        icon={<SettingOutlined />}
                         onClick={onOpenEdit}
-                        title="Thiết lập tài khoản"
                         style={{
-                            borderRadius: "8px",
-                            width: "40px",
-                            height: "40px",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            boxShadow: "0 2px 8px rgba(24, 144, 255, 0.2)",
+                            borderRadius: 12,
+                            fontWeight: 600,
+                            boxShadow: "0 4px 12px rgba(22, 119, 255, 0.3)",
+                            marginBottom: 12
                         }}
+                    >
+                        Chỉnh sửa hồ sơ
+                    </Button>
+                </Flex>
+
+                <Divider style={{ margin: "24px 0", borderColor: "#f0f0f0" }} />
+                
+                <Card bordered={false} style={{ background: "#f8fafd", borderRadius: 12 }}>
+                    <Descriptions 
+                        column={{ xs: 1, sm: 1, md: 3 }} 
+                        items={profileDescriptions}
+                        size="middle"
                     />
-                </div>
-                <Divider style={{ margin: "16px 0" }} />
-                <Descriptions column={{ xs: 1, sm: 2, md: 3 }} items={profileDescriptions} />
-            </Col>
-        </Row>
+                </Card>
+            </div>
+        </div>
     );
 }

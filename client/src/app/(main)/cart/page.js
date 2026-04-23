@@ -59,7 +59,9 @@ export default function CartPage() {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         if (token) {
             setIsAuth(true);
-            setUserEmail(localStorage.getItem("userEmail") || "Email của bạn");
+            api.get("/users/me")
+                .then(res => setUserEmail(res.data.email))
+                .catch(() => setUserEmail(""));
             fetchAddresses();
             fetchMyCoupons();
         }
@@ -252,6 +254,7 @@ export default function CartPage() {
                 {cartItems.length > 0 && (
                     <AddressSection
                         isAuth={isAuth}
+                        userEmail={userEmail}
                         addresses={addresses}
                         selectedAddress={selectedAddress}
                         setSelectedAddress={setSelectedAddress}

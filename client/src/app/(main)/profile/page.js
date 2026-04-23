@@ -98,9 +98,10 @@ export default function UserProfilePage() {
                     variant="borderless"
                     style={{
                         marginBottom: 24,
-                        borderRadius: "12px",
-                        boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                        borderRadius: "16px",
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
                     }}
+                    styles={{ body: { padding: 0 } }}
                 >
                     <UserInfo user={user} onOpenEdit={() => setIsEditModalOpen(true)} />
                 </Card>

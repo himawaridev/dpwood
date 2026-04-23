@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
     Card,
     Button,
@@ -11,8 +11,10 @@ import {
     Input,
     Radio,
     Popconfirm,
+    Select,
 } from "antd";
 import { EnvironmentOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import axios from "axios";
 
 const { Title, Text } = Typography;
 
@@ -28,7 +30,45 @@ export default function AddressSection({
     addressForm,
     handleSaveNewAddress,
     handleDeleteAddress,
+    userEmail,
 }) {
+    const [provinces, setProvinces] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [wards, setWards] = useState([]);
+
+    useEffect(() => {
+        if (isAddingAddress) {
+            axios.get("https://provinces.open-api.vn/api/?depth=1")
+                .then(res => setProvinces(res.data))
+                .catch(err => console.error(err));
+        }
+    }, [isAddingAddress]);
+
+    const handleProvinceChange = (value, option) => {
+        addressForm.setFieldsValue({ district: undefined, ward: undefined });
+        setWards([]);
+        axios.get(`https://provinces.open-api.vn/api/p/${option.key}?depth=2`)
+            .then(res => setDistricts(res.data.districts))
+            .catch(err => console.error(err));
+    };
+
+    const handleDistrictChange = (value, option) => {
+        addressForm.setFieldsValue({ ward: undefined });
+        axios.get(`https://provinces.open-api.vn/api/d/${option.key}?depth=2`)
+            .then(res => setWards(res.data.wards))
+            .catch(err => console.error(err));
+    };
+
+    const onFinishForm = (values) => {
+        const fullAddress = `${values.streetInput}, ${values.ward}, ${values.district}, ${values.province}`;
+        handleSaveNewAddress({
+            recipientName: values.recipientName,
+            phoneNumber: values.phoneNumber,
+            email: values.email,
+            fullAddress,
+        });
+    };
+
     if (!isAuth) return null;
 
     return (
@@ -102,7 +142,7 @@ export default function AddressSection({
                 forceRender
             >
                 <div style={{ display: isAddingAddress ? "block" : "none", marginTop: 16 }}>
-                    <Form form={addressForm} layout="vertical" onFinish={handleSaveNewAddress}>
+                    <Form form={addressForm} layout="vertical" onFinish={onFinishForm}>
                         <Form.Item
                             name="recipientName"
                             label="Họ và tên"
@@ -113,19 +153,71 @@ export default function AddressSection({
                         <Form.Item
                             name="phoneNumber"
                             label="Số điện thoại"
-                            rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
+                            rules={[
+                                { required: true, message: "Vui lòng nhập số điện thoại" },
+                                { pattern: /^[0-9]{10}$/, message: "Số điện thoại phải đủ 10 số và không chứa ký tự đặc biệt" }
+                            ]}
                         >
-                            <Input size="large" placeholder="Số điện thoại liên hệ" />
+                            <Input size="large" placeholder="Số điện thoại liên hệ (10 chữ số)" />
                         </Form.Item>
                         <Form.Item
-                            name="fullAddress"
+                            name="email"
+                            label="Email xác nhận"
+                            rules={[
+                                { required: true, message: "Vui lòng nhập email" },
+                                { type: "email", message: "Email không hợp lệ" },
+                                {
+                                    validator: (_, value) => {
+                                        if (!value || value === userEmail) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error("Email phải trùng khớp với email của tài khoản đang đăng nhập!"));
+                                    }
+                                }
+                            ]}
+                        >
+                            <Input size="large" placeholder="Nhập lại email tài khoản của bạn" />
+                        </Form.Item>
+                        <Form.Item label="Khu vực" style={{ marginBottom: 0 }}>
+                            <Flex gap="small">
+                                <Form.Item
+                                    name="province"
+                                    rules={[{ required: true, message: "Chọn Tỉnh/Thành phố" }]}
+                                    style={{ flex: 1 }}
+                                >
+                                    <Select size="large" placeholder="Tỉnh/Thành phố" onChange={handleProvinceChange} showSearch optionFilterProp="children">
+                                        {provinces.map(p => <Select.Option key={p.code} value={p.name}>{p.name}</Select.Option>)}
+                                    </Select>
+                                </Form.Item>
+                                <Form.Item
+                                    name="district"
+                                    rules={[{ required: true, message: "Chọn Quận/Huyện" }]}
+                                    style={{ flex: 1 }}
+                                >
+                                    <Select size="large" placeholder="Quận/Huyện" onChange={handleDistrictChange} showSearch optionFilterProp="children" disabled={districts.length === 0}>
+                                        {districts.map(d => <Select.Option key={d.code} value={d.name}>{d.name}</Select.Option>)}
+                                    </Select>
+                                </Form.Item>
+                                <Form.Item
+                                    name="ward"
+                                    rules={[{ required: true, message: "Chọn Phường/Xã" }]}
+                                    style={{ flex: 1 }}
+                                >
+                                    <Select size="large" placeholder="Phường/Xã" showSearch optionFilterProp="children" disabled={wards.length === 0}>
+                                        {wards.map(w => <Select.Option key={w.code} value={w.name}>{w.name}</Select.Option>)}
+                                    </Select>
+                                </Form.Item>
+                            </Flex>
+                        </Form.Item>
+                        <Form.Item
+                            name="streetInput"
                             label="Địa chỉ cụ thể"
-                            rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
+                            rules={[{ required: true, message: "Vui lòng nhập địa chỉ cụ thể" }]}
                         >
                             <Input.TextArea
                                 size="large"
-                                rows={3}
-                                placeholder="Số nhà, đường, phường, quận..."
+                                rows={2}
+                                placeholder="Số nhà, tên đường, ngõ hẻm..."
                             />
                         </Form.Item>
                         <Flex justify="flex-end" gap="small">

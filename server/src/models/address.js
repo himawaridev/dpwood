@@ -21,6 +21,10 @@ const Address = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false,
         },
+        email: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         fullAddress: {
             type: DataTypes.STRING,
             allowNull: false,
