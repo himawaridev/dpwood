@@ -54,6 +54,12 @@ const Blog = sequelize.define(
             type: DataTypes.STRING,
             allowNull: true,
         },
+        comments: {
+            type: DataTypes.JSON,
+            allowNull: true,
+            defaultValue: [],
+            comment: "Array of comments and replies to optimize DB load",
+        },
     },
     {
         timestamps: true,

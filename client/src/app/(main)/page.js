@@ -8,8 +8,11 @@ import LatestProducts from "@/components/LatestProducts";
 import CouponBanner from "@/components/CouponBanner";
 import TrustBadges from "@/components/TrustBadges";
 import ProductSection from "@/components/ProductSection";
+import AuthModal from "@/components/AuthModal";
+import WelcomeModal from "@/components/WelcomeModal";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
+import { useState, useEffect } from "react";
 
 export default function HomePage() {
     const { products, loading } = useProducts();
@@ -17,6 +20,31 @@ export default function HomePage() {
     const screens = useBreakpoint();
     const isMobile = screens.xs || (screens.sm && !screens.md);
     const { buyNow } = useCart();
+
+    const [isWelcomeModalVisible, setIsWelcomeModalVisible] = useState(false);
+    const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
+    const [dontShowWelcomeAgain, setDontShowWelcomeAgain] = useState(false);
+    const [dontShowAuthAgain, setDontShowAuthAgain] = useState(false);
+    const [userName, setUserName] = useState("Người dùng");
+
+    useEffect(() => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const name = typeof window !== "undefined" ? localStorage.getItem("userName") : "";
+        setUserName(name || "Người dùng");
+        const now = Date.now();
+
+        if (token) {
+            const hideWelcomeUntil = localStorage.getItem("hideWelcomeModalUntil");
+            if (!hideWelcomeUntil || now > parseInt(hideWelcomeUntil, 10)) {
+                setIsWelcomeModalVisible(true);
+            }
+        } else {
+            const hideAuthUntil = localStorage.getItem("hideAuthModalUntil");
+            if (!hideAuthUntil || now > parseInt(hideAuthUntil, 10)) {
+                setIsAuthModalVisible(true);
+            }
+        }
+    }, []);
 
     if (loading) return <div style={{ textAlign: "center", padding: "100px 0" }}><Spin size="large" /></div>;
 
@@ -65,6 +93,30 @@ export default function HomePage() {
                     isMobile={isMobile}
                 />
             </div>
+            
+            <AuthModal
+                isOpen={isAuthModalVisible}
+                onClose={() => {
+                    if (dontShowAuthAgain) {
+                        localStorage.setItem("hideAuthModalUntil", Date.now() + 6 * 3600000);
+                    }
+                    setIsAuthModalVisible(false);
+                }}
+                onLogin={() => router.push("/login")}
+                onCheckboxChange={setDontShowAuthAgain}
+            />
+
+            <WelcomeModal
+                isOpen={isWelcomeModalVisible}
+                onClose={() => {
+                    if (dontShowWelcomeAgain) {
+                        localStorage.setItem("hideWelcomeModalUntil", Date.now() + 6 * 3600000);
+                    }
+                    setIsWelcomeModalVisible(false);
+                }}
+                userName={userName}
+                onCheckboxChange={setDontShowWelcomeAgain}
+            />
         </div>
     );
 }

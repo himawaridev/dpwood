@@ -156,7 +156,31 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     try {
         await connectDB();
-        await sequelize.sync({ alter: true });
+        await sequelize.sync();
+
+        // Safely add missing columns using QueryInterface for TiDB to avoid UNIQUE constraint sync crash
+        const queryInterface = sequelize.getQueryInterface();
+        const { DataTypes } = require("sequelize");
+
+        try {
+            const tableDesc = await queryInterface.describeTable("Addresses");
+            if (!tableDesc.email) {
+                await queryInterface.addColumn("Addresses", "email", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added email column to Addresses via QueryInterface");
+            }
+        } catch (e) {
+            console.log("QueryInterface Addresses check skipped:", e.message);
+        }
+
+        try {
+            const tableDesc = await queryInterface.describeTable("Blogs");
+            if (!tableDesc.comments) {
+                await queryInterface.addColumn("Blogs", "comments", { type: DataTypes.JSON, allowNull: true });
+                console.log("Added comments column to Blogs via QueryInterface");
+            }
+        } catch (e) {
+            console.log("QueryInterface Blogs check skipped:", e.message);
+        }
 
         server.listen(PORT, () => {
             console.log(`🚀 Server running at http://localhost:${PORT}`);

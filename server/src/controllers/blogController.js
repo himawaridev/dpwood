@@ -118,4 +118,46 @@ const getBlogById = async (req, res) => {
     }
 };
 
-module.exports = { getAllBlogs, getBlogBySlug, createBlog, updateBlog, deleteBlog, getBlogById };
+const addComment = async (req, res) => {
+    try {
+        const { text, parentId } = req.body;
+        if (!text) return res.status(400).json({ message: "Bình luận không được để trống" });
+
+        const blog = await Blog.findByPk(req.params.id);
+        if (!blog) return res.status(404).json({ message: "Không tìm thấy bài viết" });
+
+        const comments = blog.comments ? [...blog.comments] : [];
+        const newComment = {
+            id: Date.now().toString(),
+            userId: req.user.id,
+            userName: req.user.name || "Khách",
+            userAvatar: req.user.avatarUrl || null,
+            text,
+            createdAt: new Date().toISOString(),
+            replies: []
+        };
+
+        if (parentId) {
+            const parentIndex = comments.findIndex(c => c.id === parentId);
+            if (parentIndex !== -1) {
+                if (!comments[parentIndex].replies) comments[parentIndex].replies = [];
+                comments[parentIndex].replies.push({ ...newComment, parentId });
+            } else {
+                return res.status(400).json({ message: "Không tìm thấy bình luận gốc" });
+            }
+        } else {
+            comments.push(newComment);
+        }
+
+        blog.comments = comments;
+        blog.changed("comments", true);
+        await blog.save();
+
+        res.status(200).json(blog);
+    } catch (error) {
+        console.error("Lỗi addComment:", error);
+        res.status(500).json({ message: "Lỗi thêm bình luận", error: error.message });
+    }
+};
+
+module.exports = { getAllBlogs, getBlogBySlug, createBlog, updateBlog, deleteBlog, getBlogById, addComment };

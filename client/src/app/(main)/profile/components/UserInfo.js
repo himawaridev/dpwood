@@ -46,29 +46,18 @@ export default function UserInfo({ user, onOpenEdit }) {
     ];
 
     return (
-        <div style={{ borderRadius: 16, background: "#fff", border: "1px solid #f0f0f0" }}>
-            {/* Ảnh bìa (Cover background) */}
-            <div style={{
-                height: 160,
-                background: "linear-gradient(120deg, #1677ff 0%, #003a8c 100%)",
-                width: "100%",
-                borderTopLeftRadius: 16,
-                borderTopRightRadius: 16
-            }} />
-            
-            <div style={{ padding: "0 32px 24px", position: "relative", marginTop: -65 }}>
-                <Flex align="flex-end" justify="space-between" wrap="wrap" gap="large">
-                    <Flex align="flex-end" gap={24} wrap="wrap" style={{ flex: 1 }}>
-                        <Avatar
-                            size={130}
-                            icon={!user?.avatarUrl ? <UserOutlined /> : null}
-                            {...(user?.avatarUrl ? { src: user.avatarUrl } : {})}
-                            style={{
-                                border: "5px solid #ffffff",
-                                boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
-                                backgroundColor: "#f0f2f5"
-                            }}
-                        />
+        <div style={{ borderRadius: 16, background: "#fff", border: "1px solid #f0f0f0", padding: "24px 32px" }}>
+            <Flex align="flex-end" justify="space-between" wrap="wrap" gap="large">
+                <Flex align="flex-end" gap={24} wrap="wrap" style={{ flex: 1 }}>
+                    <Avatar
+                        size={130}
+                        icon={!user?.avatarUrl ? <UserOutlined /> : null}
+                        {...(user?.avatarUrl ? { src: user.avatarUrl } : {})}
+                        style={{
+                            border: "1px solid #d9d9d9",
+                            backgroundColor: "#f0f2f5"
+                        }}
+                    />
                         <div style={{ paddingBottom: 12 }}>
                             <Title level={2} style={{ margin: 0, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
                                 {user?.name}
@@ -108,7 +97,6 @@ export default function UserInfo({ user, onOpenEdit }) {
                         size="middle"
                     />
                 </Card>
-            </div>
         </div>
     );
 }

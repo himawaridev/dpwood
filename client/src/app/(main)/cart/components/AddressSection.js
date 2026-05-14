@@ -235,34 +235,29 @@ export default function AddressSection({
                     {addresses.length === 0 ? (
                         <Text type="secondary">Bạn chưa có địa chỉ nào. Hãy thêm mới nhé.</Text>
                     ) : (
-                        <Radio.Group
-                            style={{ width: "100%" }}
-                            value={selectedAddress?.id}
-                            onChange={(e) =>
-                                setSelectedAddress(addresses.find((a) => a.id === e.target.value))
-                            }
-                        >
-                            <Flex vertical gap="middle" style={{ width: "100%" }}>
-                                {addresses.map((addr) => (
-                                    <Card
-                                        key={addr.id}
-                                        size="small"
-                                        hoverable
-                                        onClick={() => setSelectedAddress(addr)}
-                                        style={{
-                                            borderColor:
-                                                selectedAddress?.id === addr.id
-                                                    ? "#1677ff"
-                                                    : "#d9d9d9",
-                                            background:
-                                                selectedAddress?.id === addr.id
-                                                    ? "#e6f4ff"
-                                                    : "#fff",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <Flex justify="space-between" align="flex-start">
-                                            <Radio value={addr.id}>
+                        <Flex vertical gap="middle" style={{ width: "100%" }}>
+                            {addresses.map((addr) => (
+                                <Card
+                                    key={addr.id}
+                                    size="small"
+                                    hoverable
+                                    onClick={() => setSelectedAddress(addr)}
+                                    style={{
+                                        borderColor:
+                                            selectedAddress?.id === addr.id
+                                                ? "#1677ff"
+                                                : "#d9d9d9",
+                                        background:
+                                            selectedAddress?.id === addr.id
+                                                ? "#e6f4ff"
+                                                : "#fff",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <Flex justify="space-between" align="center">
+                                        <Flex gap="middle" align="center">
+                                            <Radio checked={selectedAddress?.id === addr.id} />
+                                            <div>
                                                 <Text strong>{addr.recipientName}</Text>
                                                 <span
                                                     style={{
@@ -275,40 +270,41 @@ export default function AddressSection({
                                                     }}
                                                 />
                                                 <Text type="secondary">{addr.phoneNumber}</Text>
-                                                <div style={{ marginTop: 8, color: "#595959" }}>
+                                                <div style={{ marginTop: 4, color: "#595959" }}>
                                                     {addr.fullAddress}
                                                 </div>
-                                            </Radio>
-                                            <div
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                }}
-                                            >
-                                                <Popconfirm
-                                                    title="Xóa địa chỉ này?"
-                                                    description="Hành động này không thể hoàn tác."
-                                                    onConfirm={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteAddress(addr.id);
-                                                    }}
-                                                    onCancel={(e) => e.stopPropagation()}
-                                                    okText="Xóa"
-                                                    cancelText="Quay lại"
-                                                >
-                                                    <Button
-                                                        type="text"
-                                                        danger
-                                                        icon={<DeleteOutlined />}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </Popconfirm>
                                             </div>
                                         </Flex>
-                                    </Card>
-                                ))}
-                            </Flex>
-                        </Radio.Group>
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                            }}
+                                        >
+                                            <Popconfirm
+                                                title="Xóa địa chỉ này?"
+                                                description="Hành động này không thể hoàn tác."
+                                                onConfirm={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteAddress(addr.id);
+                                                }}
+                                                onCancel={(e) => e.stopPropagation()}
+                                                okText="Xóa"
+                                                cancelText="Quay lại"
+                                            >
+                                                <Button
+                                                    type="primary"
+                                                    danger
+                                                    icon={<DeleteOutlined />}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    Xóa
+                                                </Button>
+                                            </Popconfirm>
+                                        </div>
+                                    </Flex>
+                                </Card>
+                            ))}
+                        </Flex>
                     )}
                     <Button
                         type="dashed"

@@ -24,4 +24,9 @@ router.get(
     blogController.getBlogById,
 );
 
+// ==========================================
+// [USER] ROUTES - Bình luận bài viết
+// ==========================================
+router.post("/:id/comments", authMiddleware, blogController.addComment);
+
 module.exports = router;
