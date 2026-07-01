@@ -23,14 +23,14 @@ const theme = {
     },
     components: {
         Button: {
-            borderRadius: 8,
+            borderRadius: 0,
             controlHeight: 40,
             controlHeightLG: 48,
             fontWeight: 600,
             primaryShadow: "none",
         },
         Card: {
-            borderRadiusLG: 8,
+            borderRadiusLG: 0,
             paddingLG: 20,
         },
         Layout: {
@@ -40,7 +40,7 @@ const theme = {
             triggerBg: "#10231e",
         },
         Menu: {
-            itemBorderRadius: 8,
+            itemBorderRadius: 0,
             activeBarBorderWidth: 0,
         },
         Table: {
@@ -53,7 +53,7 @@ const theme = {
             inkBarColor: "#f09b90",
         },
         Tag: {
-            borderRadiusSM: 999,
+            borderRadiusSM: 0,
         },
     },
 };

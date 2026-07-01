@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import { Card, Flex, Rate, Tag, Typography } from "antd";
-import { FireOutlined, EyeOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { Card, Flex, Rate, Tooltip, Typography } from "antd";
+import { FireOutlined, EyeOutlined, ShoppingCartOutlined, StopOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -42,13 +42,23 @@ export default function ProductCard({ product, badge, onClickDetail }) {
             cover={
                 <button type="button" className="webcake-product-image" onClick={onClickDetail}>
                     <img alt={product.name || "DPWOOD product"} src={image} />
-                    {badge && (
-                        <span className="webcake-product-hot-badge">
-                            <FireOutlined />
-                            {badge !== "icon-only" && badge}
+                    {(badge || !inStock) && (
+                        <span className="webcake-product-status-row">
+                            {badge && (
+                                <span className="webcake-product-hot-badge">
+                                    <FireOutlined />
+                                    {badge !== "icon-only" && badge}
+                                </span>
+                            )}
+                            {!inStock && (
+                                <Tooltip title="Hết hàng">
+                                    <span className="webcake-product-stock-badge" aria-label="Hết hàng">
+                                        <StopOutlined />
+                                    </span>
+                                </Tooltip>
+                            )}
                         </span>
                     )}
-                    {!inStock && <Tag className="webcake-product-badge">Out of stock</Tag>}
                     <span className="webcake-product-actions" aria-hidden="true">
                         <span>
                             <EyeOutlined />

@@ -48,9 +48,9 @@ export default function ClientBlogPage() {
                     <Row gutter={[20, 20]}>
                         {[1, 2, 3].map((item) => (
                             <Col xs={24} md={8} key={item}>
-                                <section className="dp-panel" style={{ padding: 18 }}>
-                                    <Skeleton.Image active style={{ width: "100%", height: 210 }} />
-                                    <Skeleton active paragraph={{ rows: 3 }} style={{ marginTop: 16 }} />
+                                <section className="dp-panel dp-blog-card-skeleton">
+                                    <Skeleton.Image active className="dp-blog-skeleton-image" />
+                                    <Skeleton active paragraph={{ rows: 3 }} />
                                 </section>
                             </Col>
                         ))}

@@ -9,6 +9,14 @@ import ProductGrid from "./components/ProductGrid";
 
 const { Title, Text } = Typography;
 
+const normalizeText = (value = "") =>
+    String(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase();
+
 export default function ProductsPage() {
     const { message } = App.useApp();
     const [products, setProducts] = useState([]);
@@ -68,11 +76,11 @@ export default function ProductsPage() {
     };
 
     const filteredProducts = useMemo(() => {
-        const normalizedQuery = query.trim().toLowerCase();
+        const normalizedQuery = normalizeText(query.trim());
         const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
         const nextProducts = products
             .filter((product) => {
-                const searchableText = `${product.name || ""} ${product.description || ""}`.toLowerCase();
+                const searchableText = normalizeText(`${product.name || ""} ${product.description || ""}`);
                 const matchesQuery = !queryTerms.length
                     ? true
                     : queryTerms.some((term) => searchableText.includes(term));
@@ -203,9 +211,9 @@ export default function ProductsPage() {
                     <Row gutter={[20, 20]}>
                         {Array.from({ length: 8 }).map((_, index) => (
                             <Col xs={24} sm={12} lg={6} key={index}>
-                                <div className="dp-panel" style={{ padding: 16 }}>
-                                    <Skeleton.Image active style={{ width: "100%", height: 220 }} />
-                                    <Skeleton active paragraph={{ rows: 3 }} style={{ marginTop: 16 }} />
+                                <div className="dp-panel dp-product-grid-skeleton">
+                                    <Skeleton.Image active className="webcake-product-skeleton-image" />
+                                    <Skeleton active paragraph={{ rows: 2 }} />
                                 </div>
                             </Col>
                         ))}

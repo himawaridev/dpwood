@@ -20,53 +20,36 @@ import ProductCard from "@/app/(main)/products/components/ProductCard";
 
 const { Title, Text, Paragraph } = Typography;
 
-const heroSlides = [
-    {
-        title: "Ceramic Planters Best Quality",
-        copy:
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry Lorem Ipsum has been the industry's standard dummy to make a type specimen book.",
-        image:
-            "https://content.pancake.vn/1/s1903x923/fwebp90/f9/3c/46/f5/92c00e77e081bb1501df20b3befb56b02be82658322739d83ac0dc33-w:1903-h:923-l:90230-t:image/jpeg.jpeg",
-    },
-    {
-        title: "White Embossed Mini Bowls",
-        copy:
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry Lorem Ipsum has been the industry's standard dummy to make a type specimen book.",
-        image:
-            "https://content.pancake.vn/1/s1903x923/fwebp90/2c/06/25/3f/003ab692848486cce231b46b5ead4581690c8022ca73c6fa0d4f7c1b-w:1903-h:923-l:108808-t:image/jpeg.jpeg",
-    },
-];
-
 const categoryDefinitions = [
     {
         key: "tables",
-        title: "Tables",
+        title: "Bàn gỗ",
         search: "ban",
-        keywords: ["ban", "table", "desk"],
+        keywords: ["ban", "table", "desk", "dining"],
         fallbackImage:
             "https://images.unsplash.com/photo-1616627561950-9f746e330187?auto=format&fit=crop&w=900&q=80",
     },
     {
         key: "seating",
-        title: "Seating",
+        title: "Ghế & sofa",
         search: "ghe",
-        keywords: ["ghe", "chair", "sofa", "seat", "lounge"],
+        keywords: ["ghe", "chair", "sofa", "seat", "lounge", "bench"],
         fallbackImage:
             "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?auto=format&fit=crop&w=900&q=80",
     },
     {
         key: "storage",
-        title: "Storage",
+        title: "Kệ tủ",
         search: "ke tu",
-        keywords: ["ke", "tu", "shelf", "cabinet", "console", "storage"],
+        keywords: ["ke", "tu", "shelf", "cabinet", "console", "storage", "wardrobe"],
         fallbackImage:
             "https://images.unsplash.com/photo-1594026112284-02bb6f3352fe?auto=format&fit=crop&w=900&q=80",
     },
     {
         key: "bedroom",
-        title: "Bedroom",
+        title: "Phòng ngủ",
         search: "giuong",
-        keywords: ["giuong", "bed", "bedroom"],
+        keywords: ["giuong", "bed", "bedroom", "nightstand", "tab dau giuong"],
         fallbackImage:
             "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
     },
@@ -144,68 +127,84 @@ const fallbackBlogs = [
 
 const fallbackProducts = [
     {
-        id: "fallback-serving-spoons",
-        name: "Serving Spoons",
-        price: 49000,
+        id: "fallback-oak-table",
+        name: "Bàn gỗ sồi Nordic",
+        description: "Bàn ăn gỗ sồi tự nhiên cho không gian bếp và phòng ăn hiện đại.",
+        price: 4200000,
         stock: 12,
+        sold: 18,
         imageUrl:
-            "https://content.pancake.vn/web-media/81/98/66/19/ec8bfc121e82a52efcf4d4882a8a74aeacb97dc0cd893ce475f3f5fc-w:823-h:1034-l:29602-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1616627561950-9f746e330187?auto=format&fit=crop&w=900&q=80",
     },
     {
-        id: "fallback-cereal-bowls",
-        name: "The Cereal Bowls",
-        price: 55000,
+        id: "fallback-dining-chair",
+        name: "Ghế ăn Vienna",
+        description: "Ghế gỗ thanh mảnh, dễ phối với bàn ăn và bàn làm việc.",
+        price: 1250000,
         stock: 9,
+        sold: 22,
         imageUrl:
-            "https://content.pancake.vn/web-media/59/fc/72/63/b9dc3f4abc452f106d33f01b56dc4a46813dd7e2c74da43fbd9b7ea4-w:823-h:1034-l:13324-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?auto=format&fit=crop&w=900&q=80",
     },
     {
-        id: "fallback-mugs",
-        name: "The Mugs",
-        price: 75000,
+        id: "fallback-storage-cabinet",
+        name: "Kệ tủ Oakline",
+        description: "Kệ tủ lưu trữ gỗ sáng màu, phù hợp phòng khách và góc làm việc.",
+        price: 3600000,
         stock: 7,
+        sold: 11,
         imageUrl:
-            "https://content.pancake.vn/web-media/38/c4/f5/ae/9988c59ae486dc94ba0d5954d275ab62046838ddc54d7389955febb8-w:823-h:1034-l:13322-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1594026112284-02bb6f3352fe?auto=format&fit=crop&w=900&q=80",
     },
     {
-        id: "fallback-everything-bowls",
-        name: "The Everything Bowls",
-        price: 45000,
+        id: "fallback-wood-bed",
+        name: "Giường gỗ Minimal",
+        description: "Giường ngủ gỗ tự nhiên, thiết kế thấp và gọn cho phòng ngủ ấm áp.",
+        price: 6900000,
         stock: 16,
+        sold: 8,
         imageUrl:
-            "https://content.pancake.vn/web-media/c4/2e/6c/f8/193b233a974e0d8496864dcc7347600e228a72082b8b0c836a4dcba1-w:823-h:1034-l:15118-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
     },
     {
-        id: "fallback-serving-set",
-        name: "Serving Set",
-        price: 105000,
+        id: "fallback-coffee-table",
+        name: "Bàn trà Mori",
+        description: "Bàn trà gỗ thấp, mặt vuông gọn đẹp cho phòng khách.",
+        price: 2400000,
         stock: 6,
+        sold: 15,
         imageUrl:
-            "https://content.pancake.vn/web-media/12/be/3b/b9/bdd8929ccb14e2aa64fdecc4e2fa4876c53fa189c1cd9e8e51998429-w:823-h:1034-l:11624-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1532372320572-cda25653a26d?auto=format&fit=crop&w=900&q=80",
     },
     {
-        id: "fallback-pasta-bowls",
-        name: "The Pasta Bowls",
-        price: 69000,
+        id: "fallback-wood-sofa",
+        name: "Sofa gỗ Nordic",
+        description: "Sofa khung gỗ, đệm vải trung tính cho phòng khách tối giản.",
+        price: 7800000,
         stock: 10,
+        sold: 9,
         imageUrl:
-            "https://content.pancake.vn/web-media/67/fb/13/df/d805f85f506f8c139e71c61e80cb5066678e04705bfc68dc38d84820-w:823-h:1034-l:11222-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=900&q=80",
     },
     {
-        id: "fallback-flatware",
-        name: "Flatware Set",
-        price: 230000,
+        id: "fallback-shoe-cabinet",
+        name: "Tủ giày Modern",
+        description: "Tủ giày gỗ nhiều ngăn, giữ lối vào nhà gọn gàng.",
+        price: 3100000,
         stock: 8,
+        sold: 13,
         imageUrl:
-            "https://content.pancake.vn/web-media/5e/3d/fc/36/e3a202fb971d2ef476b26138ef11043e52e4078479af7fabbc10295f-w:823-h:1034-l:36250-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=900&q=80",
     },
     {
-        id: "fallback-glassware",
-        name: "Glassware Set",
-        price: 125000,
+        id: "fallback-nightstand",
+        name: "Tủ đầu giường Lira",
+        description: "Tủ nhỏ cạnh giường với vân gỗ ấm và ngăn kéo tiện dụng.",
+        price: 1750000,
         stock: 14,
+        sold: 10,
         imageUrl:
-            "https://content.pancake.vn/1/s617x776/fwebp90/d2/18/a3/a7/7edb62840aa27de65bc873672bd4287bdb449a4a89014b9824139ac2-w:823-h:1034-l:58450-t:image/webp.webp",
+            "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=900&q=80",
     },
 ];
 
@@ -227,9 +226,62 @@ function ProductSkeletonGrid({ count = 8 }) {
 const getProductImage = (product, fallbackImage) =>
     product?.imageUrl || (Array.isArray(product?.images) && product.images[0]) || fallbackImage;
 
+const normalizeText = (value = "") =>
+    String(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase();
+
 const matchesCategory = (product, category) => {
-    const haystack = `${product.name || ""} ${product.description || ""}`.toLowerCase();
-    return category.keywords.some((keyword) => haystack.includes(keyword));
+    const haystack = normalizeText(`${product.name || ""} ${product.description || ""}`);
+    return category.keywords.some((keyword) => haystack.includes(normalizeText(keyword)));
+};
+
+const createCollectionCards = (products) => {
+    const productsWithImages = products.filter((product) => getProductImage(product));
+    const newest = [...productsWithImages].sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+    );
+    const bestSellers = [...productsWithImages].sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0));
+    const inStock = productsWithImages.filter((product) => Number(product.stock || 0) > 0);
+    const premium = [...productsWithImages].sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+
+    return [
+        {
+            key: "new-arrivals",
+            title: "Hàng mới",
+            subtitle: "Vừa cập nhật",
+            count: newest.length,
+            image: getProductImage(newest[0], categoryDefinitions[0].fallbackImage),
+            href: "/products",
+        },
+        {
+            key: "best-sellers",
+            title: "Bán chạy",
+            subtitle: "Được chọn nhiều",
+            count: bestSellers.length,
+            image: getProductImage(bestSellers[0], categoryDefinitions[1].fallbackImage),
+            href: "/products?search=",
+        },
+        {
+            key: "in-stock",
+            title: "Có sẵn",
+            subtitle: "Sẵn sàng giao",
+            count: inStock.length,
+            image: getProductImage(inStock[0], categoryDefinitions[2].fallbackImage),
+            href: "/products",
+        },
+        {
+            key: "premium-wood",
+            title: "Nội thất gỗ",
+            subtitle: "Chọn lọc DPWOOD",
+            count: premium.length,
+            image: getProductImage(premium[0], categoryDefinitions[3].fallbackImage),
+            href: "/products",
+        },
+    ].filter((card) => card.count > 0 && card.image);
 };
 
 const formatCompactCurrency = (value) => {
@@ -249,11 +301,42 @@ const getDaysLeft = (expiryDate) => {
     return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)));
 };
 
+const CLAIMED_COUPONS_KEY = "dpwoodClaimedCouponKeys";
+
+const getCouponClaimKeys = (coupon) =>
+    [coupon?.id, coupon?.code].filter(Boolean).map((value) => String(value));
+
+const readStoredClaimedCoupons = () => {
+    if (typeof window === "undefined") return new Set();
+    try {
+        const rawValue = localStorage.getItem(CLAIMED_COUPONS_KEY) || "[]";
+        return new Set(JSON.parse(rawValue).map(String));
+    } catch {
+        return new Set();
+    }
+};
+
+const writeStoredClaimedCoupons = (keys) => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(CLAIMED_COUPONS_KEY, JSON.stringify([...keys]));
+};
+
+const getClaimedKeysFromWallet = (walletItems = []) => {
+    const keys = new Set();
+    walletItems.forEach((item) => {
+        [item.couponId, item.Coupon?.id, item.Coupon?.code].filter(Boolean).forEach((value) => {
+            keys.add(String(value));
+        });
+    });
+    return keys;
+};
+
 export default function LatestProducts() {
     const { message } = App.useApp();
     const [products, setProducts] = useState([]);
     const [blogs, setBlogs] = useState([]);
     const [coupons, setCoupons] = useState([]);
+    const [claimedCouponIds, setClaimedCouponIds] = useState(new Set());
     const [claimingCouponId, setClaimingCouponId] = useState("");
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -261,6 +344,9 @@ export default function LatestProducts() {
     const fetchHomepageData = useCallback(async () => {
         try {
             setLoading(true);
+            const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+            const storedClaimedCoupons = readStoredClaimedCoupons();
+            setClaimedCouponIds(storedClaimedCoupons);
             const [productResponse, blogResponse, couponResponse] = await Promise.allSettled([
                 api.get("/products", { timeout: 3500 }),
                 api.get("/blogs?public=true", { timeout: 3500 }),
@@ -281,6 +367,18 @@ export default function LatestProducts() {
             if (couponResponse.status === "fulfilled") {
                 setCoupons((couponResponse.value.data || []).slice(0, 3));
             }
+
+            if (token) {
+                const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
+                const nextClaimedCoupons = new Set([
+                    ...storedClaimedCoupons,
+                    ...getClaimedKeysFromWallet(myCouponResponse.data || []),
+                ]);
+                setClaimedCouponIds(nextClaimedCoupons);
+                writeStoredClaimedCoupons(nextClaimedCoupons);
+            } else {
+                setClaimedCouponIds(storedClaimedCoupons);
+            }
         } finally {
             setLoading(false);
         }
@@ -300,28 +398,68 @@ export default function LatestProducts() {
         const expanded = productSource.length >= 12 ? productSource : [...productSource, ...fallbackProducts];
         return expanded.slice(0, 12);
     }, [productSource]);
-    const categoryCards = useMemo(
-        () =>
-            categoryDefinitions.map((category) => {
+    const categoryCards = useMemo(() => {
+        const matchedCards = categoryDefinitions
+            .map((category) => {
                 const matchedProducts = productSource.filter((product) => matchesCategory(product, category));
-                const coverProduct = matchedProducts[0] || productSource[0];
+                const coverProduct =
+                    matchedProducts.find((product) => getProductImage(product)) || matchedProducts[0];
 
                 return {
                     ...category,
+                    subtitle: "Xem danh mục",
                     count: matchedProducts.length,
                     image: getProductImage(coverProduct, category.fallbackImage),
+                    href: `/products?search=${encodeURIComponent(category.search)}`,
                 };
-            }),
-        [productSource],
-    );
+            })
+            .filter((category) => category.count > 0);
+
+        if (matchedCards.length >= 3) return matchedCards.slice(0, 4);
+
+        const collectionCards = createCollectionCards(productSource);
+        const existingKeys = new Set(matchedCards.map((card) => card.key));
+        const mergedCards = [
+            ...matchedCards,
+            ...collectionCards.filter((card) => !existingKeys.has(card.key)),
+        ];
+
+        return mergedCards.slice(0, 4);
+    }, [productSource]);
     const blogSource = blogs.length ? blogs : fallbackBlogs;
     const couponSource = coupons.length ? coupons.slice(0, 3) : fallbackCoupons;
+    const heroProducts = useMemo(
+        () =>
+            [...productSource]
+                .filter((product) => getProductImage(product))
+                .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
+                .slice(0, 3)
+                .map((product, index) => ({
+                    key: product.id || `${product.name}-${index}`,
+                    product,
+                    title: product.name || "DPWOOD Collection",
+                    copy:
+                        product.description ||
+                        "Selected wooden furniture with clean lines, warm materials and everyday comfort.",
+                    image: getProductImage(product),
+                    price: Number(product.price || 0),
+                })),
+        [productSource],
+    );
 
     const goToProduct = (product) => {
         router.push(usingFallbackProducts ? "/products" : `/products/${product.id}`);
     };
 
     const handleCouponAction = async (coupon) => {
+        const couponClaimKeys = getCouponClaimKeys(coupon);
+        const isCouponClaimed = couponClaimKeys.some((key) => claimedCouponIds.has(key));
+
+        if (isCouponClaimed) {
+            message.info(`B?n ?? l?y m? ${coupon.code} r?i.`);
+            return;
+        }
+
         try {
             await navigator.clipboard?.writeText(coupon.code);
         } catch {
@@ -329,19 +467,40 @@ export default function LatestProducts() {
         }
 
         const token = localStorage.getItem("token");
-        if (!token || String(coupon.id).startsWith("fallback-")) {
-            message.success(`Copied code ${coupon.code}`);
-            router.push(token ? "/cart" : "/login");
+        if (!token) {
+            message.success(`?? sao ch?p m? ${coupon.code}`);
+            message.warning("Vui l?ng ??ng nh?p ?? l?u m? v?o t?i kho?n.");
+            return;
+        }
+
+        if (String(coupon.id).startsWith("fallback-")) {
+            setClaimedCouponIds((prev) => {
+                const next = new Set([...prev, ...couponClaimKeys]);
+                writeStoredClaimedCoupons(next);
+                return next;
+            });
+            message.success(`?? l?u m? ${coupon.code}`);
             return;
         }
 
         try {
             setClaimingCouponId(coupon.id);
             await api.post("/coupons/claim", { couponId: coupon.id });
-            message.success(`Saved code ${coupon.code}`);
-            router.push("/cart");
+            setClaimedCouponIds((prev) => {
+                const next = new Set([...prev, ...couponClaimKeys]);
+                writeStoredClaimedCoupons(next);
+                return next;
+            });
+            message.success(`?? l?y m? ${coupon.code}`);
         } catch (error) {
-            message.warning(error.response?.data?.message || `Copied code ${coupon.code}`);
+            message.warning(error.response?.data?.message || `?? sao ch?p m? ${coupon.code}`);
+            const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
+            const nextClaimedCoupons = new Set([
+                ...readStoredClaimedCoupons(),
+                ...getClaimedKeysFromWallet(myCouponResponse.data || []),
+            ]);
+            setClaimedCouponIds(nextClaimedCoupons);
+            writeStoredClaimedCoupons(nextClaimedCoupons);
         } finally {
             setClaimingCouponId("");
         }
@@ -351,37 +510,58 @@ export default function LatestProducts() {
         <main className="webcake-home">
             <section className="webcake-hero">
                 <Carousel autoplay autoplaySpeed={4200} dots draggable pauseOnHover>
-                    {heroSlides.map((slide) => (
-                        <div key={slide.title}>
+                    {heroProducts.map((slide) => (
+                        <div key={slide.key}>
                             <div
                                 className="webcake-hero-slide"
                                 style={{ "--webcake-hero-image": `url(${slide.image})` }}
                             >
                                 <div className="webcake-hero-copy">
+                                    <span className="webcake-hero-eyebrow">Featured Product</span>
                                     <Title level={1}>{slide.title}</Title>
-                                    <Paragraph>{slide.copy}</Paragraph>
-                                    <Button type="primary" onClick={() => router.push("/products")}>
+                                    <Paragraph className="dp-line-clamp-2">{slide.copy}</Paragraph>
+                                    <Text className="webcake-hero-price">
+                                        {slide.price.toLocaleString("vi-VN")}đ
+                                    </Text>
+                                    <Button type="primary" onClick={() => goToProduct(slide.product)}>
                                         SHOP NOW
                                     </Button>
                                 </div>
                             </div>
                         </div>
                     ))}
+                    {!heroProducts.length && (
+                        <div>
+                            <div className="webcake-hero-slide webcake-hero-empty">
+                                <div className="webcake-hero-copy">
+                                    <span className="webcake-hero-eyebrow">DPWOOD Collection</span>
+                                    <Title level={1}>Wooden furniture for everyday living</Title>
+                                    <Paragraph>Browse curated tables, seating, storage and bedroom pieces.</Paragraph>
+                                    <Button type="primary" onClick={() => router.push("/products")}>
+                                        SHOP NOW
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </Carousel>
             </section>
 
             <section className="webcake-section webcake-category-section">
                 <div className="webcake-container">
-                    <Title level={2} className="webcake-section-title">
-                        Shop By Category
-                    </Title>
+                    <div className="webcake-section-head">
+                        <span className="dp-eyebrow">Danh mục</span>
+                        <Title level={2} className="webcake-section-title">
+                            Explore DPWOOD
+                        </Title>
+                    </div>
                     <Row gutter={[30, 30]}>
                         {categoryCards.map((category) => (
                             <Col xs={24} sm={12} lg={6} key={category.key}>
                                 <button
                                     type="button"
                                     className="webcake-category-card"
-                                    onClick={() => router.push(`/products?search=${encodeURIComponent(category.search)}`)}
+                                    onClick={() => router.push(category.href)}
                                 >
                                     <img src={category.image} alt={category.title} />
                                     <span className="webcake-category-label">
@@ -390,8 +570,9 @@ export default function LatestProducts() {
                                         </span>
                                         <strong>{category.title}</strong>
                                         <small>
-                                            {category.count || 0} {category.count === 1 ? "item" : "items"}
+                                            {category.count} sản phẩm
                                         </small>
+                                        <em>{category.subtitle}</em>
                                     </span>
                                 </button>
                             </Col>
@@ -457,9 +638,18 @@ export default function LatestProducts() {
                         Special Offers
                     </Title>
                     <Row gutter={[24, 24]} justify="center">
-                        {couponSource.map((coupon) => (
-                            <Col xs={24} md={8} key={coupon.id}>
-                                <article className="webcake-coupon-card">
+                        {couponSource.map((coupon) => {
+                            const isCouponClaimed = getCouponClaimKeys(coupon).some((key) =>
+                                claimedCouponIds.has(key),
+                            );
+
+                            return (
+                                <Col xs={24} md={8} key={coupon.id}>
+                                <article
+                                    className={`webcake-coupon-card ${
+                                        isCouponClaimed ? "webcake-coupon-card-claimed" : ""
+                                    }`}
+                                >
                                     <div className="webcake-coupon-value">
                                         <GiftOutlined />
                                         <strong>{getCouponValue(coupon)}</strong>
@@ -485,16 +675,19 @@ export default function LatestProducts() {
                                             )}
                                         </div>
                                         <Button
-                                            type="primary"
+                                            type={isCouponClaimed ? "default" : "primary"}
+                                            icon={isCouponClaimed ? <CheckCircleOutlined /> : null}
+                                            disabled={isCouponClaimed}
                                             loading={claimingCouponId === coupon.id}
                                             onClick={() => handleCouponAction(coupon)}
                                         >
-                                            SAVE CODE
+                                            {isCouponClaimed ? "\u0110\u00c3 L\u1ea4Y M\u00c3" : "SAVE CODE"}
                                         </Button>
                                     </div>
                                 </article>
-                            </Col>
-                        ))}
+                                </Col>
+                            );
+                        })}
                     </Row>
                 </div>
             </section>
@@ -521,6 +714,10 @@ export default function LatestProducts() {
                     )}
                 </div>
             </section>
+
+            <div className="webcake-container">
+                <div className="webcake-section-divider" aria-hidden="true" />
+            </div>
 
             <section className="webcake-section webcake-blog-section">
                 <div className="webcake-container">
