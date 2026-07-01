@@ -1,10 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Typography, Table, Tag, Spin, message, Empty } from "antd";
+import { App, Row, Col, Card, Statistic, Typography, Table, Tag, Spin, Empty } from "antd";
 import {
     ShoppingCartOutlined,
     UserOutlined,
-    DollarCircleOutlined,
     InboxOutlined,
     WarningOutlined,
     CheckCircleOutlined,
@@ -24,6 +23,7 @@ import {
 const { Title, Text } = Typography;
 
 export default function AdminDashboard() {
+    const { message } = App.useApp();
     const [data, setData] = useState({
         products: [],
         users: [],
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [message]);
 
     // --- LOGIC TÍNH TOÁN ---
     const successfulOrders = data.orders.filter((order) => {

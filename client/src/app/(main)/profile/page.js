@@ -1,17 +1,19 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Card, Tabs, Spin, message } from "antd";
+
+import React, { useCallback, useEffect, useState } from "react";
+import { App, Card, Tabs, Spin, Typography } from "antd";
 import { ShoppingOutlined, HistoryOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 import { useRouter } from "next/navigation";
-
-// Nhúng các component con đã chia nhỏ
 import UserInfo from "./components/UserInfo";
 import EditProfileModal from "./components/EditProfileModal";
 import MyOrders from "./components/MyOrders";
 import TransactionHistory from "./components/TransactionHistory";
 
+const { Title, Text } = Typography;
+
 export default function UserProfilePage() {
+    const { message } = App.useApp();
     const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
     const [logs, setLogs] = useState([]);
@@ -19,7 +21,7 @@ export default function UserProfilePage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const router = useRouter();
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const [userRes, ordersRes, logsRes] = await Promise.all([
@@ -34,7 +36,7 @@ export default function UserProfilePage() {
         } catch (error) {
             console.error("Lỗi tải hồ sơ:", error);
             if (error.response?.status === 401) {
-                message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!");
+                message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.");
                 localStorage.clear();
                 router.push("/login");
             } else {
@@ -43,16 +45,16 @@ export default function UserProfilePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [message, router]);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get("status") === "PAID" || params.get("cancel") === "false") {
-            message.success("🎉 Thanh toán thành công! Hệ thống đã ghi nhận đơn hàng.");
+            message.success("Thanh toán thành công. Hệ thống đã ghi nhận đơn hàng.");
             window.history.replaceState(null, "", "/profile");
         }
         fetchData();
-    }, []);
+    }, [fetchData, message]);
 
     const tabItems = [
         {
@@ -77,45 +79,32 @@ export default function UserProfilePage() {
 
     if (loading) {
         return (
-            <div
-                style={{
-                    height: "80vh",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
-            >
-                <Spin size="large" description="Đang tải dữ liệu hồ sơ..." />
+            <div className="dp-page" style={{ display: "grid", placeItems: "center" }}>
+                <Spin size="large" />
             </div>
         );
     }
 
     return (
-        <div style={{ minHeight: "100vh" }}>
-            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-                {/* Component 1: Cụm thông tin người dùng */}
-                <Card
-                    variant="borderless"
-                    style={{
-                        marginBottom: 24,
-                        borderRadius: "16px",
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-                    }}
-                    styles={{ body: { padding: 0 } }}
-                >
+        <div className="dp-page">
+            <div className="dp-container">
+                <div style={{ marginBottom: 22 }}>
+                    <span className="dp-eyebrow">Tài khoản</span>
+                    <Title level={1} className="dp-section-title">
+                        Hồ sơ cá nhân
+                    </Title>
+                    <Text className="dp-muted">Quản lý thông tin, đơn hàng và hoạt động tài khoản.</Text>
+                </div>
+
+                <Card variant="outlined" className="dp-panel" style={{ marginBottom: 22 }}>
                     <UserInfo user={user} onOpenEdit={() => setIsEditModalOpen(true)} />
                 </Card>
 
-                {/* Component 2 & 3: Tabs chứa Bảng Đơn Hàng và Bảng Lịch Sử */}
-                <Card
-                    variant="borderless"
-                    style={{ borderRadius: "12px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}
-                >
+                <Card variant="outlined" className="dp-panel">
                     <Tabs defaultActiveKey="orders" size="large" items={tabItems} />
                 </Card>
             </div>
 
-            {/* Component 4: Modal Cài đặt hồ sơ */}
             <EditProfileModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}

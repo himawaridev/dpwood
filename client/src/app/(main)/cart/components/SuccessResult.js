@@ -1,38 +1,37 @@
 import React from "react";
-import { Card, Result, Button } from "antd";
+import { Card, Result, Button, Space } from "antd";
+import { HomeOutlined, ProfileOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
 export default function SuccessResult({ orderCode }) {
     const router = useRouter();
 
     return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                minHeight: "60vh",
-                background: "#f0f2f5",
-            }}
-        >
-            <Card style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.05)" }}>
+        <div className="dp-page" style={{ display: "grid", placeItems: "center" }}>
+            <Card className="dp-panel" style={{ maxWidth: 620, width: "100%" }}>
                 <Result
                     status="success"
-                    title="Đặt hàng thành công!"
-                    subTitle={`Mã đơn hàng: #${orderCode}. Hóa đơn điện tử sẽ được gửi về email của bạn.`}
-                    extra={[
-                        <Button
-                            type="primary"
-                            key="home"
-                            onClick={() => router.push("/")}
-                            size="large"
-                        >
-                            Về trang chủ
-                        </Button>,
-                        <Button key="buy" onClick={() => router.push("/profile")} size="large">
-                            Xem đơn hàng
-                        </Button>,
-                    ]}
+                    title="Đặt hàng thành công"
+                    subTitle={`Mã đơn hàng: #${orderCode}. Hóa đơn điện tử sẽ được gửi về email tài khoản của bạn.`}
+                    extra={
+                        <Space wrap>
+                            <Button
+                                type="primary"
+                                icon={<HomeOutlined />}
+                                onClick={() => router.push("/")}
+                                size="large"
+                            >
+                                Về trang chủ
+                            </Button>
+                            <Button
+                                icon={<ProfileOutlined />}
+                                onClick={() => router.push("/profile")}
+                                size="large"
+                            >
+                                Xem đơn hàng
+                            </Button>
+                        </Space>
+                    }
                 />
             </Card>
         </div>

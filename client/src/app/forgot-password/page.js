@@ -1,6 +1,7 @@
-// src/app/forgot-password/page.js
 "use client";
-import { Form, Input, Button, Card, message, Typography } from "antd";
+
+import { App, Form, Input, Button, Card, Typography } from "antd";
+import { MailOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/utils/axios";
@@ -8,58 +9,46 @@ import api from "@/utils/axios";
 const { Title, Text } = Typography;
 
 export default function ForgotPasswordPage() {
+    const { message } = App.useApp();
     const router = useRouter();
 
     const onFinish = async (values) => {
         try {
-            // Gửi đồng thời vào 3 trường để khớp với logic [Op.or] dưới Backend của bạn
             await api.post("/auth/forgot", {
                 email: values.login,
                 username: values.login,
                 phone: values.login,
             });
 
-            message.success("Đã gửi yêu cầu! Vui lòng kiểm tra email của bạn.");
+            message.success("Đã gửi yêu cầu. Vui lòng kiểm tra email của bạn.");
             router.push("/login");
         } catch (error) {
-            message.error(error.response?.data?.message || "Không tìm thấy tài khoản này!");
+            message.error(error.response?.data?.message || "Không tìm thấy tài khoản này.");
         }
     };
 
     return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100vh",
-                background: "#f0f2f5",
-            }}
-        >
-            <Card style={{ width: 400, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-                <Title level={3} style={{ textAlign: "center", marginBottom: 8 }}>
-                    Quên Mật Khẩu
+        <div className="dp-page" style={{ display: "grid", placeItems: "center" }}>
+            <Card className="dp-panel" style={{ width: "min(100%, 440px)" }}>
+                <Title level={3} style={{ marginBottom: 8 }}>
+                    Khôi phục mật khẩu
                 </Title>
-                <div style={{ textAlign: "center", marginBottom: 24 }}>
-                    <Text type="secondary">Nhập tài khoản của bạn để nhận liên kết khôi phục</Text>
-                </div>
+                <Text className="dp-muted">Nhập tài khoản đã đăng ký để nhận liên kết khôi phục.</Text>
 
-                <Form layout="vertical" onFinish={onFinish}>
+                <Form layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
                     <Form.Item
-                        label="Email / Username / SĐT"
+                        label="Email / Username / Số điện thoại"
                         name="login"
-                        rules={[{ required: true, message: "Vui lòng nhập thông tin!" }]}
+                        rules={[{ required: true, message: "Vui lòng nhập thông tin" }]}
                     >
                         <Input size="large" placeholder="Nhập tài khoản đã đăng ký" />
                     </Form.Item>
 
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" size="large" block>
-                            Gửi liên kết khôi phục
-                        </Button>
-                    </Form.Item>
+                    <Button type="primary" htmlType="submit" size="large" block icon={<MailOutlined />}>
+                        Gửi liên kết khôi phục
+                    </Button>
 
-                    <div style={{ textAlign: "center" }}>
+                    <div style={{ textAlign: "center", marginTop: 16 }}>
                         <Link href="/login">Quay lại đăng nhập</Link>
                     </div>
                 </Form>

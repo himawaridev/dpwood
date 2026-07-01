@@ -1,88 +1,95 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Typography, message, Form } from "antd";
+
+import { useCallback, useEffect, useState } from "react";
+import { App, Typography, Form, Steps } from "antd";
 import { ShoppingCartOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
-
-// Import các Component đã chia nhỏ
 import SuccessResult from "./components/SuccessResult";
 import AddressSection from "./components/AddressSection";
 import CartTable from "./components/CartTable";
 import ConfirmOrderModal from "./components/ConfirmOrderModal";
 import PaymentQRModal from "./components/PaymentQRModal";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
+
+const normalizePhoneNumber = (countryCode = "+84", rawPhone = "") => {
+    const digits = String(rawPhone).replace(/\D/g, "");
+
+    if (countryCode === "+84") {
+        let nationalNumber = digits;
+        if (nationalNumber.startsWith("84")) nationalNumber = nationalNumber.slice(2);
+        if (nationalNumber.startsWith("0")) nationalNumber = nationalNumber.slice(1);
+        return `${countryCode}${nationalNumber}`;
+    }
+
+    return `${countryCode}${digits}`;
+};
 
 export default function CartPage() {
+    const { message } = App.useApp();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState("COD");
     const [payosData, setPayosData] = useState(null);
-
+    const [discountCode, setDiscountCode] = useState("");
+    const [discountData, setDiscountData] = useState({ percentage: 0, amount: 0 });
     const [isQrModalVisible, setIsQrModalVisible] = useState(false);
     const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
-
     const [isAuth, setIsAuth] = useState(false);
-    const [userEmail, setUserEmail] = useState("");
     const [orderCode, setOrderCode] = useState("");
     const [checkingPayment, setCheckingPayment] = useState(false);
-
     const [addresses, setAddresses] = useState([]);
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
     const [isAddingAddress, setIsAddingAddress] = useState(false);
     const [addressForm] = Form.useForm();
-
-    // Coupon states
-    const [couponCode, setCouponCode] = useState("");
-    const [appliedCoupon, setAppliedCoupon] = useState(null);
-    const [couponLoading, setCouponLoading] = useState(false);
-    const [myCoupons, setMyCoupons] = useState([]);
-
     const router = useRouter();
 
-    const fetchMyCoupons = async () => {
+    const fetchAddresses = useCallback(async () => {
         try {
-            const res = await api.get("/coupons/my");
-            setMyCoupons(res.data);
-        } catch (error) {
-            console.error("Lỗi tải mã giảm giá:", error);
+            const res = await api.get("/addresses");
+            setAddresses(res.data);
+            if (res.data.length > 0) setSelectedAddress(res.data[0]);
+        } catch {
+            message.error("Không thể tải địa chỉ giao hàng.");
         }
-    };
+    }, [message]);
 
     useEffect(() => {
         const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
         setCartItems(storedCart);
 
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const token = localStorage.getItem("token");
         if (token) {
             setIsAuth(true);
-            api.get("/users/me")
-                .then(res => setUserEmail(res.data.email))
-                .catch(() => setUserEmail(""));
             fetchAddresses();
-            fetchMyCoupons();
         }
-    }, []);
-
-    const fetchAddresses = async () => {
-        try {
-            const res = await api.get("/addresses");
-            setAddresses(res.data);
-            if (res.data.length > 0) setSelectedAddress(res.data[0]);
-        } catch (error) {}
-    };
+    }, [fetchAddresses]);
 
     const handleSaveNewAddress = async (values) => {
         try {
-            await api.post("/addresses", { ...values, isDefault: true });
-            message.success("Đã thêm địa chỉ mới!");
+            const fullAddress = [
+                values.streetAddress,
+                values.wardName,
+                values.districtName,
+                values.provinceName,
+            ]
+                .filter(Boolean)
+                .join(", ");
+
+            await api.post("/addresses", {
+                recipientName: values.recipientName,
+                phoneNumber: normalizePhoneNumber(values.phoneCountryCode, values.phoneLocalNumber),
+                fullAddress,
+                isDefault: true,
+            });
+            message.success("Đã thêm địa chỉ mới.");
             setIsAddingAddress(false);
             addressForm.resetFields();
             fetchAddresses();
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi thêm địa chỉ");
         }
     };
@@ -90,10 +97,10 @@ export default function CartPage() {
     const handleDeleteAddress = async (id) => {
         try {
             await api.delete(`/addresses/${id}`);
-            message.success("Đã xóa địa chỉ thành công!");
+            message.success("Đã xóa địa chỉ.");
             if (selectedAddress?.id === id) setSelectedAddress(null);
             fetchAddresses();
-        } catch (error) {
+        } catch {
             message.error("Không thể xóa địa chỉ lúc này.");
         }
     };
@@ -101,18 +108,14 @@ export default function CartPage() {
     const saveCart = (newCart) => {
         setCartItems(newCart);
         localStorage.setItem("cart", JSON.stringify(newCart));
-        // Reset coupon khi thay đổi giỏ hàng vì tổng tiền thay đổi
-        if (appliedCoupon) {
-            setAppliedCoupon(null);
-            setCouponCode("");
-            message.info("Giỏ hàng đã thay đổi, vui lòng áp dụng lại mã giảm giá.");
-        }
+        window.dispatchEvent(new Event("cart-updated"));
     };
 
-    const handleQuantityChange = (value, productId) => {
+    const handleQuantityChange = (productId, value) => {
+        const safeValue = Math.max(1, Number(value || 1));
         saveCart(
             cartItems.map((item) =>
-                item.productId === productId ? { ...item, quantity: value } : item,
+                item.productId === productId ? { ...item, quantity: safeValue } : item,
             ),
         );
     };
@@ -123,51 +126,16 @@ export default function CartPage() {
     };
 
     const totalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-
-    // ===== COUPON LOGIC =====
-    const handleApplyCoupon = async () => {
-        if (!couponCode.trim()) {
-            message.warning("Vui lòng nhập mã giảm giá");
-            return;
-        }
-        if (!isAuth) {
-            message.warning("Vui lòng đăng nhập để sử dụng mã giảm giá!");
-            return;
-        }
-
-        try {
-            setCouponLoading(true);
-            const res = await api.post("/coupons/apply", {
-                code: couponCode.trim(),
-                totalAmount: totalPrice,
-            });
-            setAppliedCoupon(res.data);
-            message.success(res.data.message || "Áp dụng mã giảm giá thành công!");
-        } catch (error) {
-            message.error(error.response?.data?.message || "Mã giảm giá không hợp lệ");
-            setAppliedCoupon(null);
-        } finally {
-            setCouponLoading(false);
-        }
-    };
-
-    const handleRemoveCoupon = () => {
-        setAppliedCoupon(null);
-        setCouponCode("");
-        message.info("Đã hủy mã giảm giá");
-    };
-
-    const discountAmount = appliedCoupon?.discountAmount || 0;
-    const finalPrice = totalPrice - discountAmount;
+    const finalPrice = Math.max(0, totalPrice - (discountData?.amount || 0));
 
     const handleCheckoutClick = () => {
         if (!isAuth) {
-            message.warning("Vui lòng đăng nhập để thanh toán!");
+            message.warning("Vui lòng đăng nhập để thanh toán.");
             router.push("/login");
             return;
         }
         if (!selectedAddress) {
-            message.error("Vui lòng chọn hoặc thêm địa chỉ giao hàng!");
+            message.error("Vui lòng chọn hoặc thêm địa chỉ giao hàng.");
             return;
         }
         setIsConfirmModalVisible(true);
@@ -181,13 +149,13 @@ export default function CartPage() {
                     productId: item.productId,
                     quantity: item.quantity,
                 })),
-                paymentMethod: paymentMethod,
+                paymentMethod,
                 shippingInfo: {
                     recipientName: selectedAddress.recipientName,
                     phoneNumber: selectedAddress.phoneNumber,
                     fullAddress: selectedAddress.fullAddress,
                 },
-                couponCode: appliedCoupon?.couponCode || null,
+                discountCode,
             };
 
             const response = await api.post("/orders/checkout", payload);
@@ -196,16 +164,17 @@ export default function CartPage() {
             setOrderCode(response.data.orderCode);
 
             if (paymentMethod === "QR") {
-                setPayosData(response.data.paymentLink);
+                setPayosData(response.data.payosData || response.data.paymentLink || null);
                 setIsQrModalVisible(true);
             } else {
                 localStorage.removeItem("cart");
+                window.dispatchEvent(new Event("cart-updated"));
                 setCartItems([]);
                 setIsSuccess(true);
             }
         } catch (error) {
             message.error(error.response?.data?.message || "Lỗi khi tạo đơn hàng");
-            setIsConfirmModalVisible(true);
+            setIsConfirmModalVisible(false);
         } finally {
             setLoading(false);
         }
@@ -216,15 +185,16 @@ export default function CartPage() {
             setCheckingPayment(true);
             const response = await api.get(`/orders/${orderCode}/status`);
             if (response.data.status === "PAID") {
-                message.success("Nhận tiền thành công!");
+                message.success("Thanh toán thành công.");
                 setIsQrModalVisible(false);
                 localStorage.removeItem("cart");
+                window.dispatchEvent(new Event("cart-updated"));
                 setCartItems([]);
                 setIsSuccess(true);
             } else {
-                message.warning("Hệ thống chưa nhận được tiền. Vui lòng chờ vài giây!");
+                message.warning("Hệ thống chưa nhận được tiền. Vui lòng chờ thêm vài giây.");
             }
-        } catch (error) {
+        } catch {
             message.error("Lỗi kết nối");
         } finally {
             setCheckingPayment(false);
@@ -236,7 +206,7 @@ export default function CartPage() {
             await api.put(`/orders/${orderCode}/cancel`);
             setIsQrModalVisible(false);
             message.info("Đã hủy thanh toán. Giỏ hàng của bạn được giữ nguyên.");
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi hủy giao dịch");
         }
     };
@@ -244,17 +214,35 @@ export default function CartPage() {
     if (isSuccess) return <SuccessResult orderCode={orderCode} />;
 
     return (
-        <div style={{ minHeight: "100vh" }}>
-            <div style={{ maxWidth: 1000, margin: "0 auto", width: "100%" }}>
-                <Title level={2} style={{ color: "#001529", marginBottom: 24 }}>
-                    <ShoppingCartOutlined style={{ color: "#1677ff", marginRight: 12 }} />
-                    Giỏ hàng của bạn
-                </Title>
+        <div className="dp-page">
+            <div className="dp-container" style={{ maxWidth: 1060 }}>
+                <section style={{ marginBottom: 22 }}>
+                    <span className="dp-eyebrow">Checkout</span>
+                    <Title level={1} className="dp-section-title">
+                        <ShoppingCartOutlined style={{ color: "var(--dp-primary)", marginRight: 10 }} />
+                        Giỏ hàng
+                    </Title>
+                    <Text className="dp-muted">
+                        Kiểm tra sản phẩm, địa chỉ và phương thức thanh toán trước khi chốt đơn.
+                    </Text>
+                </section>
+
+                {cartItems.length > 0 && (
+                    <Steps
+                        size="small"
+                        current={selectedAddress ? 1 : 0}
+                        style={{ marginBottom: 22 }}
+                        items={[
+                            { title: "Địa chỉ" },
+                            { title: "Giỏ hàng" },
+                            { title: "Xác nhận" },
+                        ]}
+                    />
+                )}
 
                 {cartItems.length > 0 && (
                     <AddressSection
                         isAuth={isAuth}
-                        userEmail={userEmail}
                         addresses={addresses}
                         selectedAddress={selectedAddress}
                         setSelectedAddress={setSelectedAddress}
@@ -277,15 +265,10 @@ export default function CartPage() {
                     totalPrice={totalPrice}
                     loading={loading}
                     handleCheckoutClick={handleCheckoutClick}
-                    couponCode={couponCode}
-                    setCouponCode={setCouponCode}
-                    appliedCoupon={appliedCoupon}
-                    couponLoading={couponLoading}
-                    handleApplyCoupon={handleApplyCoupon}
-                    handleRemoveCoupon={handleRemoveCoupon}
-                    discountAmount={discountAmount}
-                    finalPrice={finalPrice}
-                    myCoupons={myCoupons}
+                    discountCode={discountCode}
+                    setDiscountCode={setDiscountCode}
+                    discountData={discountData}
+                    setDiscountData={setDiscountData}
                 />
             </div>
 
@@ -297,10 +280,7 @@ export default function CartPage() {
                 selectedAddress={selectedAddress}
                 paymentMethod={paymentMethod}
                 cartItems={cartItems}
-                totalPrice={totalPrice}
-                appliedCoupon={appliedCoupon}
-                discountAmount={discountAmount}
-                finalPrice={finalPrice}
+                totalPrice={finalPrice}
             />
 
             <PaymentQRModal

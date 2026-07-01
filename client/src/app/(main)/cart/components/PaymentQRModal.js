@@ -15,8 +15,8 @@ export default function PaymentQRModal({
         <Modal
             title={
                 <Flex gap="small" align="center">
-                    <QrcodeOutlined style={{ color: "#1677ff" }} />
-                    Thanh toán tự động
+                    <QrcodeOutlined style={{ color: "var(--dp-primary)" }} />
+                    Thanh toán QR PayOS
                 </Flex>
             }
             open={isQrModalVisible}
@@ -24,12 +24,12 @@ export default function PaymentQRModal({
             closable={false}
             mask={{ closable: false }}
             centered
-            width={480}
+            width={500}
         >
-            <Flex vertical align="center" gap="large">
+            <Flex vertical align="center" gap={18}>
                 <Alert
-                    title="Duyệt đơn tự động trong 5 giây"
-                    description="Hệ thống PayOS sẽ ghi nhận và tự động xử lý ngay khi nhận được tiền."
+                    title="Hệ thống sẽ tự cập nhật khi PayOS xác nhận tiền"
+                    description="Sau khi chuyển khoản, bấm kiểm tra để cập nhật trạng thái đơn hàng."
                     type="info"
                     showIcon
                     style={{ width: "100%" }}
@@ -37,8 +37,8 @@ export default function PaymentQRModal({
                 <div
                     style={{
                         padding: 16,
-                        border: "1px solid #f0f0f0",
-                        borderRadius: 16,
+                        border: "1px solid var(--dp-soft-border)",
+                        borderRadius: 8,
                         background: "#fff",
                         textAlign: "center",
                         width: "100%",
@@ -47,107 +47,90 @@ export default function PaymentQRModal({
                     {payosData ? (
                         <Flex vertical align="center" gap="middle">
                             <Image
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payosData.qrCode)}`}
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payosData.qrCode || payosData.checkoutUrl || "")}`}
                                 width={220}
                                 preview={false}
+                                alt="Mã QR thanh toán"
                             />
                             <Divider plain style={{ margin: "8px 0" }}>
                                 <Text type="secondary" style={{ fontSize: 13 }}>
-                                    Hoặc chuyển khoản thủ công
+                                    Thông tin chuyển khoản
                                 </Text>
                             </Divider>
                             <div
                                 style={{
-                                    background: "#f9f9f9",
-                                    padding: "16px",
-                                    borderRadius: "12px",
+                                    background: "var(--dp-surface-muted)",
+                                    padding: 16,
+                                    borderRadius: 8,
                                     width: "100%",
                                     textAlign: "left",
                                 }}
                             >
                                 <Flex vertical gap="small">
-                                    <Flex justify="space-between" align="center">
-                                        <Text type="secondary">Ngân hàng:</Text>
-                                        <Text strong>Theo mã QR (Mã BIN: {payosData.bin})</Text>
+                                    <Flex justify="space-between" align="center" gap={12}>
+                                        <Text type="secondary">Ngân hàng</Text>
+                                        <Text strong>{payosData.bin ? `Mã BIN: ${payosData.bin}` : "Theo mã QR"}</Text>
                                     </Flex>
-                                    <Flex justify="space-between" align="center">
-                                        <Text type="secondary">Chủ tài khoản:</Text>
-                                        <Text strong>{payosData.accountName}</Text>
+                                    <Flex justify="space-between" align="center" gap={12}>
+                                        <Text type="secondary">Chủ tài khoản</Text>
+                                        <Text strong>{payosData.accountName || "PayOS"}</Text>
                                     </Flex>
-                                    <Flex justify="space-between" align="center">
-                                        <Text type="secondary">Số tài khoản:</Text>
-                                        <div style={{ textAlign: "right" }}>
-                                            <Text
-                                                strong
-                                                copyable={{ tooltips: ["Sao chép", "Đã chép"] }}
-                                                style={{ color: "#1677ff", fontSize: 15 }}
-                                            >
-                                                {payosData.accountNumber}
-                                            </Text>
-                                            <br />
-                                            <Text
-                                                type="secondary"
-                                                style={{ fontSize: 12, fontStyle: "italic" }}
-                                            >
-                                                (Tài khoản ảo tự động của đơn này)
-                                            </Text>
-                                        </div>
+                                    <Flex justify="space-between" align="center" gap={12}>
+                                        <Text type="secondary">Số tài khoản</Text>
+                                        <Text strong copyable={{ tooltips: ["Sao chép", "Đã chép"] }}>
+                                            {payosData.accountNumber || "Theo mã QR"}
+                                        </Text>
                                     </Flex>
-                                    <Flex justify="space-between" align="center">
-                                        <Text type="secondary">Số tiền:</Text>
+                                    <Flex justify="space-between" align="center" gap={12}>
+                                        <Text type="secondary">Số tiền</Text>
                                         <Text
-                                            strong
+                                            className="dp-price"
                                             copyable={{
-                                                text: String(payosData.amount),
+                                                text: String(payosData.amount || ""),
                                                 tooltips: ["Sao chép số tiền", "Đã chép"],
                                             }}
-                                            style={{ color: "#cf1322", fontSize: 15 }}
                                         >
-                                            {new Intl.NumberFormat("vi-VN").format(
-                                                payosData.amount,
-                                            )}
-                                            ₫
+                                            {new Intl.NumberFormat("vi-VN").format(payosData.amount || 0)}đ
                                         </Text>
                                     </Flex>
                                     <Flex
                                         justify="space-between"
                                         align="center"
+                                        gap={12}
                                         style={{
-                                            background: "#e6f4ff",
+                                            background: "#eaf7f4",
                                             padding: "8px 12px",
                                             borderRadius: 8,
                                             marginTop: 8,
                                         }}
                                     >
-                                        <Text type="secondary" style={{ color: "#1677ff" }}>
-                                            Nội dung CK:
-                                        </Text>
+                                        <Text type="secondary">Nội dung</Text>
                                         <Text
                                             strong
-                                            copyable={{
-                                                tooltips: ["Sao chép nội dung", "Đã chép"],
-                                            }}
-                                            style={{ color: "#1677ff", fontSize: 16 }}
+                                            copyable={{ tooltips: ["Sao chép nội dung", "Đã chép"] }}
+                                            style={{ color: "var(--dp-primary)" }}
                                         >
                                             {payosData.description}
                                         </Text>
                                     </Flex>
                                 </Flex>
                             </div>
-                            <Button
-                                type="link"
-                                icon={<LinkOutlined />}
-                                href={payosData.checkoutUrl}
-                                target="_blank"
-                            >
-                                Hoặc mở trang thanh toán gốc của PayOS
-                            </Button>
+                            {payosData.checkoutUrl && (
+                                <Button
+                                    type="link"
+                                    icon={<LinkOutlined />}
+                                    href={payosData.checkoutUrl}
+                                    target="_blank"
+                                >
+                                    Mở trang thanh toán PayOS
+                                </Button>
+                            )}
                         </Flex>
                     ) : (
                         <Flex vertical align="center" style={{ padding: 40 }}>
-                            <Spin />{" "}
+                            <Spin />
                             <Text type="secondary" style={{ marginTop: 12 }}>
-                                Đang khởi tạo mã bảo mật...
+                                Đang khởi tạo mã thanh toán...
                             </Text>
                         </Flex>
                     )}

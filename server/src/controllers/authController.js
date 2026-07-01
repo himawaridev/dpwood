@@ -2,11 +2,12 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const User = require("../models/user");
 const sendEmail = require("../utils/sendEmail");
 const { Op } = require("sequelize");
 const AuditLog = require("../models/auditLog");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL XÁC THỰC TÀI KHOẢN ---
 const generateVerificationHtml = (name, link) => `
@@ -82,7 +83,7 @@ const register = async (req, res) => {
         await user.save();
 
         // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
-        const verifyLink = `${process.env.CLIENT_URL || "http://localhost:3000"}/verify/${verifyToken}`;
+        const verifyLink = `http://localhost:3000/verify/${verifyToken}`;
         const emailContent = generateVerificationHtml(name, verifyLink);
         await sendEmail(email, "[DPWOOD] Xác thực tài khoản của bạn", emailContent);
 
@@ -121,6 +122,12 @@ const login = async (req, res) => {
             return res.status(403).json({
                 message: `Account locked. Please try again after: ${timeLeftMinutes} min`,
                 timeLeftMinutes: timeLeftMinutes,
+            });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({
+                message: "This account uses Google sign-in. Please continue with Google.",
             });
         }
 
@@ -240,7 +247,7 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
-        const resetLink = `${process.env.CLIENT_URL || "http://localhost:3000"}/reset/${resetToken}`;
+        const resetLink = `http://localhost:3000/reset/${resetToken}`;
         const emailContent = generateResetPasswordHtml(resetLink);
 
         await sendEmail(email, "[DPWOOD] Yêu cầu đặt lại mật khẩu", emailContent);
@@ -290,6 +297,9 @@ const googleLogin = async (req, res) => {
     try {
         const { token } = req.body;
         if (!token) return res.status(400).json({ message: "Thiếu token Google." });
+        if (!process.env.GOOGLE_CLIENT_ID) {
+            return res.status(500).json({ message: "Server chưa cấu hình GOOGLE_CLIENT_ID." });
+        }
 
         let ticket;
         try {
@@ -297,28 +307,34 @@ const googleLogin = async (req, res) => {
                 idToken: token,
                 audience: process.env.GOOGLE_CLIENT_ID,
             });
-        } catch (e) {
+        } catch {
             return res.status(400).json({ message: "Token Google không hợp lệ hoặc đã hết hạn." });
         }
 
         const payload = ticket.getPayload();
-        const { email, name, picture, sub: googleId } = payload;
+        const { email, email_verified: emailVerified, name, picture, sub: googleId } = payload;
+
+        if (!email || !googleId || emailVerified === false) {
+            return res.status(400).json({ message: "Google account email is not verified." });
+        }
 
         let user = await User.findOne({
             where: { [Op.or]: [{ email }, { googleId }] },
         });
 
         if (!user) {
-            let baseUsername = email.split("@")[0].toLowerCase();
-            let newUsername = baseUsername;
+            const baseUsername = email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
+            const usernameSeed = baseUsername || `google_${googleId.slice(0, 8)}`;
+            let newUsername = usernameSeed;
             let count = 1;
+
             while (await User.findOne({ where: { username: newUsername } })) {
-                newUsername = `${baseUsername}${count}`;
-                count++;
+                newUsername = `${usernameSeed}${count}`;
+                count += 1;
             }
 
             user = await User.create({
-                name,
+                name: name || email,
                 username: newUsername,
                 email,
                 avatarUrl: picture,
@@ -326,7 +342,7 @@ const googleLogin = async (req, res) => {
                 authProvider: "google",
                 isVerified: true,
                 role: "user",
-                password: null, 
+                password: null,
                 phone: null,
             });
 
@@ -336,11 +352,11 @@ const googleLogin = async (req, res) => {
                 details: "Đăng ký thành viên thông qua Google",
             });
         } else {
-            if (!user.googleId) {
-                user.googleId = googleId;
-                if (!user.isVerified) user.isVerified = true;
-                await user.save();
-            }
+            if (!user.googleId) user.googleId = googleId;
+            if (!user.avatarUrl && picture) user.avatarUrl = picture;
+            if (!user.isVerified) user.isVerified = true;
+            if (!user.authProvider || !user.password) user.authProvider = "google";
+            await user.save();
         }
 
         if (user.lockUntil && user.lockUntil > Date.now()) {
@@ -348,7 +364,7 @@ const googleLogin = async (req, res) => {
             const timeLeftMinutes = Math.ceil(timeLock / (1000 * 60));
             return res.status(403).json({
                 message: `Account locked. Please try again after: ${timeLeftMinutes} min`,
-                timeLeftMinutes: timeLeftMinutes,
+                timeLeftMinutes,
             });
         }
 
@@ -363,7 +379,6 @@ const googleLogin = async (req, res) => {
         });
 
         user.refreshToken = refreshToken;
-        user.avatarUrl = user.avatarUrl || picture; 
         await user.save();
 
         await AuditLog.create({

@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import {
     Table,
     Typography,
@@ -10,28 +12,27 @@ import {
     Card,
     Image,
     Input,
+    Divider,
+    App,
     Tag,
-    Space,
-    Popover,
-    List,
     Empty,
+    Modal,
 } from "antd";
-import useBreakpoint from "antd/lib/grid/hooks/useBreakpoint";
 import {
     DeleteOutlined,
     CreditCardOutlined,
-    GiftOutlined,
-    CheckCircleOutlined,
-    CloseCircleOutlined,
-    WalletOutlined,
-    ClockCircleOutlined,
-    StopOutlined,
-    PercentageOutlined,
     TagOutlined,
+    WalletOutlined,
+    QrcodeOutlined,
+    GiftOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import api from "@/utils/axios";
 
 const { Title, Text } = Typography;
+const { Search } = Input;
+
+const formatCurrency = (value) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 
 export default function CartTable({
     cartItems,
@@ -42,54 +43,92 @@ export default function CartTable({
     totalPrice,
     loading,
     handleCheckoutClick,
-    // Coupon props
-    couponCode,
-    setCouponCode,
-    appliedCoupon,
-    couponLoading,
-    handleApplyCoupon,
-    handleRemoveCoupon,
-    discountAmount,
-    finalPrice,
-    myCoupons,
+    discountCode,
+    setDiscountCode,
+    discountData = { percentage: 0, amount: 0 },
+    setDiscountData,
 }) {
-    const screens = useBreakpoint();
-    const isMobile = screens.xs || screens.sm && !screens.md;
+    const { message } = App.useApp();
+    const [activeVouchers, setActiveVouchers] = useState([]);
+    const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+    const [isVoucherLoading, setIsVoucherLoading] = useState(false);
 
-    const [walletOpen, setWalletOpen] = useState(false);
+    useEffect(() => {
+        const fetchActiveVouchers = async () => {
+            try {
+                setIsVoucherLoading(true);
+                const response = await api.get("/discounts/active");
+                setActiveVouchers(response.data || []);
+            } catch {
+                setActiveVouchers([]);
+            } finally {
+                setIsVoucherLoading(false);
+            }
+        };
 
-    // Lọc mã có thể dùng từ ví
-    const availableCoupons = (myCoupons || []).filter((uc) => {
-        const coupon = uc.Coupon;
-        if (!coupon || uc.isUsed) return false;
-        const now = new Date();
-        if (new Date(coupon.expiryDate) <= now) return false;
-        if (!coupon.isActive) return false;
-        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
-        return true;
-    });
+        fetchActiveVouchers();
+    }, []);
 
-    const handleSelectCoupon = (code) => {
-        setCouponCode(code);
-        setWalletOpen(false);
+    const handleApplyDiscount = async (value) => {
+        const code = value.trim().toUpperCase();
+        if (!code) {
+            setDiscountCode("");
+            setDiscountData({ percentage: 0, amount: 0 });
+            return;
+        }
+
+        try {
+            const res = await api.post("/discounts/validate", { code });
+            const amount = Math.floor((totalPrice * res.data.percentage) / 100);
+            setDiscountCode(code);
+            setDiscountData({ percentage: res.data.percentage, amount });
+            message.success(`Áp dụng mã thành công. Bạn được giảm ${res.data.percentage}%.`);
+        } catch (error) {
+            setDiscountCode("");
+            setDiscountData({ percentage: 0, amount: 0 });
+            message.error(error.response?.data?.message || "Mã giảm giá không hợp lệ");
+        }
     };
+
+    const handleDiscountInputChange = (event) => {
+        const nextCode = event.target.value.toUpperCase();
+        setDiscountCode(nextCode);
+        if (!nextCode) setDiscountData({ percentage: 0, amount: 0 });
+    };
+
+    const handleSelectVoucher = async (voucher) => {
+        await handleApplyDiscount(voucher.code);
+        setIsVoucherModalOpen(false);
+    };
+
+    const finalPrice = Math.max(0, totalPrice - (discountData?.amount || 0));
 
     const columns = [
         {
             title: "Sản phẩm",
+            key: "product",
             render: (_, record) => (
-                <Flex align="center" gap="middle">
+                <Flex align="center" gap={14}>
                     <Image
-                        src={record.imageUrl || "https://via.placeholder.com/50"}
-                        alt={record.name || "Sản phẩm"}
-                        width={60}
-                        height={60}
+                        src={record.imageUrl || "https://via.placeholder.com/96?text=DPWOOD"}
+                        alt={record.name}
+                        width={76}
+                        height={76}
                         preview={false}
-                        style={{ borderRadius: 8, objectFit: "cover", border: "1px solid #f0f0f0" }}
+                        style={{
+                            borderRadius: 8,
+                            objectFit: "cover",
+                            border: "1px solid var(--dp-soft-border)",
+                        }}
                     />
-                    <Text strong style={{ fontSize: "15px", color: "#262626" }}>
-                        {record.name}
-                    </Text>
+                    <div style={{ minWidth: 180 }}>
+                        <Text strong className="dp-line-clamp-2" style={{ fontSize: 15 }}>
+                            {record.name}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
+                            SKU: {record.productId?.substring(0, 8).toUpperCase()}
+                        </Text>
+                    </div>
                 </Flex>
             ),
         },
@@ -97,24 +136,19 @@ export default function CartTable({
             title: "Đơn giá",
             dataIndex: "price",
             align: "right",
-            width: 130,
-            render: (p) => (
-                <Text type="secondary" style={{ fontVariantNumeric: "tabular-nums" }}>
-                    {new Intl.NumberFormat("vi-VN").format(p)}₫
-                </Text>
-            ),
+            width: 140,
+            render: (price) => <Text strong>{formatCurrency(price)}</Text>,
         },
         {
             title: "Số lượng",
             align: "center",
-            width: 120,
+            width: 130,
             render: (_, record) => (
                 <InputNumber
                     min={1}
-                    max={9999}
+                    max={100}
                     value={record.quantity}
-                    onChange={(val) => handleQuantityChange(val, record.productId)}
-                    size="middle"
+                    onChange={(value) => handleQuantityChange(record.productId, value)}
                 />
             ),
         },
@@ -123,416 +157,216 @@ export default function CartTable({
             align: "right",
             width: 150,
             render: (_, record) => (
-                <Text
-                    strong
-                    style={{
-                        color: "#1677ff",
-                        fontSize: "16px",
-                        fontVariantNumeric: "tabular-nums",
-                    }}
-                >
-                    {new Intl.NumberFormat("vi-VN").format(record.price * record.quantity)}₫
-                </Text>
+                <Text className="dp-price">{formatCurrency(record.price * record.quantity)}</Text>
             ),
         },
         {
             title: "",
             align: "center",
-            width: 60,
+            width: 64,
             render: (_, record) => (
                 <Popconfirm
-                    title="Xóa sản phẩm này khỏi giỏ hàng?"
+                    title="Xóa sản phẩm này?"
                     onConfirm={() => handleRemoveItem(record.productId)}
                     okText="Xóa"
                     cancelText="Hủy"
                 >
-                    <Button danger icon={<DeleteOutlined />} type="text" shape="circle" />
+                    <Button type="text" danger icon={<DeleteOutlined />} />
                 </Popconfirm>
             ),
         },
     ];
 
-    // Nội dung popover ví mã giảm giá
-    const walletContent = (
-        <div style={{ width: 280, maxHeight: 300, overflow: "auto" }}>
-            {availableCoupons.length === 0 ? (
+    if (cartItems.length === 0) {
+        return (
+            <Card variant="outlined" className="dp-panel">
                 <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Không có mã khả dụng"
-                    style={{ padding: "16px 0" }}
-                />
-            ) : (
-                <List
-                    size="small"
-                    dataSource={availableCoupons}
-                    renderItem={(uc) => {
-                        const c = uc.Coupon;
-                        const isSelected =
-                            couponCode.toUpperCase() === c.code.toUpperCase();
-                        return (
-                            <List.Item
-                                style={{
-                                    cursor: "pointer",
-                                    padding: "8px 12px",
-                                    borderRadius: 8,
-                                    background: isSelected ? "#f6ffed" : "transparent",
-                                    border: isSelected
-                                        ? "1px solid #b7eb8f"
-                                        : "1px solid transparent",
-                                    marginBottom: 4,
-                                    transition: "all 0.2s",
-                                }}
-                                onClick={() => handleSelectCoupon(c.code)}
-                            >
-                                <div style={{ width: "100%" }}>
-                                    <Flex
-                                        justify="space-between"
-                                        align="center"
-                                    >
-                                        <Text
-                                            strong
-                                            style={{
-                                                fontFamily: "monospace",
-                                                color: "#1677ff",
-                                                fontSize: 13,
-                                            }}
-                                        >
-                                            {c.code}
-                                        </Text>
-                                        <Tag
-                                            color={
-                                                c.discountType === "percent"
-                                                    ? "#f5222d"
-                                                    : "#fa8c16"
-                                            }
-                                            style={{
-                                                border: "none",
-                                                borderRadius: 4,
-                                                fontSize: 11,
-                                                margin: 0,
-                                            }}
-                                        >
-                                            {c.discountType === "percent"
-                                                ? `−${Number(c.discountValue)}%`
-                                                : `−${new Intl.NumberFormat("vi-VN").format(c.discountValue)}₫`}
-                                        </Tag>
-                                    </Flex>
-                                    <Flex
-                                        justify="space-between"
-                                        style={{ marginTop: 2 }}
-                                    >
-                                        <Text
-                                            style={{
-                                                fontSize: 11,
-                                                color: "#8c8c8c",
-                                            }}
-                                        >
-                                            {Number(c.minOrderAmount) > 0
-                                                ? `Đơn từ ${new Intl.NumberFormat("vi-VN").format(c.minOrderAmount)}₫`
-                                                : "Mọi đơn hàng"}
-                                        </Text>
-                                        <Text
-                                            style={{
-                                                fontSize: 10,
-                                                color: "#bfbfbf",
-                                            }}
-                                        >
-                                            <ClockCircleOutlined /> HSD:{" "}
-                                            {dayjs(c.expiryDate).format(
-                                                "DD/MM",
-                                            )}
-                                        </Text>
-                                    </Flex>
-                                </div>
-                            </List.Item>
-                        );
-                    }}
-                />
-            )}
-        </div>
-    );
+                    description="Giỏ hàng của bạn đang trống"
+                >
+                    <Button type="primary" href="/products">
+                        Tiếp tục mua sắm
+                    </Button>
+                </Empty>
+            </Card>
+        );
+    }
 
     return (
-        <Card
-            variant="borderless"
-            style={{ borderRadius: 12, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
-            styles={{ body: { padding: 0 } }}
-        >
+        <Card variant="outlined" className="dp-panel" styles={{ body: { padding: 0 } }}>
             <Table
                 dataSource={cartItems}
                 columns={columns}
                 rowKey="productId"
                 pagination={false}
-                scroll={{ x: "max-content" }}
-                locale={{ emptyText: "Giỏ hàng đang trống" }}
-                style={{ borderBottom: cartItems.length > 0 ? "1px solid #f0f0f0" : "none" }}
+                loading={loading}
+                scroll={{ x: 760 }}
             />
-            {cartItems.length > 0 && (
-                <div
-                    style={{
-                        padding: isMobile ? "20px 16px" : "24px 32px",
-                        background: "#fafafa",
-                        borderBottomLeftRadius: 12,
-                        borderBottomRightRadius: 12,
-                    }}
-                >
-                    {/* Mã giảm giá */}
-                    <div
-                        style={{
-                            padding: isMobile ? "12px 16px" : "16px 20px",
-                            background: "#fff",
-                            borderRadius: 10,
-                            border: appliedCoupon
-                                ? "1px solid #b7eb8f"
-                                : "1px dashed #d9d9d9",
-                            marginBottom: 20,
-                        }}
-                    >
-                        <Flex align="center" gap="small" style={{ marginBottom: 12 }}>
-                            <GiftOutlined style={{ color: "#f5222d", fontSize: 16 }} />
-                            <Text strong style={{ color: "#262626" }}>
-                                Mã giảm giá
-                            </Text>
-                        </Flex>
 
-                        {appliedCoupon ? (
-                            <Flex justify="space-between" align="center">
-                                <Space>
-                                    <Tag
-                                        color="success"
-                                        icon={<CheckCircleOutlined />}
-                                        style={{
-                                            borderRadius: 6,
-                                            fontSize: 13,
-                                            padding: "2px 10px",
-                                        }}
-                                    >
-                                        {appliedCoupon.couponCode}
-                                    </Tag>
-                                    <Text type="success" strong>
-                                        -
-                                        {new Intl.NumberFormat("vi-VN").format(
-                                            discountAmount,
-                                        )}
-                                        ₫
-                                    </Text>
-                                </Space>
-                                <Button
-                                    type="text"
-                                    danger
-                                    size="small"
-                                    icon={<CloseCircleOutlined />}
-                                    onClick={handleRemoveCoupon}
-                                >
-                                    Hủy mã
-                                </Button>
-                            </Flex>
-                        ) : (
-                            <Flex gap="small" align="center" wrap="wrap">
-                                <Input
-                                    placeholder="Nhập mã giảm giá..."
-                                    value={couponCode}
-                                    onChange={(e) =>
-                                        setCouponCode(e.target.value.toUpperCase())
-                                    }
-                                    onPressEnter={handleApplyCoupon}
-                                    style={{
-                                        flex: 1,
-                                        textTransform: "uppercase",
-                                        fontFamily: "monospace",
-                                        letterSpacing: 1,
-                                    }}
-                                    allowClear
-                                />
-                                <Popover
-                                    content={walletContent}
-                                    title={
-                                        <Flex align="center" gap={6}>
-                                            <WalletOutlined
-                                                style={{ color: "#1677ff" }}
-                                            />
-                                            <span>Chọn từ kho mã</span>
-                                        </Flex>
-                                    }
-                                    trigger="click"
-                                    open={walletOpen}
-                                    onOpenChange={setWalletOpen}
-                                    placement="bottomRight"
-                                >
-                                    <Button
-                                        icon={<WalletOutlined />}
-                                        style={{ borderRadius: 6 }}
-                                    >
-                                        Kho mã
-                                        {availableCoupons.length > 0 && (
-                                            <span
-                                                style={{
-                                                    background: "#f5222d",
-                                                    color: "#fff",
-                                                    borderRadius: 10,
-                                                    padding: "0 6px",
-                                                    fontSize: 11,
-                                                    marginLeft: 4,
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                {availableCoupons.length}
-                                            </span>
-                                        )}
-                                    </Button>
-                                </Popover>
-                                <Button
-                                    type="primary"
-                                    onClick={handleApplyCoupon}
-                                    loading={couponLoading}
-                                    style={{ borderRadius: 6 }}
-                                >
-                                    Áp dụng
-                                </Button>
-                            </Flex>
-                        )}
-                    </div>
-
-                    <Flex
-                        justify="space-between"
-                        align={isMobile ? "flex-start" : "flex-start"}
-                        vertical={isMobile}
-                        gap="large"
-                    >
-                        <div style={{ width: isMobile ? "100%" : "auto" }}>
-                            <Title
-                                level={5}
-                                style={{ color: "#595959", marginBottom: 16 }}
-                            >
-                                Phương thức thanh toán:
+            <div
+                style={{
+                    padding: "24px clamp(18px, 4vw, 32px)",
+                    borderTop: "1px solid var(--dp-soft-border)",
+                    background: "var(--dp-surface-muted)",
+                }}
+            >
+                <Flex justify="space-between" align="flex-start" wrap="wrap" gap={24}>
+                    <Flex vertical gap={20} style={{ flex: 1, minWidth: 300 }}>
+                        <div>
+                            <Title level={5} style={{ marginBottom: 12 }}>
+                                Phương thức thanh toán
                             </Title>
                             <Radio.Group
-                                onChange={(e) => setPaymentMethod(e.target.value)}
                                 value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                optionType="button"
+                                buttonStyle="solid"
                             >
-                                <Flex vertical gap="middle">
-                                    <Radio value="COD">
-                                        <Text strong={paymentMethod === "COD"}>
-                                            Thanh toán khi nhận hàng (COD)
-                                        </Text>
-                                    </Radio>
-                                    <Radio value="QR">
-                                        <Text strong={paymentMethod === "QR"}>
-                                            Chuyển khoản qua mã QR (Tự động xác
-                                            nhận)
-                                        </Text>
-                                    </Radio>
-                                </Flex>
+                                <Radio value="COD">
+                                    <WalletOutlined /> COD
+                                </Radio>
+                                <Radio value="QR">
+                                    <QrcodeOutlined /> QR PayOS
+                                </Radio>
                             </Radio.Group>
                         </div>
-                        <Flex vertical align={isMobile ? "flex-start" : "flex-end"} gap="small" style={{ width: isMobile ? "100%" : "auto", paddingTop: isMobile ? 12 : 0, borderTop: isMobile ? "1px solid #e8e8e8" : "none" }}>
-                            {/* Tạm tính */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                                <Text
-                                    style={{
-                                        fontSize: "14px",
-                                        color: "#8c8c8c",
-                                        marginRight: 8,
-                                    }}
-                                >
-                                    Tạm tính:
-                                </Text>
-                                <Text
-                                    style={{
-                                        fontSize: "16px",
-                                        color: "#595959",
-                                        fontVariantNumeric: "tabular-nums",
-                                    }}
-                                >
-                                    {new Intl.NumberFormat("vi-VN").format(
-                                        totalPrice,
-                                    )}
-                                    ₫
-                                </Text>
-                            </div>
 
-                            {/* Giảm giá */}
-                            {appliedCoupon && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                                    <Text
-                                        style={{
-                                            fontSize: "14px",
-                                            color: "#52c41a",
-                                            marginRight: 8,
-                                        }}
-                                    >
-                                        Giảm giá:
-                                    </Text>
-                                    <Text
-                                        strong
-                                        style={{
-                                            fontSize: "16px",
-                                            color: "#52c41a",
-                                            fontVariantNumeric: "tabular-nums",
-                                        }}
-                                    >
-                                        -
-                                        {new Intl.NumberFormat("vi-VN").format(
-                                            discountAmount,
-                                        )}
-                                        ₫
-                                    </Text>
-                                </div>
+                        <div style={{ maxWidth: 380 }}>
+                            <Text strong>
+                                <TagOutlined /> Ưu đãi & mã giảm giá
+                            </Text>
+                            <Flex gap={8} wrap style={{ marginTop: 8 }}>
+                                <Search
+                                    placeholder="Nhập mã voucher"
+                                    allowClear
+                                    enterButton="Áp dụng"
+                                    onSearch={handleApplyDiscount}
+                                    value={discountCode}
+                                    onChange={handleDiscountInputChange}
+                                    style={{ flex: "1 1 220px", minWidth: 0 }}
+                                />
+                                <Button
+                                    icon={<GiftOutlined />}
+                                    onClick={() => setIsVoucherModalOpen(true)}
+                                    style={{ flex: "0 0 auto" }}
+                                >
+                                    {"Kho m\u00e3"}
+                                </Button>
+                            </Flex>
+                            {discountData?.percentage > 0 && (
+                                <Tag
+                                    color="success"
+                                    closable
+                                    onClose={() => handleApplyDiscount("")}
+                                    style={{ marginTop: 10, padding: "4px 8px" }}
+                                >
+                                    {discountCode}: giảm {discountData.percentage}%
+                                </Tag>
                             )}
-
-                            {/* Tổng thanh toán */}
-                            <div
-                                style={{
-                                    marginTop: appliedCoupon ? 4 : 0,
-                                    display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'
-                                }}
-                            >
-                                <Text
-                                    style={{
-                                        fontSize: "16px",
-                                        color: "#595959",
-                                        marginRight: 12,
-                                    }}
-                                >
-                                    Tổng thanh toán:
-                                </Text>
-                                <Text
-                                    strong
-                                    style={{
-                                        fontSize: "28px",
-                                        color: "#1677ff",
-                                        lineHeight: 1,
-                                        fontVariantNumeric: "tabular-nums",
-                                    }}
-                                >
-                                    {new Intl.NumberFormat("vi-VN").format(
-                                        finalPrice,
-                                    )}
-                                    ₫
-                                </Text>
-                            </div>
-
-                            <Button
-                                type="primary"
-                                size="large"
-                                block={isMobile}
-                                icon={<CreditCardOutlined />}
-                                onClick={handleCheckoutClick}
-                                loading={loading}
-                                style={{
-                                    height: 48,
-                                    fontSize: "16px",
-                                    padding: "0 32px",
-                                    borderRadius: 8,
-                                    marginTop: isMobile ? 16 : 8,
-                                }}
-                            >
-                                Tiến hành Đặt hàng
-                            </Button>
-                        </Flex>
+                        </div>
                     </Flex>
-                </div>
-            )}
+
+                    <Flex vertical align="stretch" gap={10} style={{ minWidth: 300 }}>
+                        <Flex justify="space-between">
+                            <Text type="secondary">Tổng tiền hàng</Text>
+                            <Text strong>{formatCurrency(totalPrice)}</Text>
+                        </Flex>
+                        {(discountData?.amount || 0) > 0 && (
+                            <Flex justify="space-between">
+                                <Text type="secondary">Giảm giá ({discountData.percentage}%)</Text>
+                                <Text type="danger" strong>
+                                    -{formatCurrency(discountData.amount)}
+                                </Text>
+                            </Flex>
+                        )}
+                        <Divider style={{ margin: "8px 0" }} />
+                        <Flex justify="space-between" align="center">
+                            <Text strong style={{ fontSize: 16 }}>
+                                Tổng thanh toán
+                            </Text>
+                            <Text className="dp-price" style={{ fontSize: 28 }}>
+                                {formatCurrency(finalPrice)}
+                            </Text>
+                        </Flex>
+                        <Button
+                            type="primary"
+                            size="large"
+                            icon={<CreditCardOutlined />}
+                            onClick={handleCheckoutClick}
+                            loading={loading}
+                            block
+                        >
+                            Tiến hành đặt hàng
+                        </Button>
+                    </Flex>
+                </Flex>
+            </div>
+
+            <Modal
+                title={"Kho m\u00e3 \u01b0u \u0111\u00e3i"}
+                open={isVoucherModalOpen}
+                onCancel={() => setIsVoucherModalOpen(false)}
+                footer={null}
+                width={620}
+            >
+                {isVoucherLoading ? (
+                    <Text type="secondary">{"\u0110ang t\u1ea3i kho m\u00e3..."}</Text>
+                ) : activeVouchers.length === 0 ? (
+                    <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                            "Hi\u1ec7n ch\u01b0a c\u00f3 m\u00e3 \u01b0u \u0111\u00e3i \u0111ang ho\u1ea1t \u0111\u1ed9ng."
+                        }
+                    />
+                ) : (
+                    <Flex vertical gap={12}>
+                        {activeVouchers.map((voucher) => (
+                            <Card
+                                key={voucher.id}
+                                size="small"
+                                variant="outlined"
+                                styles={{ body: { padding: 14 } }}
+                            >
+                                <Flex justify="space-between" align="flex-start" gap={14} wrap="wrap">
+                                    <Flex gap={12} align="flex-start" style={{ flex: 1, minWidth: 260 }}>
+                                        <Tag color="warning" style={{ marginTop: 2 }}>
+                                            -{voucher.percentage}%
+                                        </Tag>
+                                        <Flex vertical gap={4}>
+                                            <Flex align="center" gap={8} wrap="wrap">
+                                                <Text strong copyable>
+                                                    {voucher.code}
+                                                </Text>
+                                                {discountCode === voucher.code && (
+                                                    <Tag color="success">
+                                                        {"\u0110\u00e3 \u00e1p d\u1ee5ng"}
+                                                    </Tag>
+                                                )}
+                                            </Flex>
+                                            <Text type="secondary">
+                                                {voucher.description ||
+                                                    "\u00c1p d\u1ee5ng cho \u0111\u01a1n h\u00e0ng ph\u00f9 h\u1ee3p."}
+                                            </Text>
+                                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                                {"H\u1ebft h\u1ea1n"}:{" "}
+                                                {new Date(voucher.expiryDate).toLocaleDateString("vi-VN")}
+                                            </Text>
+                                        </Flex>
+                                    </Flex>
+                                    <Button
+                                        type={discountCode === voucher.code ? "primary" : "default"}
+                                        onClick={() => handleSelectVoucher(voucher)}
+                                    >
+                                        {discountCode === voucher.code
+                                            ? "\u0110ang d\u00f9ng"
+                                            : "Ch\u1ecdn m\u00e3"}
+                                    </Button>
+                                </Flex>
+                            </Card>
+                        ))}
+                    </Flex>
+                )}
+            </Modal>
         </Card>
     );
 }

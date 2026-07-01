@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState, useRef, useMemo } from "react";
-import { Form, Input, Button, Switch, message, Typography, Row, Col, Card, Flex, Spin } from "antd";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { App, Form, Input, Button, Switch, Typography, Row, Col, Card, Flex, Spin } from "antd";
 import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/utils/axios";
@@ -12,6 +12,7 @@ import "react-quill-new/dist/quill.snow.css";
 const { Title, Text } = Typography;
 
 export default function BlogEditorPage() {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -39,7 +40,7 @@ export default function BlogEditorPage() {
                     ...data,
                     isPublished: !!data.isPublished,
                 });
-            } catch (error) {
+            } catch {
                 message.error("Lỗi lấy dữ liệu bài viết!");
                 router.push("/admin/blogs");
             } finally {
@@ -47,9 +48,9 @@ export default function BlogEditorPage() {
             }
         };
         fetchBlog();
-    }, [params.id, isEditMode, router]);
+    }, [params.id, isEditMode, message, router]);
 
-    const imageHandler = () => {
+    const imageHandler = useCallback(() => {
         const input = document.createElement("input");
         input.setAttribute("type", "file");
         input.setAttribute("accept", "image/*");
@@ -71,11 +72,11 @@ export default function BlogEditorPage() {
                 const range = quill.getSelection(true);
                 quill.insertEmbed(range.index, "image", url);
                 message.success({ content: "Đã chèn ảnh!", key: "uploading" });
-            } catch (error) {
+            } catch {
                 message.error({ content: "Tải ảnh thất bại", key: "uploading" });
             }
         };
-    };
+    }, [message]);
 
     const modules = useMemo(
         () => ({
@@ -90,7 +91,7 @@ export default function BlogEditorPage() {
                 handlers: { image: imageHandler },
             },
         }),
-        [],
+        [imageHandler],
     );
 
     const onFinish = async (values) => {
@@ -104,7 +105,7 @@ export default function BlogEditorPage() {
                 message.success("Đã đăng bài viết mới!");
                 router.push("/admin/blogs");
             }
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi lưu bài viết");
         } finally {
             setLoading(false);

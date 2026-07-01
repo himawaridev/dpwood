@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Table, Button, Typography, Tag, Space, message, Flex, Image, Popconfirm } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
+import { App, Table, Button, Typography, Tag, Space, Flex, Image, Popconfirm } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
@@ -8,32 +8,33 @@ import api from "@/utils/axios";
 const { Title, Text } = Typography;
 
 export default function AdminBlogPage() {
+    const { message } = App.useApp();
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(false);
     const router = useRouter(); // 🔴 Dùng để chuyển trang
 
-    const fetchBlogs = async () => {
+    const fetchBlogs = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get("/blogs");
             setBlogs(res.data);
-        } catch (error) {
+        } catch {
             message.error("Lỗi lấy danh sách bài viết");
         } finally {
             setLoading(false);
         }
-    };
+    }, [message]);
 
     useEffect(() => {
         fetchBlogs();
-    }, []);
+    }, [fetchBlogs]);
 
     const handleDelete = async (id) => {
         try {
             await api.delete(`/blogs/${id}`);
             message.success("Đã xóa bài viết");
             fetchBlogs();
-        } catch (error) {
+        } catch {
             message.error("Không thể xóa bài viết");
         }
     };
@@ -47,6 +48,7 @@ export default function AdminBlogPage() {
                 url ? (
                     <Image
                         src={url}
+                        alt="Ảnh bìa bài viết"
                         width={60}
                         height={40}
                         style={{ objectFit: "cover", borderRadius: 4 }}

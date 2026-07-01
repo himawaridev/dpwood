@@ -1,16 +1,19 @@
 import React from "react";
-import { Typography, Flex, Tag, InputNumber, Button } from "antd";
+import { Typography, Flex, Tag, InputNumber, Button, Space, Divider } from "antd";
 import {
-    TrophyOutlined,
+    FireOutlined,
     SafetyCertificateOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
     ShoppingCartOutlined,
     CreditCardOutlined,
+    TruckOutlined,
 } from "@ant-design/icons";
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
+const formatCurrency = (value) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 
 export default function ProductInfo({
     product,
@@ -19,119 +22,72 @@ export default function ProductInfo({
     handleAddToCart,
     bestSellerThreshold,
 }) {
+    const inStock = Number(product.stock || 0) > 0;
+
     return (
-        <>
-            <div
-                style={{
-                    borderBottom: "1px solid #f0f0f0",
-                    paddingBottom: "20px",
-                    marginBottom: "24px",
-                }}
-            >
-                <Flex gap="small" align="center" style={{ marginBottom: "12px" }}>
-                    {product.sold >= bestSellerThreshold && (
-                        <Tag color="gold" variant="solid" icon={<TrophyOutlined />}>
+        <Flex vertical gap={22}>
+            <div>
+                <Space size={8} wrap style={{ marginBottom: 14 }}>
+                    {Number(product.sold || 0) >= bestSellerThreshold && (
+                        <Tag color="error" icon={<FireOutlined />}>
                             Bán chạy ({product.sold} đã bán)
                         </Tag>
                     )}
-                    <Tag color="blue" variant="outlined" icon={<SafetyCertificateOutlined />}>
-                        Chính hãng 100%
+                    <Tag color="success" icon={<SafetyCertificateOutlined />}>
+                        DPWOOD selected
                     </Tag>
-                </Flex>
+                    <Tag color={inStock ? "processing" : "default"} icon={inStock ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>
+                        {inStock ? "Còn hàng" : "Hết hàng"}
+                    </Tag>
+                </Space>
+
                 <Title
-                    level={2}
+                    level={1}
+                    className="dp-product-detail-title"
                     style={{
-                        marginTop: 0,
-                        marginBottom: "8px",
-                        color: "#001529",
-                        fontWeight: 700,
-                        lineHeight: 1.3,
+                        margin: 0,
+                        color: "var(--dp-ink)",
+                        lineHeight: 1.15,
                     }}
                 >
                     {product.name}
                 </Title>
-                <Text type="secondary" style={{ fontSize: "14px" }}>
-                    Mã sản phẩm (SKU):{" "}
-                    <Text strong style={{ color: "#595959" }}>
-                        {product.id?.substring(0, 8).toUpperCase()}
-                    </Text>
-                </Text>
+                <Text className="dp-muted">SKU: {product.id?.substring(0, 8).toUpperCase()}</Text>
             </div>
 
-            <Flex gap="middle" align="center" style={{ marginBottom: 24 }}>
-                <Tag
-                    color={product.stock > 0 ? "success" : "error"}
-                    icon={product.stock > 0 ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                    style={{ fontSize: "14px", padding: "4px 8px" }}
-                >
-                    {product.stock > 0 ? "Còn hàng" : "Hết hàng"}
-                </Tag>
-                <Text type="secondary" style={{ fontSize: "15px" }}>
-                    Tồn kho: <strong>{product.stock}</strong> sản phẩm
+            <div>
+                <Text className="dp-price" style={{ fontSize: 34 }}>
+                    {formatCurrency(product.price)}
                 </Text>
-            </Flex>
-
-            <div
-                style={{
-                    background: "#f0f5ff",
-                    padding: "20px 24px",
-                    borderRadius: "12px",
-                    border: "1px solid #d6e4ff",
-                    marginBottom: "32px",
-                }}
-            >
-                <Text
-                    strong
-                    style={{
-                        fontSize: "32px",
-                        color: "#1677ff",
-                        lineHeight: 1,
-                        fontVariantNumeric: "tabular-nums",
-                    }}
-                >
-                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
-                        product.price,
-                    )}
-                </Text>
+                <Paragraph className="dp-muted" style={{ margin: "8px 0 0" }}>
+                    Tồn kho hiện tại: <strong>{product.stock}</strong> sản phẩm
+                </Paragraph>
             </div>
 
-            <div style={{ marginBottom: "32px" }}>
-                <Text
-                    strong
-                    style={{
-                        fontSize: "16px",
-                        display: "block",
-                        marginBottom: "12px",
-                        color: "#262626",
-                    }}
-                >
-                    Chọn số lượng:
+            <Divider style={{ margin: 0 }} />
+
+            <div>
+                <Text strong style={{ display: "block", marginBottom: 10 }}>
+                    Số lượng
                 </Text>
                 <InputNumber
                     min={1}
-                    max={product.stock}
+                    max={Math.max(1, Number(product.stock || 1))}
                     value={quantity}
-                    onChange={setQuantity}
+                    onChange={(value) => setQuantity(value || 1)}
                     size="large"
-                    style={{ width: "140px" }}
-                    disabled={product.stock === 0}
+                    disabled={!inStock}
+                    style={{ width: 132 }}
                 />
             </div>
 
-            <Flex gap="middle" style={{ width: "100%" }}>
+            <Flex gap={12} wrap="wrap">
                 <Button
                     size="large"
                     icon={<ShoppingCartOutlined />}
-                    style={{
-                        flex: 1,
-                        height: "56px",
-                        fontSize: "15px",
-                        color: "#1677ff",
-                        borderColor: "#1677ff",
-                        fontWeight: 500,
-                    }}
                     onClick={() => handleAddToCart(false)}
-                    disabled={product.stock === 0}
+                    disabled={!inStock}
+                    style={{ flex: "1 1 180px" }}
                 >
                     Thêm vào giỏ
                 </Button>
@@ -139,19 +95,43 @@ export default function ProductInfo({
                     type="primary"
                     size="large"
                     icon={<CreditCardOutlined />}
-                    style={{
-                        flex: 1,
-                        height: "56px",
-                        fontSize: "15px",
-                        background: "#1677ff",
-                        fontWeight: 500,
-                    }}
                     onClick={() => handleAddToCart(true)}
-                    disabled={product.stock === 0}
+                    disabled={!inStock}
+                    style={{ flex: "1 1 180px" }}
                 >
                     Mua ngay
                 </Button>
             </Flex>
-        </>
+
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 12,
+                }}
+            >
+                {[
+                    { icon: <TruckOutlined />, title: "Giao hàng", text: "Theo dõi trạng thái đơn" },
+                    { icon: <SafetyCertificateOutlined />, title: "Thanh toán", text: "COD hoặc QR PayOS" },
+                ].map((item) => (
+                    <div
+                        key={item.title}
+                        style={{
+                            border: "1px solid var(--dp-soft-border)",
+                            borderRadius: 8,
+                            padding: 14,
+                            background: "var(--dp-surface-muted)",
+                        }}
+                    >
+                        <div style={{ color: "var(--dp-primary)", fontSize: 20 }}>{item.icon}</div>
+                        <Text strong>{item.title}</Text>
+                        <br />
+                        <Text className="dp-muted" style={{ fontSize: 13 }}>
+                            {item.text}
+                        </Text>
+                    </div>
+                ))}
+            </div>
+        </Flex>
     );
 }

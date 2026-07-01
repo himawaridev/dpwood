@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SWT Payment Workflow - DPWOOD</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #172033; background: #f6f7fb; margin: 0; line-height: 1.55; }
+  main { max-width: 980px; margin: 32px auto; background: #fff; padding: 44px 54px; border: 1px solid #e5e7ef; box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06); }
+  h1 { text-align: center; color: #0f172a; margin-top: 0; font-size: 30px; }
+  h2 { color: #123b7a; margin-top: 34px; border-bottom: 2px solid #dbe7ff; padding-bottom: 6px; }
+  h3 { color: #1f4f8f; margin-top: 24px; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 24px; font-size: 14px; }
+  th, td { border: 1px solid #d9deea; padding: 9px 11px; vertical-align: top; }
+  th { background: #eef4ff; color: #0f2f5f; text-align: left; }
+  tr:nth-child(even) td { background: #fbfcff; }
+  code { font-family: Consolas, 'Courier New', monospace; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #9f1239; }
+  pre.code { white-space: pre-wrap; background: #0f172a; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; }
+  pre.code code { background: transparent; color: inherit; padding: 0; }
+  hr { border: 0; border-top: 1px solid #e5e7ef; margin: 28px 0; }
+  ul { margin-top: 8px; }
+  li { margin: 4px 0; }
+  @media print {
+    body { background: #fff; }
+    main { box-shadow: none; border: 0; margin: 0; max-width: none; padding: 18mm; }
+    h2 { page-break-after: avoid; }
+    table, pre { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main>
+<h1>SOFTWARE TESTING DOCUMENT</h1>
+<h2>Payment Workflow - DPWOOD</h2>
+<p><strong>Môn học:</strong> Software Testing</p>
+<p><strong>Trường:</strong> Đại học FPT</p>
+<p><strong>Vai trò thực hiện:</strong> Người 1 - Workflow / Process Flow</p>
+<p><strong>Chức năng chọn:</strong> Thanh toán / Đặt hàng</p>
+<p><strong>Dự án:</strong> DPWOOD - Website bán sản phẩm gỗ/nội thất</p>
+<p><strong>Ngày lập tài liệu:</strong> 01/07/2026</p>
+<p><strong>Phiên bản:</strong> 1.0</p>
+<hr />
+<h2>1. Mục đích tài liệu</h2>
+<p>Tài liệu này mô tả workflow của chức năng <strong>thanh toán/đặt hàng</strong> trong hệ thống DPWOOD. Nội dung được xây dựng dựa trên source code hiện tại của dự án, nhằm phục vụ bài tập nhóm môn Software Testing.</p>
+<p>Phần này tương ứng nhiệm vụ của <strong>Người 1 - Workflow (Process Flow)</strong>:</p>
+<ul>
+<li>Chọn chức năng cần kiểm thử.</li>
+<li>Vẽ và mô tả flow hoạt động của hệ thống.</li>
+<li>Giải thích luồng xử lý chính, luồng thay thế và luồng ngoại lệ.</li>
+<li>Cung cấp thông tin đầu vào cho các thành viên tiếp theo thiết kế test case, thực hiện kiểm thử, viết bug report và tổng kết test report.</li>
+</ul>
+<hr />
+<h2>2. Tổng quan chức năng</h2>
+<h3>2.1. Tên chức năng</h3>
+<p><strong>Thanh toán / Đặt hàng tại giỏ hàng</strong></p>
+<h3>2.2. Mô tả ngắn</h3>
+<p>Khách hàng chọn sản phẩm, thêm vào giỏ hàng, chọn địa chỉ nhận hàng, nhập mã giảm giá nếu có, chọn phương thức thanh toán COD hoặc QR PayOS, sau đó xác nhận đặt hàng. Hệ thống kiểm tra đăng nhập, kiểm tra tồn kho, tính lại giá từ database, tạo đơn hàng, cập nhật trạng thái và gửi email xác nhận.</p>
+<h3>2.3. Lý do chọn chức năng</h3>
+<p>Chức năng thanh toán phù hợp để làm bài SWT vì có nhiều điểm cần kiểm thử:</p>
+<ul>
+<li>Có nhiều điều kiện đầu vào: đăng nhập, giỏ hàng, địa chỉ, voucher, tồn kho.</li>
+<li>Có nhiều nhánh nghiệp vụ: COD, QR, hủy đơn, thanh toán thành công, thanh toán chưa ghi nhận.</li>
+<li>Có xử lý frontend, backend, database và bên thứ ba PayOS.</li>
+<li>Có trạng thái đơn hàng thay đổi theo thời gian: <code>PENDING</code>, <code>PAID</code>, <code>SHIPPING</code>, <code>COMPLETED</code>, <code>CANCELED</code>.</li>
+<li>Có khả năng phát sinh lỗi thực tế để nhóm viết bug report.</li>
+</ul>
+<hr />
+<h2>3. Phạm vi phân tích</h2>
+<h3>3.1. Trong phạm vi</h3>
+<ul>
+<li>Thêm sản phẩm vào giỏ hàng.</li>
+<li>Mở trang giỏ hàng.</li>
+<li>Kiểm tra đăng nhập.</li>
+<li>Chọn/thêm địa chỉ giao hàng.</li>
+<li>Chỉnh số lượng và xóa sản phẩm trong giỏ.</li>
+<li>Áp dụng mã giảm giá.</li>
+<li>Chọn phương thức thanh toán COD hoặc QR.</li>
+<li>Xác nhận đặt hàng.</li>
+<li>Backend tạo đơn hàng.</li>
+<li>Backend kiểm tra sản phẩm, tồn kho, voucher.</li>
+<li>Thanh toán QR qua PayOS.</li>
+<li>Kiểm tra trạng thái thanh toán.</li>
+<li>Hủy đơn hàng khi đơn còn <code>PENDING</code>.</li>
+<li>Xem đơn hàng sau khi đặt.</li>
+</ul>
+<h3>3.2. Ngoài phạm vi</h3>
+<ul>
+<li>Đăng ký/đăng nhập chi tiết.</li>
+<li>Quản trị sản phẩm.</li>
+<li>Quản trị voucher.</li>
+<li>Quản lý vận chuyển ngoài thao tác cập nhật trạng thái đơn.</li>
+<li>Hoàn tiền sau khi đơn đã thanh toán.</li>
+<li>Tích hợp thật với ngân hàng ngoài PayOS.</li>
+</ul>
+<hr />
+<h2>4. Tác nhân và hệ thống liên quan</h2>
+<table>
+<thead><tr><th>Tác nhân / Thành phần</th><th>Vai trò</th></tr></thead>
+<tbody>
+<tr><td>Khách hàng</td><td>Thêm sản phẩm vào giỏ, chọn địa chỉ, chọn phương thức thanh toán, xác nhận/hủy đơn.</td></tr>
+<tr><td>Frontend Next.js</td><td>Hiển thị sản phẩm, giỏ hàng, địa chỉ, voucher, modal xác nhận, modal QR và màn hình thành công.</td></tr>
+<tr><td>Backend Express.js</td><td>Xác thực token, kiểm tra nghiệp vụ, tạo đơn hàng, xử lý webhook PayOS, kiểm tra trạng thái, hủy đơn.</td></tr>
+<tr><td>Database Sequelize</td><td>Lưu dữ liệu người dùng, sản phẩm, địa chỉ, đơn hàng, chi tiết đơn, voucher và audit log.</td></tr>
+<tr><td>PayOS</td><td>Tạo mã QR/link thanh toán và gửi webhook khi nhận được tiền.</td></tr>
+<tr><td>Email service</td><td>Gửi email xác nhận đơn hàng và email thông báo đã thanh toán.</td></tr>
+<tr><td>Admin</td><td>Theo dõi và cập nhật trạng thái đơn hàng sau khi khách đặt.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>5. File source code liên quan</h2>
+<table>
+<thead><tr><th>File</th><th>Vai trò trong workflow</th></tr></thead>
+<tbody>
+<tr><td><code>client/src/app/(main)/products/page.js</code></td><td>Xử lý mua ngay từ danh sách sản phẩm.</td></tr>
+<tr><td><code>client/src/app/(main)/products/[id]/page.js</code></td><td>Xử lý thêm sản phẩm vào giỏ từ trang chi tiết.</td></tr>
+<tr><td><code>client/src/app/(main)/cart/page.js</code></td><td>Điều phối chính toàn bộ luồng checkout trên frontend.</td></tr>
+<tr><td><code>client/src/app/(main)/cart/components/CartTable.js</code></td><td>Hiển thị giỏ hàng, số lượng, voucher, phương thức thanh toán.</td></tr>
+<tr><td><code>client/src/app/(main)/cart/components/AddressSection.js</code></td><td>Hiển thị, chọn, thêm và xóa địa chỉ giao hàng.</td></tr>
+<tr><td><code>client/src/app/(main)/cart/components/ConfirmOrderModal.js</code></td><td>Modal xác nhận thông tin đơn hàng trước khi checkout.</td></tr>
+<tr><td><code>client/src/app/(main)/cart/components/PaymentQRModal.js</code></td><td>Modal hiển thị QR PayOS, kiểm tra thanh toán và hủy thanh toán.</td></tr>
+<tr><td><code>client/src/app/(main)/cart/components/SuccessResult.js</code></td><td>Màn hình đặt hàng thành công.</td></tr>
+<tr><td><code>client/src/app/(main)/profile/components/MyOrders.js</code></td><td>Hiển thị lịch sử đơn hàng và hủy đơn đang chờ xử lý.</td></tr>
+<tr><td><code>server/src/routers/order.js</code></td><td>Khai báo các route liên quan đến đơn hàng.</td></tr>
+<tr><td><code>server/src/controllers/orderController.js</code></td><td>Xử lý checkout, webhook, status, cancel và admin order.</td></tr>
+<tr><td><code>server/src/models/order.js</code></td><td>Model đơn hàng và trạng thái đơn hàng.</td></tr>
+<tr><td><code>server/src/models/orderItem.js</code></td><td>Model chi tiết sản phẩm trong đơn.</td></tr>
+<tr><td><code>server/src/controllers/discountController.js</code></td><td>Validate mã giảm giá.</td></tr>
+<tr><td><code>server/src/models/discount.js</code></td><td>Model mã giảm giá.</td></tr>
+<tr><td><code>server/src/middlewares/authMiddleware.js</code></td><td>Xác thực token người dùng trước checkout/cancel.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>6. Điều kiện nghiệp vụ</h2>
+<h3>6.1. Pre-condition</h3>
+<p>Trước khi bắt đầu thanh toán:</p>
+<ul>
+<li>Khách hàng đã có sản phẩm trong giỏ hàng.</li>
+<li>Sản phẩm có thông tin <code>productId</code>, <code>name</code>, <code>price</code>, <code>imageUrl</code>, <code>quantity</code>.</li>
+<li>Khách hàng phải đăng nhập để đặt hàng.</li>
+<li>Tài khoản khách hàng không bị khóa.</li>
+<li>Khách hàng phải có địa chỉ giao hàng.</li>
+<li>Sản phẩm trong giỏ vẫn còn tồn tại trong database.</li>
+<li>Tồn kho của từng sản phẩm phải đủ với số lượng đặt.</li>
+</ul>
+<h3>6.2. Post-condition</h3>
+<p>Sau khi kết thúc workflow:</p>
+<table>
+<thead><tr><th>Trường hợp</th><th>Kết quả</th></tr></thead>
+<tbody>
+<tr><td>COD thành công</td><td>Tạo đơn <code>PENDING</code>, trừ tồn kho, gửi email xác nhận, xóa giỏ hàng.</td></tr>
+<tr><td>QR tạo đơn thành công nhưng chưa chuyển khoản</td><td>Tạo đơn <code>PENDING</code>, trừ tồn kho, hiển thị QR cho khách thanh toán.</td></tr>
+<tr><td>QR thanh toán thành công</td><td>Đơn chuyển <code>PAID</code>, ghi audit log, gửi email đã thanh toán, xóa giỏ hàng.</td></tr>
+<tr><td>Khách hủy đơn/QR</td><td>Đơn chuyển <code>CANCELED</code>, hoàn lại tồn kho, giữ giỏ hàng để khách chỉnh sửa/đặt lại.</td></tr>
+<tr><td>Lỗi dữ liệu hoặc tồn kho</td><td>Không tạo đơn, rollback thay đổi database, hiển thị lỗi cho khách.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>7. Dữ liệu vào và dữ liệu ra</h2>
+<h3>7.1. Dữ liệu vào từ frontend</h3>
+<p>Khi khách hàng xác nhận đặt hàng, frontend gửi request đến <code>/api/orders/checkout</code>:</p>
+<pre class="code json"><code>{
+  &quot;items&quot;: [
+    {
+      &quot;productId&quot;: &quot;uuid-san-pham&quot;,
+      &quot;quantity&quot;: 1
+    }
+  ],
+  &quot;paymentMethod&quot;: &quot;COD&quot;,
+  &quot;shippingInfo&quot;: {
+    &quot;recipientName&quot;: &quot;Nguyen Van A&quot;,
+    &quot;phoneNumber&quot;: &quot;0912345678&quot;,
+    &quot;fullAddress&quot;: &quot;Hoa Lac, Thach That, Ha Noi&quot;
+  },
+  &quot;discountCode&quot;: &quot;SALE10&quot;
+}</code></pre>
+<h3>7.2. Dữ liệu backend tự tính lại</h3>
+<p>Backend không tin hoàn toàn dữ liệu giá từ frontend. Khi checkout, backend sẽ:</p>
+<ul>
+<li>Lấy sản phẩm thật từ database bằng <code>productId</code>.</li>
+<li>Kiểm tra sản phẩm có tồn tại không.</li>
+<li>Kiểm tra tồn kho.</li>
+<li>Lấy giá thật từ database.</li>
+<li>Tính <code>subTotal</code>.</li>
+<li>Kiểm tra lại mã giảm giá trong database.</li>
+<li>Tính <code>finalTotalAmount</code>.</li>
+<li>Tạo <code>Order</code> và <code>OrderItem</code>.</li>
+</ul>
+<h3>7.3. Dữ liệu ra</h3>
+<p>Khi thành công, backend trả về:</p>
+<pre class="code json"><code>{
+  &quot;message&quot;: &quot;Đặt hàng thành công&quot;,
+  &quot;orderCode&quot;: 123456,
+  &quot;payosData&quot;: {
+    &quot;qrCode&quot;: &quot;du-lieu-qr&quot;,
+    &quot;checkoutUrl&quot;: &quot;https://pay.payos.vn/...&quot;,
+    &quot;amount&quot;: 500000,
+    &quot;description&quot;: &quot;Thanh toan don #123456&quot;
+  }
+}</code></pre>
+<p>Với COD, <code>payosData</code> có thể là <code>null</code>. Với QR, <code>payosData</code> chứa dữ liệu dùng để hiển thị mã QR.</p>
+<hr />
+<h2>8. Use case specification</h2>
+<table>
+<thead><tr><th>Mục</th><th>Nội dung</th></tr></thead>
+<tbody>
+<tr><td>Use case ID</td><td>UC-PAYMENT-01</td></tr>
+<tr><td>Use case name</td><td>Thanh toán / Đặt hàng</td></tr>
+<tr><td>Primary actor</td><td>Khách hàng</td></tr>
+<tr><td>Supporting actor</td><td>PayOS, Email service, Admin</td></tr>
+<tr><td>Trigger</td><td>Khách hàng bấm nút <code>Tiến hành Đặt hàng</code> ở trang giỏ hàng.</td></tr>
+<tr><td>Pre-condition</td><td>Khách hàng đã đăng nhập, giỏ hàng có sản phẩm, có địa chỉ giao hàng, sản phẩm còn tồn kho.</td></tr>
+<tr><td>Main success scenario</td><td>Khách hàng xác nhận đơn, hệ thống tạo đơn thành công, thanh toán COD hoặc QR thành công.</td></tr>
+<tr><td>Alternative scenario</td><td>Khách hủy thanh toán, QR chưa được ghi nhận, voucher không hợp lệ, chưa đăng nhập.</td></tr>
+<tr><td>Post-condition</td><td>Đơn hàng được tạo/cập nhật trạng thái, tồn kho thay đổi đúng, khách nhận thông báo phù hợp.</td></tr>
+<tr><td>Business value</td><td>Cho phép khách hoàn tất mua hàng và hệ thống ghi nhận doanh thu/đơn hàng.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>9. Activity diagram - Luồng tổng quát</h2>
+<pre class="code mermaid"><code>flowchart TD
+    A([Bắt đầu]) --&gt; B[Khách hàng chọn Mua ngay hoặc Thêm vào giỏ]
+    B --&gt; C[Frontend lưu/cập nhật cart trong localStorage]
+    C --&gt; D[Khách hàng vào trang /cart]
+    D --&gt; E{Giỏ hàng có sản phẩm?}
+    E -- Không --&gt; E1[Hiển thị giỏ hàng trống]
+    E1 --&gt; Z([Kết thúc])
+    E -- Có --&gt; F{Khách hàng đã đăng nhập?}
+    F -- Không --&gt; F1[Thông báo yêu cầu đăng nhập]
+    F1 --&gt; F2[Chuyển sang /login]
+    F2 --&gt; Z
+    F -- Có --&gt; G[Frontend tải danh sách địa chỉ]
+    G --&gt; H{Có địa chỉ giao hàng?}
+    H -- Không --&gt; H1[Khách hàng thêm địa chỉ mới]
+    H1 --&gt; G
+    H -- Có --&gt; I[Khách hàng kiểm tra sản phẩm và số lượng]
+    I --&gt; J[Khách hàng chọn COD hoặc QR]
+    J --&gt; K{Có nhập voucher?}
+    K -- Có --&gt; K1[Validate voucher qua /api/discounts/validate]
+    K1 --&gt; L[Hiển thị tổng tiền sau giảm giá tạm tính]
+    K -- Không --&gt; L
+    L --&gt; M[Khách hàng bấm Tiến hành Đặt hàng]
+    M --&gt; N[Hiển thị modal xác nhận đơn]
+    N --&gt; O{Khách hàng xác nhận?}
+    O -- Không --&gt; I
+    O -- Có --&gt; P[POST /api/orders/checkout]
+    P --&gt; Q[Backend xác thực token]
+    Q --&gt; R[Backend kiểm tra sản phẩm, tồn kho, voucher]
+    R --&gt; S{Dữ liệu hợp lệ?}
+    S -- Không --&gt; S1[Rollback và trả lỗi]
+    S1 --&gt; I
+    S -- Có --&gt; T[Tạo Order và OrderItem, trừ tồn kho]
+    T --&gt; U{Phương thức thanh toán}
+    U -- COD --&gt; V[Commit database, gửi email xác nhận]
+    V --&gt; W[Xóa cart và hiển thị thành công]
+    W --&gt; Z
+    U -- QR --&gt; X[Gọi PayOS tạo payment link]
+    X --&gt; Y[Commit database và trả dữ liệu QR]
+    Y --&gt; AA[Hiển thị modal QR]
+    AA --&gt; AB{Khách xử lý thanh toán}
+    AB -- Chuyển khoản --&gt; AC[PayOS gửi webhook]
+    AC --&gt; AD[Backend đổi đơn sang PAID]
+    AD --&gt; AE[Khách kiểm tra trạng thái thanh toán]
+    AE --&gt; AF{Status = PAID?}
+    AF -- Có --&gt; W
+    AF -- Không --&gt; AA
+    AB -- Hủy --&gt; AG[PUT /api/orders/:orderCode/cancel]
+    AG --&gt; AH[Hoàn tồn kho, đổi status CANCELED]
+    AH --&gt; I</code></pre>
+<hr />
+<h2>10. Sequence diagram - Thanh toán COD</h2>
+<pre class="code mermaid"><code>sequenceDiagram
+    actor Customer as Khách hàng
+    participant FE as Frontend /cart
+    participant API as Backend API
+    participant DB as Database
+    participant Mail as Email service
+
+    Customer-&gt;&gt;FE: Chọn COD và bấm Tiến hành Đặt hàng
+    FE-&gt;&gt;FE: Kiểm tra đăng nhập và địa chỉ
+    FE-&gt;&gt;Customer: Hiển thị modal xác nhận đơn
+    Customer-&gt;&gt;FE: Bấm Chốt đơn hàng
+    FE-&gt;&gt;API: POST /api/orders/checkout
+    API-&gt;&gt;API: authMiddleware kiểm tra token
+    API-&gt;&gt;DB: Bắt đầu transaction
+    API-&gt;&gt;DB: Lấy Product, kiểm tồn kho, tính giá thật
+    API-&gt;&gt;DB: Kiểm tra discountCode nếu có
+    API-&gt;&gt;DB: Tạo Order status PENDING
+    API-&gt;&gt;DB: Tạo OrderItem và trừ stock
+    API-&gt;&gt;DB: Commit transaction
+    API-&gt;&gt;Mail: Gửi email xác nhận đơn
+    API--&gt;&gt;FE: Trả orderCode
+    FE-&gt;&gt;FE: Xóa localStorage cart
+    FE--&gt;&gt;Customer: Hiển thị đặt hàng thành công</code></pre>
+<hr />
+<h2>11. Sequence diagram - Thanh toán QR PayOS</h2>
+<pre class="code mermaid"><code>sequenceDiagram
+    actor Customer as Khách hàng
+    participant FE as Frontend /cart
+    participant API as Backend API
+    participant DB as Database
+    participant PayOS as PayOS
+    participant Mail as Email service
+
+    Customer-&gt;&gt;FE: Chọn QR và xác nhận đơn
+    FE-&gt;&gt;API: POST /api/orders/checkout
+    API-&gt;&gt;API: Xác thực token
+    API-&gt;&gt;DB: Bắt đầu transaction
+    API-&gt;&gt;DB: Kiểm tra sản phẩm, tồn kho, voucher
+    API-&gt;&gt;DB: Tạo Order PENDING và OrderItem
+    API-&gt;&gt;PayOS: createPaymentLink(orderCode, amount, items)
+    PayOS--&gt;&gt;API: Trả dữ liệu QR/payment link
+    API-&gt;&gt;DB: Commit transaction
+    API-&gt;&gt;Mail: Gửi email xác nhận đơn
+    API--&gt;&gt;FE: Trả orderCode và payosData
+    FE--&gt;&gt;Customer: Hiển thị modal QR
+    Customer-&gt;&gt;PayOS: Chuyển khoản theo QR
+    PayOS-&gt;&gt;API: POST /api/orders/webhook
+    API-&gt;&gt;DB: Tìm Order PENDING theo orderCode
+    API-&gt;&gt;DB: Cập nhật status PAID
+    API-&gt;&gt;DB: Ghi AuditLog PAYMENT_RECEIVED
+    API-&gt;&gt;Mail: Gửi email đã thanh toán
+    Customer-&gt;&gt;FE: Bấm Tôi đã chuyển khoản xong
+    FE-&gt;&gt;API: GET /api/orders/:orderCode/status
+    API--&gt;&gt;FE: Trả status PAID
+    FE-&gt;&gt;FE: Đóng modal, xóa cart
+    FE--&gt;&gt;Customer: Hiển thị đặt hàng thành công</code></pre>
+<hr />
+<h2>12. State diagram - Trạng thái đơn hàng</h2>
+<pre class="code mermaid"><code>stateDiagram-v2
+    [*] --&gt; PENDING: Tạo đơn thành công
+    PENDING --&gt; PAID: PayOS webhook xác nhận tiền
+    PENDING --&gt; CANCELED: Khách hủy đơn/thanh toán
+    PENDING --&gt; SHIPPING: Admin xử lý giao hàng
+    PAID --&gt; SHIPPING: Admin giao đơn đã thanh toán
+    SHIPPING --&gt; COMPLETED: Giao hàng hoàn tất
+    PAID --&gt; COMPLETED: Admin hoàn tất trực tiếp nếu cần
+    COMPLETED --&gt; [*]
+    CANCELED --&gt; [*]</code></pre>
+<h3>Ý nghĩa trạng thái</h3>
+<table>
+<thead><tr><th>Trạng thái</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><code>PENDING</code></td><td>Đơn vừa được tạo, chờ xử lý hoặc chờ thanh toán.</td></tr>
+<tr><td><code>PAID</code></td><td>Đơn QR đã được PayOS xác nhận thanh toán.</td></tr>
+<tr><td><code>SHIPPING</code></td><td>Đơn đang trong quá trình giao hàng.</td></tr>
+<tr><td><code>COMPLETED</code></td><td>Đơn đã hoàn tất.</td></tr>
+<tr><td><code>CANCELED</code></td><td>Đơn đã bị hủy và không tiếp tục xử lý.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>13. Main flow - Luồng thành công chính</h2>
+<h3>13.1. Luồng COD thành công</h3>
+<table>
+<thead><tr><th>Bước</th><th>Actor</th><th>Hành động</th><th>Kết quả mong đợi</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Khách hàng</td><td>Chọn sản phẩm và bấm <code>Mua ngay</code> hoặc <code>Thêm vào giỏ</code></td><td>Sản phẩm được lưu vào <code>localStorage cart</code>.</td></tr>
+<tr><td>2</td><td>Khách hàng</td><td>Mở trang <code>/cart</code></td><td>Hệ thống hiển thị danh sách sản phẩm trong giỏ.</td></tr>
+<tr><td>3</td><td>Frontend</td><td>Kiểm tra trạng thái đăng nhập</td><td>Nếu có token hợp lệ thì tiếp tục.</td></tr>
+<tr><td>4</td><td>Frontend</td><td>Tải địa chỉ qua <code>/api/addresses</code></td><td>Hiển thị địa chỉ mặc định hoặc danh sách địa chỉ.</td></tr>
+<tr><td>5</td><td>Khách hàng</td><td>Chọn <code>COD</code></td><td>Phương thức thanh toán được lưu ở state frontend.</td></tr>
+<tr><td>6</td><td>Khách hàng</td><td>Bấm <code>Tiến hành Đặt hàng</code></td><td>Modal xác nhận đơn hàng được mở.</td></tr>
+<tr><td>7</td><td>Khách hàng</td><td>Bấm <code>Chốt đơn hàng</code></td><td>Frontend gửi request checkout.</td></tr>
+<tr><td>8</td><td>Backend</td><td>Kiểm tra token, sản phẩm, tồn kho, voucher</td><td>Dữ liệu hợp lệ, transaction tiếp tục.</td></tr>
+<tr><td>9</td><td>Backend</td><td>Tạo <code>Order</code>, <code>OrderItem</code>, trừ tồn kho</td><td>Đơn hàng được tạo với status <code>PENDING</code>.</td></tr>
+<tr><td>10</td><td>Backend</td><td>Commit transaction và gửi email</td><td>Dữ liệu được lưu, khách nhận email xác nhận.</td></tr>
+<tr><td>11</td><td>Frontend</td><td>Nhận <code>orderCode</code></td><td>Xóa cart và hiển thị đặt hàng thành công.</td></tr>
+</tbody>
+</table>
+<h3>13.2. Luồng QR thành công</h3>
+<table>
+<thead><tr><th>Bước</th><th>Actor</th><th>Hành động</th><th>Kết quả mong đợi</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Khách hàng</td><td>Chọn sản phẩm, mở giỏ hàng, chọn địa chỉ</td><td>Điều kiện checkout hợp lệ.</td></tr>
+<tr><td>2</td><td>Khách hàng</td><td>Chọn <code>Chuyển khoản QR</code></td><td>Phương thức thanh toán là <code>QR</code>.</td></tr>
+<tr><td>3</td><td>Khách hàng</td><td>Xác nhận đặt hàng</td><td>Frontend gửi request checkout.</td></tr>
+<tr><td>4</td><td>Backend</td><td>Kiểm tra dữ liệu và tạo đơn <code>PENDING</code></td><td>Đơn được tạo và tồn kho bị trừ.</td></tr>
+<tr><td>5</td><td>Backend</td><td>Gọi PayOS <code>createPaymentLink</code></td><td>PayOS trả dữ liệu QR/payment link.</td></tr>
+<tr><td>6</td><td>Frontend</td><td>Hiển thị modal QR</td><td>Khách thấy mã QR, số tiền, nội dung chuyển khoản.</td></tr>
+<tr><td>7</td><td>Khách hàng</td><td>Chuyển khoản theo QR</td><td>PayOS nhận tiền.</td></tr>
+<tr><td>8</td><td>PayOS</td><td>Gửi webhook về backend</td><td>Backend cập nhật đơn sang <code>PAID</code>.</td></tr>
+<tr><td>9</td><td>Khách hàng</td><td>Bấm <code>Tôi đã chuyển khoản xong</code></td><td>Frontend gọi API kiểm tra status.</td></tr>
+<tr><td>10</td><td>Frontend</td><td>Nhận status <code>PAID</code></td><td>Đóng modal, xóa cart, hiển thị thành công.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>14. Alternative flow - Luồng thay thế</h2>
+<h3>AF-01: Khách chưa đăng nhập</h3>
+<table>
+<thead><tr><th>Bước</th><th>Mô tả</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Khách hàng vào <code>/cart</code> và bấm <code>Tiến hành Đặt hàng</code>.</td></tr>
+<tr><td>2</td><td>Frontend kiểm tra không có token đăng nhập.</td></tr>
+<tr><td>3</td><td>Hệ thống hiển thị cảnh báo yêu cầu đăng nhập.</td></tr>
+<tr><td>4</td><td>Hệ thống chuyển khách hàng sang <code>/login</code>.</td></tr>
+<tr><td>Kết quả</td><td>Không tạo đơn hàng.</td></tr>
+</tbody>
+</table>
+<h3>AF-02: Khách chưa có địa chỉ giao hàng</h3>
+<table>
+<thead><tr><th>Bước</th><th>Mô tả</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Khách hàng đã đăng nhập và có sản phẩm trong giỏ.</td></tr>
+<tr><td>2</td><td>Frontend không tìm thấy <code>selectedAddress</code>.</td></tr>
+<tr><td>3</td><td>Hệ thống yêu cầu khách thêm hoặc chọn địa chỉ giao hàng.</td></tr>
+<tr><td>4</td><td>Khách thêm địa chỉ qua form.</td></tr>
+<tr><td>5</td><td>Frontend gọi API lưu địa chỉ, sau đó tải lại danh sách địa chỉ.</td></tr>
+<tr><td>Kết quả</td><td>Khách có thể tiếp tục checkout sau khi có địa chỉ.</td></tr>
+</tbody>
+</table>
+<h3>AF-03: Khách áp dụng mã giảm giá hợp lệ</h3>
+<table>
+<thead><tr><th>Bước</th><th>Mô tả</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Khách nhập voucher ở giỏ hàng.</td></tr>
+<tr><td>2</td><td>Frontend gọi <code>POST /api/discounts/validate</code>.</td></tr>
+<tr><td>3</td><td>Backend kiểm tra voucher có tồn tại, đang hoạt động, chưa hết hạn.</td></tr>
+<tr><td>4</td><td>Frontend hiển thị số tiền giảm tạm tính.</td></tr>
+<tr><td>5</td><td>Khi checkout, backend kiểm tra lại voucher lần nữa.</td></tr>
+<tr><td>Kết quả</td><td>Đơn hàng được giảm tiền theo phần trăm hợp lệ.</td></tr>
+</tbody>
+</table>
+<h3>AF-04: QR chưa ghi nhận tiền</h3>
+<table>
+<thead><tr><th>Bước</th><th>Mô tả</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Khách chuyển khoản hoặc vừa bấm kiểm tra quá sớm.</td></tr>
+<tr><td>2</td><td>Frontend gọi <code>GET /api/orders/:orderCode/status</code>.</td></tr>
+<tr><td>3</td><td>Backend trả status vẫn là <code>PENDING</code>.</td></tr>
+<tr><td>4</td><td>Frontend thông báo hệ thống chưa nhận được tiền.</td></tr>
+<tr><td>Kết quả</td><td>Modal QR vẫn mở, khách tiếp tục chờ hoặc kiểm tra lại.</td></tr>
+</tbody>
+</table>
+<h3>AF-05: Khách hủy thanh toán QR</h3>
+<table>
+<thead><tr><th>Bước</th><th>Mô tả</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Đơn QR đã được tạo với status <code>PENDING</code>.</td></tr>
+<tr><td>2</td><td>Khách bấm <code>Hủy thanh toán đơn này</code>.</td></tr>
+<tr><td>3</td><td>Frontend gọi <code>PUT /api/orders/:orderCode/cancel</code>.</td></tr>
+<tr><td>4</td><td>Backend hoàn lại tồn kho từng sản phẩm.</td></tr>
+<tr><td>5</td><td>Backend đổi đơn sang <code>CANCELED</code> và ghi audit log.</td></tr>
+<tr><td>Kết quả</td><td>Modal đóng, giỏ hàng vẫn còn để khách chỉnh sửa/đặt lại.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>15. Exception flow - Luồng lỗi</h2>
+<table>
+<thead><tr><th>Mã</th><th>Điều kiện lỗi</th><th>Nơi xử lý</th><th>Kết quả mong đợi</th></tr></thead>
+<tbody>
+<tr><td>EF-01</td><td>Giỏ hàng rỗng</td><td>Frontend/Backend</td><td>Không tạo đơn, báo giỏ hàng không được để trống.</td></tr>
+<tr><td>EF-02</td><td>Token không hợp lệ/hết hạn</td><td><code>authMiddleware</code> / axios interceptor</td><td>Thử refresh token; nếu thất bại chuyển về <code>/login</code>.</td></tr>
+<tr><td>EF-03</td><td>Tài khoản bị khóa</td><td><code>authMiddleware</code></td><td>Trả <code>ACCOUNT_BANNED</code>, frontend chuyển sang <code>/banned</code>.</td></tr>
+<tr><td>EF-04</td><td>Sản phẩm không tồn tại</td><td><code>checkout</code> backend</td><td>Rollback transaction, trả lỗi.</td></tr>
+<tr><td>EF-05</td><td>Tồn kho không đủ</td><td><code>checkout</code> backend</td><td>Rollback transaction, báo sản phẩm chỉ còn số lượng hiện có.</td></tr>
+<tr><td>EF-06</td><td>Voucher không tồn tại</td><td><code>validateDiscount</code> / <code>checkout</code></td><td>Frontend báo lỗi; backend không áp dụng voucher.</td></tr>
+<tr><td>EF-07</td><td>Voucher hết hạn</td><td><code>validateDiscount</code> / <code>checkout</code></td><td>Frontend báo mã hết hạn; backend không áp dụng voucher.</td></tr>
+<tr><td>EF-08</td><td>Tổng tiền QR dưới 2.000 VNĐ</td><td><code>checkout</code> backend</td><td>Rollback và báo điều kiện tối thiểu của PayOS.</td></tr>
+<tr><td>EF-09</td><td>PayOS không tạo được payment link</td><td><code>checkout</code> backend</td><td>Rollback transaction, trả lỗi tạo đơn/thanh toán.</td></tr>
+<tr><td>EF-10</td><td>Hủy đơn không còn <code>PENDING</code></td><td><code>cancelOrder</code> backend</td><td>Không cho hủy, trả lỗi.</td></tr>
+<tr><td>EF-11</td><td>PayOS webhook gửi orderCode không tồn tại</td><td><code>handleWebhook</code> backend</td><td>Trả success để tránh retry vô hạn, không cập nhật đơn.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>16. API mapping</h2>
+<table>
+<thead><tr><th>API</th><th>Method</th><th>Auth</th><th>Mục đích</th><th>Kết quả chính</th></tr></thead>
+<tbody>
+<tr><td><code>/api/addresses</code></td><td>GET</td><td>Có</td><td>Lấy địa chỉ của user</td><td>Danh sách địa chỉ.</td></tr>
+<tr><td><code>/api/addresses</code></td><td>POST</td><td>Có</td><td>Thêm địa chỉ mới</td><td>Địa chỉ mới được lưu.</td></tr>
+<tr><td><code>/api/addresses/:id</code></td><td>DELETE</td><td>Có</td><td>Xóa địa chỉ</td><td>Địa chỉ bị xóa.</td></tr>
+<tr><td><code>/api/discounts/validate</code></td><td>POST</td><td>Không bắt buộc</td><td>Kiểm tra mã giảm giá</td><td>Trả percentage/description hoặc lỗi.</td></tr>
+<tr><td><code>/api/orders/checkout</code></td><td>POST</td><td>Có</td><td>Tạo đơn hàng</td><td>Trả orderCode và dữ liệu PayOS nếu QR.</td></tr>
+<tr><td><code>/api/orders/webhook</code></td><td>POST</td><td>Không</td><td>PayOS xác nhận thanh toán</td><td>Đơn chuyển <code>PAID</code>.</td></tr>
+<tr><td><code>/api/orders/:orderCode/status</code></td><td>GET</td><td>Không</td><td>Kiểm tra trạng thái đơn</td><td>Trả <code>status</code>.</td></tr>
+<tr><td><code>/api/orders/:orderCode/cancel</code></td><td>PUT</td><td>Có</td><td>Hủy đơn còn <code>PENDING</code></td><td>Đơn chuyển <code>CANCELED</code>, hoàn stock.</td></tr>
+<tr><td><code>/api/orders/me</code></td><td>GET</td><td>Có</td><td>User xem đơn của mình</td><td>Danh sách đơn hàng.</td></tr>
+<tr><td><code>/api/orders/admin</code></td><td>GET</td><td>Admin/root</td><td>Admin xem toàn bộ đơn</td><td>Danh sách đơn hàng.</td></tr>
+<tr><td><code>/api/orders/admin/:id/status</code></td><td>PUT</td><td>Admin/root</td><td>Admin cập nhật trạng thái</td><td>Trạng thái đơn được cập nhật.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>17. Business rules</h2>
+<table>
+<thead><tr><th>Mã rule</th><th>Quy tắc</th></tr></thead>
+<tbody>
+<tr><td>BR-01</td><td>Khách hàng phải đăng nhập mới được checkout.</td></tr>
+<tr><td>BR-02</td><td>Khách hàng phải có địa chỉ giao hàng mới được checkout.</td></tr>
+<tr><td>BR-03</td><td>Backend phải tính lại giá theo database, không dùng giá từ frontend.</td></tr>
+<tr><td>BR-04</td><td>Backend phải kiểm tra tồn kho trước khi tạo đơn.</td></tr>
+<tr><td>BR-05</td><td>Nếu có lỗi trong checkout, transaction phải rollback toàn bộ.</td></tr>
+<tr><td>BR-06</td><td>Đơn mới tạo có trạng thái mặc định <code>PENDING</code>.</td></tr>
+<tr><td>BR-07</td><td>Thanh toán COD không gọi PayOS.</td></tr>
+<tr><td>BR-08</td><td>Thanh toán QR phải gọi PayOS để tạo payment link.</td></tr>
+<tr><td>BR-09</td><td>Đơn QR chỉ chuyển <code>PAID</code> khi PayOS webhook xác nhận.</td></tr>
+<tr><td>BR-10</td><td>Chỉ đơn <code>PENDING</code> mới được hủy.</td></tr>
+<tr><td>BR-11</td><td>Khi hủy đơn <code>PENDING</code>, hệ thống phải hoàn lại tồn kho.</td></tr>
+<tr><td>BR-12</td><td>Voucher phải tồn tại, active và chưa hết hạn mới được áp dụng.</td></tr>
+<tr><td>BR-13</td><td>Tổng tiền thanh toán QR phải từ 2.000 VNĐ trở lên.</td></tr>
+<tr><td>BR-14</td><td>Sau khi đặt hàng/thanh toán thành công, giỏ hàng trên frontend được xóa.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>18. Database impact</h2>
+<table>
+<thead><tr><th>Model</th><th>Thao tác trong workflow</th></tr></thead>
+<tbody>
+<tr><td><code>Product</code></td><td>Đọc giá/tồn kho; trừ stock khi tạo đơn; hoàn stock khi hủy đơn.</td></tr>
+<tr><td><code>Order</code></td><td>Tạo đơn mới; cập nhật status <code>PAID</code>, <code>CANCELED</code>, <code>SHIPPING</code>, <code>COMPLETED</code>.</td></tr>
+<tr><td><code>OrderItem</code></td><td>Lưu từng sản phẩm trong đơn với số lượng và giá tại thời điểm mua.</td></tr>
+<tr><td><code>Discount</code></td><td>Kiểm tra mã giảm giá, phần trăm giảm và ngày hết hạn.</td></tr>
+<tr><td><code>Address</code></td><td>Lấy địa chỉ giao hàng của user.</td></tr>
+<tr><td><code>User</code></td><td>Xác thực người dùng và lấy email gửi thông báo.</td></tr>
+<tr><td><code>AuditLog</code></td><td>Ghi log thanh toán PayOS và hủy đơn.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>19. Điểm cần lưu ý khi chuyển sang test case</h2>
+<p>Nhóm thiết kế test case nên ưu tiên các nhóm kiểm thử sau:</p>
+<table>
+<thead><tr><th>Nhóm test</th><th>Nội dung cần test</th></tr></thead>
+<tbody>
+<tr><td>Authentication</td><td>Chưa đăng nhập, token hết hạn, tài khoản bị khóa.</td></tr>
+<tr><td>Cart</td><td>Giỏ rỗng, nhiều sản phẩm, tăng/giảm số lượng, xóa sản phẩm.</td></tr>
+<tr><td>Address</td><td>Không có địa chỉ, thêm địa chỉ mới, chọn địa chỉ khác, xóa địa chỉ.</td></tr>
+<tr><td>Discount</td><td>Mã hợp lệ, không tồn tại, hết hạn, inactive, discount lớn.</td></tr>
+<tr><td>Inventory</td><td>Sản phẩm hết hàng, không đủ hàng, sản phẩm bị xóa trước checkout.</td></tr>
+<tr><td>COD payment</td><td>Tạo đơn COD thành công, email, trạng thái <code>PENDING</code>, xóa cart.</td></tr>
+<tr><td>QR payment</td><td>Tạo QR, hiển thị QR, webhook <code>PAID</code>, kiểm tra status, xóa cart.</td></tr>
+<tr><td>Cancel order</td><td>Hủy QR, hủy từ profile, hoàn stock, không cho hủy đơn đã thanh toán/hoàn tất.</td></tr>
+<tr><td>Admin order</td><td>Admin xem đơn và cập nhật trạng thái.</td></tr>
+<tr><td>Data integrity</td><td>Transaction rollback khi lỗi, không trừ stock sai, không tạo đơn thiếu item.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>20. Rủi ro/bug tiềm năng phát hiện từ source code</h2>
+<p>Các điểm dưới đây không phải kết luận bug chính thức, nhưng nên được chuyển cho nhóm test case và bug report kiểm tra:</p>
+<table>
+<thead><tr><th>Mã</th><th>Rủi ro</th><th>Lý do cần test</th></tr></thead>
+<tbody>
+<tr><td>R-01</td><td>Modal QR có thể không nhận dữ liệu thanh toán</td><td>Frontend dùng <code>response.data.paymentLink</code>, nhưng backend trả <code>payosData</code>.</td></tr>
+<tr><td>R-02</td><td>Đổi số lượng trong giỏ có thể sai sản phẩm/sai giá trị</td><td>Hàm <code>handleQuantityChange(value, productId)</code> ở page nhận thứ tự khác với cách <code>CartTable</code> gọi.</td></tr>
+<tr><td>R-03</td><td>Số lượng <code>sold</code> có thể bị tăng không đúng trong luồng QR</td><td>Checkout đã tăng <code>sold</code>, webhook QR lại tiếp tục tăng <code>sold</code>.</td></tr>
+<tr><td>R-04</td><td><code>OrderItem</code> model không có field <code>name</code>, nhưng email/webhook dùng tên sản phẩm theo dữ liệu tạm</td><td>Cần kiểm tra email/hiển thị chi tiết đơn có đúng tên sản phẩm không.</td></tr>
+<tr><td>R-05</td><td>Route status không có auth</td><td>Cần xem yêu cầu bảo mật: người ngoài có thể kiểm tra status nếu biết <code>orderCode</code>.</td></tr>
+<tr><td>R-06</td><td><code>returnUrl</code> và <code>cancelUrl</code> PayOS hardcode <code>localhost:3000</code></td><td>Khi deploy có thể sai URL môi trường production.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>21. Acceptance criteria</h2>
+<p>Chức năng thanh toán được xem là đạt khi:</p>
+<ul>
+<li>Khách chưa đăng nhập không thể checkout.</li>
+<li>Khách không có địa chỉ không thể checkout.</li>
+<li>Hệ thống tạo đơn thành công với phương thức COD.</li>
+<li>Hệ thống tạo QR thành công với phương thức QR.</li>
+<li>Backend tính đúng tổng tiền dựa trên giá trong database.</li>
+<li>Backend áp dụng voucher hợp lệ và bỏ qua voucher không hợp lệ.</li>
+<li>Backend không tạo đơn khi sản phẩm không tồn tại hoặc không đủ tồn kho.</li>
+<li>Khi tạo đơn thành công, <code>Order</code> và <code>OrderItem</code> được lưu đúng.</li>
+<li>Khi hủy đơn <code>PENDING</code>, tồn kho được hoàn lại.</li>
+<li>Khi PayOS webhook thành công, đơn QR chuyển sang <code>PAID</code>.</li>
+<li>Frontend hiển thị thông báo phù hợp với từng trạng thái.</li>
+<li>Giỏ hàng được xóa sau khi đặt hàng/thanh toán thành công.</li>
+</ul>
+<hr />
+<h2>22. Kết luận</h2>
+<p>Workflow thanh toán của DPWOOD là một luồng nghiệp vụ quan trọng vì liên quan trực tiếp đến dữ liệu đơn hàng, tồn kho, thanh toán và trải nghiệm khách hàng. Luồng có hai nhánh chính là <strong>COD</strong> và <strong>QR PayOS</strong>. COD đơn giản hơn vì chỉ cần tạo đơn <code>PENDING</code>, còn QR cần thêm bước tạo mã thanh toán, nhận webhook và cập nhật trạng thái <code>PAID</code>.</p>
+<p>Tài liệu này cung cấp đủ thông tin cho các vai trò còn lại trong nhóm:</p>
+<ul>
+<li><strong>Người 2:</strong> Dựa vào main flow, alternative flow và exception flow để thiết kế test case.</li>
+<li><strong>Người 3:</strong> Dựa vào API mapping và expected result để thực hiện kiểm thử.</li>
+<li><strong>Người 4:</strong> Dựa vào rủi ro/bug tiềm năng để xác minh và viết bug report nếu phát hiện lỗi.</li>
+<li><strong>Người 5:</strong> Dựa vào acceptance criteria và kết quả test để tổng hợp test report.</li>
+</ul>
+<hr />
+<h2>23. Phụ lục - Checklist nhanh cho phần trình bày</h2>
+<ul>
+<li>Chức năng chọn: Thanh toán / Đặt hàng.</li>
+<li>Actor chính: Khách hàng.</li>
+<li>Hệ thống liên quan: Frontend, Backend, Database, PayOS, Email.</li>
+<li>Pre-condition quan trọng: Đăng nhập, có giỏ hàng, có địa chỉ, đủ tồn kho.</li>
+<li>Main flow: Thêm vào giỏ -&gt; mở cart -&gt; chọn địa chỉ -&gt; chọn thanh toán -&gt; xác nhận -&gt; backend tạo đơn.</li>
+<li>Nhánh COD: Tạo đơn <code>PENDING</code>, gửi email, xóa cart.</li>
+<li>Nhánh QR: Tạo QR -&gt; chờ webhook -&gt; <code>PAID</code> -&gt; xóa cart.</li>
+<li>Nhánh hủy: Chỉ hủy <code>PENDING</code>, hoàn tồn kho, status <code>CANCELED</code>.</li>
+<li>Điểm cần test mạnh: voucher, tồn kho, QR webhook, hủy đơn, mismatch dữ liệu QR.</li>
+</ul>
+
+</main>
+</body>
+</html>

@@ -1,10 +1,13 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
-import { Modal, Form, Input, Button, Upload, Avatar, message } from "antd";
+import { App, Modal, Form, Input, Button, Upload, Avatar } from "antd";
 import { UploadOutlined, UserOutlined } from "@ant-design/icons";
 import axios from "axios";
 import api from "@/utils/axios";
 
 export default function EditProfileModal({ isOpen, onClose, user, onSuccess }) {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
     const [uploading, setUploading] = useState(false);
     const [tempAvatar, setTempAvatar] = useState("");
@@ -48,7 +51,7 @@ export default function EditProfileModal({ isOpen, onClose, user, onSuccess }) {
             window.dispatchEvent(new Event("storage"));
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch {
             message.error("Cập nhật thất bại.");
         }
     };

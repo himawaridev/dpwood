@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Providers from "./Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,35 +16,38 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'DPWOOD Store - Nội Thất Gỗ Cao Cấp',
-    template: '%s | DPWOOD Store',
+    default: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
+    template: "%s | DPWOOD Store",
   },
-  description: 'Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.',
+  description:
+    "Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.",
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
   openGraph: {
-    title: 'DPWOOD Store - Nội Thất Gỗ Cao Cấp',
-    description: 'Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.',
-    url: 'https://dpwood.store',
-    siteName: 'DPWOOD',
+    title: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
+    description:
+      "Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.",
+    url: "https://dpwood.store",
+    siteName: "DPWOOD",
     images: [
       {
-        url: 'https://dpwood.store/linkbanner.png',
+        url: "https://dpwood.store/linkbanner.png",
         width: 1200,
         height: 630,
-        alt: 'DPWOOD Store - Nội Thất Gỗ Cao Cấp',
+        alt: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
       },
     ],
-    locale: 'vi_VN',
-    type: 'website',
+    locale: "vi_VN",
+    type: "website",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'DPWOOD Store - Nội Thất Gỗ Cao Cấp',
-    description: 'Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.',
-    images: ['https://dpwood.store/linkbanner.png'],
+    card: "summary_large_image",
+    title: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
+    description:
+      "Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.",
+    images: ["https://dpwood.store/linkbanner.png"],
   },
 };
 
@@ -53,8 +57,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+    <html lang="vi" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

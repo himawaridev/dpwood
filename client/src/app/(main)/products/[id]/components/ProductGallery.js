@@ -3,57 +3,62 @@ import { Image, Flex } from "antd";
 
 export default function ProductGallery({ activeImage, setActiveImage, imageList, productName }) {
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div
                 style={{
-                    border: "1px solid #f0f0f0",
-                    borderRadius: "12px",
+                    border: "1px solid var(--dp-soft-border)",
+                    borderRadius: 8,
                     overflow: "hidden",
-                    padding: "12px",
+                    background: "var(--dp-surface-muted)",
+                    aspectRatio: "1 / 1",
                     display: "flex",
-                    justifyContent: "center",
                     alignItems: "center",
-                    background: "#fafafa",
+                    justifyContent: "center",
                 }}
             >
                 <Image
                     src={activeImage}
                     alt={productName}
+                    preview
                     style={{
                         width: "100%",
-                        maxHeight: "550px",
-                        borderRadius: "8px",
+                        height: "100%",
                         objectFit: "contain",
+                        display: "block",
                     }}
                 />
             </div>
 
             {imageList.length > 1 && (
-                <Flex gap="small" style={{ overflowX: "auto", paddingBottom: "8px" }}>
+                <Flex gap={10} style={{ overflowX: "auto", paddingBottom: 4 }}>
                     {imageList.map((img, index) => (
-                        <div
-                            key={index}
+                        <button
+                            key={img}
+                            type="button"
                             onClick={() => setActiveImage(img)}
                             style={{
-                                width: "80px",
-                                height: "80px",
-                                borderRadius: "8px",
+                                width: 78,
+                                height: 78,
+                                borderRadius: 8,
                                 border:
-                                    activeImage === img ? "2px solid #1677ff" : "1px solid #d9d9d9",
+                                    activeImage === img
+                                        ? "2px solid var(--dp-primary)"
+                                        : "1px solid var(--dp-border)",
                                 overflow: "hidden",
                                 cursor: "pointer",
-                                opacity: activeImage === img ? 1 : 0.6,
-                                transition: "all 0.3s ease",
+                                opacity: activeImage === img ? 1 : 0.7,
+                                background: "#fff",
                                 flexShrink: 0,
+                                padding: 0,
                             }}
                         >
                             <Image
                                 src={img}
                                 preview={false}
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                alt={`Thumbnail ${index + 1}`}
+                                className="dp-image-cover"
+                                alt={`${productName} ${index + 1}`}
                             />
-                        </div>
+                        </button>
                     ))}
                 </Flex>
             )}

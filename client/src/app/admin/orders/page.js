@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { message, Typography, Tabs, Input, Space, Button, Badge } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { App, Typography, Tabs, Input, Space, Button, Badge } from "antd";
 import { ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
@@ -10,6 +10,7 @@ import OrderDetailModal from "./components/OrderDetailModal";
 const { Title } = Typography;
 
 export default function AdminOrdersPage() {
+    const { message } = App.useApp();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState("");
@@ -17,21 +18,21 @@ export default function AdminOrdersPage() {
     const [isDetailVisible, setIsDetailVisible] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get("/orders/admin");
             setOrders(res.data);
-        } catch (error) {
+        } catch {
             message.error("Không thể lấy danh sách đơn hàng");
         } finally {
             setLoading(false);
         }
-    };
+    }, [message]);
 
     useEffect(() => {
         fetchOrders();
-    }, []);
+    }, [fetchOrders]);
 
     const handleStatusChange = async (orderId, newStatus) => {
         setOrders((prevOrders) =>

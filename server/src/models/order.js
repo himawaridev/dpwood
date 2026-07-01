@@ -51,6 +51,14 @@ const Order = sequelize.define(
             type: DataTypes.ENUM("PENDING", "PAID", "SHIPPING", "COMPLETED", "CANCELED"),
             defaultValue: "PENDING",
         },
+        discountCode: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        discountAmount: {
+            type: DataTypes.DECIMAL(15, 0),
+            defaultValue: 0,
+        },
     },
     {
         timestamps: true,

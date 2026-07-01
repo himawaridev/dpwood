@@ -19,7 +19,7 @@ export async function generateMetadata({ params }) {
                 images: [blog.thumbnail],
             },
         };
-    } catch (error) {
+    } catch {
         return { title: "Cẩm nang nội thất" };
     }
 }

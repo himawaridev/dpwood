@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Table, Button, Typography, Tag, Switch, message, Flex, Popconfirm } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { App, Table, Button, Typography, Tag, Switch, Flex, Popconfirm } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, FieldTimeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 import NotificationModal from "./components/NotificationModal";
@@ -9,26 +9,27 @@ import dayjs from "dayjs";
 const { Title, Text } = Typography;
 
 export default function AdminNotificationsPage() {
+    const { message } = App.useApp();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get("/notifications");
             setNotifications(res.data);
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi tải danh sách thông báo");
         } finally {
             setLoading(false);
         }
-    };
+    }, [message]);
 
     useEffect(() => {
         fetchNotifications();
-    }, []);
+    }, [fetchNotifications]);
 
     const handleSave = async (values) => {
         try {
@@ -52,7 +53,7 @@ export default function AdminNotificationsPage() {
             }
             setIsModalVisible(false);
             fetchNotifications();
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi lưu thông báo");
         }
     };
@@ -62,7 +63,7 @@ export default function AdminNotificationsPage() {
             await api.delete(`/notifications/${id}`);
             message.success("Xóa thành công");
             fetchNotifications();
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi xóa");
         }
     };
@@ -72,7 +73,7 @@ export default function AdminNotificationsPage() {
             await api.put(`/notifications/${id}`, { isActive: !currentStatus });
             message.success("Đã cập nhật trạng thái");
             fetchNotifications();
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi cập nhật");
         }
     };

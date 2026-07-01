@@ -1,37 +1,31 @@
-"use client";
 import React from "react";
 import { Typography, Row, Col } from "antd";
-import ProductCard from "@/components/ProductCard";
-import { useRouter } from "next/navigation";
-import { useCart } from "@/hooks/useCart";
+import ProductCard from "../../components/ProductCard";
 
 const { Title } = Typography;
 
 export default function RelatedProducts({ relatedProducts, onProductClick }) {
-    const router = useRouter();
-    const { buyNow } = useCart();
-
     if (!relatedProducts || relatedProducts.length === 0) return null;
 
     return (
-        <div style={{ marginBottom: "16px", marginTop: "40px" }}>
-            <Title level={3} style={{ textAlign: "center", marginBottom: "32px", color: "#001529" }}>
-                Sản phẩm liên quan
-            </Title>
-            <Row gutter={[16, 24]}>
-                {relatedProducts.map((p) => (
-                    <Col xs={12} sm={12} md={8} lg={6} key={p.id}>
+        <div>
+            <div style={{ marginBottom: 18 }}>
+                <span className="dp-eyebrow">Có thể bạn thích</span>
+                <Title level={2} className="dp-section-title">
+                    Sản phẩm liên quan
+                </Title>
+            </div>
+            <Row gutter={[20, 20]}>
+                {relatedProducts.map((product) => (
+                    <Col xs={24} sm={12} lg={6} key={product.id}>
                         <ProductCard
-                            product={p}
-                            onBuyNow={buyNow}
-                            onClickDetail={() => {
-                                if (onProductClick) onProductClick(p.id);
-                                else router.push(`/products/${p.id}`);
-                            }}
+                            product={product}
+                            onBuyNow={() => onProductClick(product.id)}
+                            onClickDetail={() => onProductClick(product.id)}
                         />
                     </Col>
                 ))}
             </Row>
         </div>
     );
-}
+}

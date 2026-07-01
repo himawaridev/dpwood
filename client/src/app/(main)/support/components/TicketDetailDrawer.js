@@ -1,128 +1,123 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
-import { Drawer, Typography, Tag, Input, Button, Avatar, Flex, message, Spin } from "antd";
-import { SendOutlined, UserOutlined, RobotOutlined } from "@ant-design/icons";
-import api from "@/utils/axios";
+
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { App, Avatar, Button, Drawer, Empty, Flex, Input, Spin, Tag, Typography } from "antd";
+import { RobotOutlined, SendOutlined, UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { io } from "socket.io-client";
+import api from "@/utils/axios";
 
 const { Text, Title } = Typography;
 
+const getSocketURL = () => {
+    if (typeof window === "undefined") return "http://localhost:5000";
+
+    try {
+        const apiURL = new URL(api.defaults.baseURL || "", window.location.origin);
+        return apiURL.origin;
+    } catch {
+        return window.location.origin;
+    }
+};
+
 export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket }) {
+    const { message } = App.useApp();
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false); // Trạng thái cuộn để tải thêm
+    const [loadingMore, setLoadingMore] = useState(false);
     const [replyText, setReplyText] = useState("");
     const [sending, setSending] = useState(false);
-
-    // Quản lý phân trang
     const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-
     const messagesEndRef = useRef(null);
-    const chatContainerRef = useRef(null); // Ref để theo dõi vị trí cuộn
+    const chatContainerRef = useRef(null);
+    const hasMoreRef = useRef(true);
 
-    // 1. Hàm tải tin nhắn (Hỗ trợ phân trang)
-    const fetchMessages = async (currentPage = 1) => {
-        if (!selectedTicket || !hasMore) return;
+    const fetchMessages = useCallback(async (currentPage = 1) => {
+        if (!selectedTicket || (currentPage > 1 && !hasMoreRef.current)) return;
+
         try {
             if (currentPage === 1) setLoading(true);
             else setLoadingMore(true);
 
-            // Truyền page và limit (20) lên Backend
             const res = await api.get(
                 `/support/${selectedTicket.id}/messages?page=${currentPage}&limit=20`,
             );
-            const newMessages = res.data;
+            const nextMessages = res.data || [];
 
-            // Nếu Backend trả về ít hơn 20 tin, nghĩa là đã hết sạch tin cũ
-            if (newMessages.length < 20) {
-                setHasMore(false);
-            }
+            if (nextMessages.length < 20) hasMoreRef.current = false;
 
             if (currentPage === 1) {
-                setMessages(newMessages);
+                setMessages(nextMessages);
             } else {
-                // Giữ vị trí thanh cuộn khi load thêm tin cũ để màn hình không bị giật lên nóc
                 const container = chatContainerRef.current;
-                const prevScrollHeight = container.scrollHeight;
+                const prevScrollHeight = container?.scrollHeight || 0;
+                setMessages((prev) => [...nextMessages, ...prev]);
 
-                setMessages((prev) => [...newMessages, ...prev]);
-
-                setTimeout(() => {
-                    if (container) {
-                        container.scrollTop = container.scrollHeight - prevScrollHeight;
-                    }
+                window.setTimeout(() => {
+                    if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
                 }, 0);
             }
-        } catch (error) {
-            message.error("Không thể tải chi tiết yêu cầu");
+        } catch {
+            message.error("Không thể tải chi tiết yêu cầu.");
         } finally {
             setLoading(false);
             setLoadingMore(false);
         }
-    };
+    }, [message, selectedTicket]);
 
-    // 2. Lắng nghe sự kiện Cuộn chuột chạm nóc
-    const handleScroll = (e) => {
-        if (e.target.scrollTop === 0 && !loadingMore && hasMore) {
+    useEffect(() => {
+        if (isVisible && selectedTicket) {
+            setPage(1);
+            hasMoreRef.current = true;
+            fetchMessages(1);
+        } else {
+            setMessages([]);
+            setReplyText("");
+            setPage(1);
+            hasMoreRef.current = true;
+        }
+    }, [fetchMessages, isVisible, selectedTicket]);
+
+    useEffect(() => {
+        if (!isVisible || !selectedTicket) return undefined;
+
+        const socket = io(getSocketURL(), { transports: ["websocket", "polling"] });
+
+        socket.on("receive_message", (newMessage) => {
+            if (String(newMessage.ticketId) !== String(selectedTicket.id)) return;
+
+            setMessages((prev) => {
+                const exists = prev.some((item) => item.id === newMessage.id);
+                return exists ? prev : [...prev, newMessage];
+            });
+            window.setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        });
+
+        return () => socket.disconnect();
+    }, [isVisible, selectedTicket]);
+
+    useEffect(() => {
+        if (page === 1) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, page]);
+
+    const handleScroll = (event) => {
+        if (event.target.scrollTop === 0 && !loadingMore && hasMoreRef.current) {
             const nextPage = page + 1;
             setPage(nextPage);
             fetchMessages(nextPage);
         }
     };
 
-    // 3. Reset state và tải dữ liệu khi mở Drawer
-    useEffect(() => {
-        if (isVisible) {
-            setPage(1);
-            setHasMore(true);
-            fetchMessages(1);
-        } else {
-            // Dọn dẹp dữ liệu khi đóng Drawer
-            setMessages([]);
-            setReplyText("");
-            setPage(1);
-            setHasMore(true);
-        }
-    }, [isVisible, selectedTicket]);
-
-    // 4. LẮNG NGHE SOCKET REAL-TIME
-    useEffect(() => {
-        const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000");
-
-        socket.on("receive_message", (newMessage) => {
-            if (selectedTicket && String(newMessage.ticketId) === String(selectedTicket.id)) {
-                setMessages((prev) => {
-                    const isExist = prev.some((m) => m.id === newMessage.id);
-                    return isExist ? prev : [...prev, newMessage];
-                });
-                // Cuộn xuống dòng cuối khi có tin mới
-                setTimeout(() => {
-                    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-                }, 100);
-            }
-        });
-
-        return () => socket.disconnect();
-    }, [selectedTicket]);
-
-    // Cuộn xuống tin nhắn mới nhất khi lần đầu tiên tải xong (Page 1)
-    useEffect(() => {
-        if (page === 1) {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages, page]);
-
-    // 5. Hàm gửi tin nhắn
     const handleReply = async () => {
-        if (!replyText.trim()) return;
+        const content = replyText.trim();
+        if (!content || !selectedTicket) return;
+
         try {
             setSending(true);
-            await api.post(`/support/${selectedTicket.id}/reply`, { message: replyText });
+            await api.post(`/support/${selectedTicket.id}/reply`, { message: content });
             setReplyText("");
-        } catch (error) {
-            message.error("Lỗi khi gửi phản hồi");
+        } catch {
+            message.error("Không thể gửi phản hồi lúc này.");
         } finally {
             setSending(false);
         }
@@ -133,11 +128,9 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
     return (
         <Drawer
             title={
-                <Flex align="center" gap="small">
-                    <Text strong style={{ fontSize: 16 }}>
-                        {selectedTicket.ticketCode}
-                    </Text>
-                    <Tag color="blue">{selectedTicket.topic}</Tag>
+                <Flex align="center" gap="small" wrap="wrap">
+                    <Text strong>{selectedTicket.ticketCode}</Text>
+                    <Tag color="cyan">{selectedTicket.topic}</Tag>
                 </Flex>
             }
             size="large"
@@ -145,20 +138,28 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
             onClose={onClose}
             destroyOnClose
         >
-            <div style={{ marginBottom: 20, padding: 16, background: "#fafafa", borderRadius: 8 }}>
+            <section
+                style={{
+                    marginBottom: 18,
+                    padding: 16,
+                    background: "var(--dp-bg)",
+                    border: "1px solid var(--dp-soft-border)",
+                    borderRadius: 8,
+                }}
+            >
                 <Title level={5} style={{ marginTop: 0 }}>
                     {selectedTicket.title}
                 </Title>
-                <Text type="secondary">Khách hàng: {selectedTicket.User?.email || "N/A"}</Text>
+                <Text className="dp-muted">Khách hàng: {selectedTicket.User?.email || "N/A"}</Text>
                 {selectedTicket.orderCode && (
                     <div style={{ marginTop: 8 }}>
-                        <Text strong>Mã đơn hàng liên quan: </Text>
+                        <Text strong>Mã đơn hàng: </Text>
                         <Tag color="magenta">{selectedTicket.orderCode}</Tag>
                     </div>
                 )}
-            </div>
+            </section>
 
-            <div style={{ display: "flex", flexDirection: "column", height: "calc(100% - 140px)" }}>
+            <div style={{ display: "flex", flexDirection: "column", height: "calc(100% - 128px)" }}>
                 {loading ? (
                     <Flex justify="center" align="center" style={{ flex: 1 }}>
                         <Spin />
@@ -167,72 +168,55 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
                     <div
                         ref={chatContainerRef}
                         onScroll={handleScroll}
-                        style={{ flex: 1, overflowY: "auto", padding: "0 10px", marginBottom: 20 }}
+                        style={{ flex: 1, overflowY: "auto", padding: "0 6px", marginBottom: 18 }}
                     >
-                        {/* Biểu tượng loading khi cuộn lên tải tin nhắn cũ */}
                         {loadingMore && (
                             <Flex justify="center" style={{ marginBottom: 16 }}>
                                 <Spin size="small" />
                             </Flex>
                         )}
 
-                        {messages.map((msg) => {
-                            const isSenderAdmin = msg.isAdmin;
+                        {messages.length === 0 && <Empty description="Chưa có phản hồi" />}
+
+                        {messages.map((item) => {
+                            const isAdmin = item.isAdmin;
                             return (
-                                <div
-                                    key={msg.id}
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: isSenderAdmin ? "flex-end" : "flex-start",
-                                        marginBottom: 16,
-                                    }}
+                                <Flex
+                                    key={item.id}
+                                    justify={isAdmin ? "flex-end" : "flex-start"}
+                                    style={{ marginBottom: 16 }}
                                 >
-                                    <Flex
-                                        gap="small"
-                                        align="flex-start"
-                                        style={{ maxWidth: "80%" }}
-                                    >
-                                        {!isSenderAdmin && <Avatar icon={<UserOutlined />} />}
+                                    <Flex gap="small" align="flex-start" style={{ maxWidth: "82%" }}>
+                                        {!isAdmin && <Avatar icon={<UserOutlined />} />}
                                         <div
                                             style={{
                                                 display: "flex",
                                                 flexDirection: "column",
-                                                alignItems: isSenderAdmin
-                                                    ? "flex-end"
-                                                    : "flex-start",
+                                                alignItems: isAdmin ? "flex-end" : "flex-start",
                                             }}
                                         >
                                             <div
                                                 style={{
                                                     padding: "10px 14px",
-                                                    background: isSenderAdmin
-                                                        ? "#1677ff"
-                                                        : "#f0f2f5",
-                                                    color: isSenderAdmin ? "#fff" : "#000",
-                                                    borderRadius: isSenderAdmin
-                                                        ? "8px 0px 8px 8px"
-                                                        : "0px 8px 8px 8px",
-                                                    wordWrap: "break-word",
+                                                    background: isAdmin ? "var(--dp-primary)" : "var(--dp-bg)",
+                                                    color: isAdmin ? "#fff" : "var(--dp-ink)",
+                                                    border: "1px solid var(--dp-soft-border)",
+                                                    borderRadius: 8,
                                                     whiteSpace: "pre-wrap",
+                                                    overflowWrap: "anywhere",
                                                 }}
                                             >
-                                                {msg.message}
+                                                {item.message}
                                             </div>
-                                            <Text
-                                                type="secondary"
-                                                style={{ fontSize: 12, marginTop: 4 }}
-                                            >
-                                                {dayjs(msg.createdAt).format("HH:mm DD/MM")}
+                                            <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
+                                                {dayjs(item.createdAt).format("HH:mm DD/MM")}
                                             </Text>
                                         </div>
-                                        {isSenderAdmin && (
-                                            <Avatar
-                                                style={{ background: "#f56a00" }}
-                                                icon={<RobotOutlined />}
-                                            />
+                                        {isAdmin && (
+                                            <Avatar style={{ background: "var(--dp-accent)" }} icon={<RobotOutlined />} />
                                         )}
                                     </Flex>
-                                </div>
+                                </Flex>
                             );
                         })}
                         <div ref={messagesEndRef} />
@@ -242,12 +226,12 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
                 <Flex gap="small" style={{ marginTop: "auto" }}>
                     <Input.TextArea
                         value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
+                        onChange={(event) => setReplyText(event.target.value)}
                         placeholder="Nhập nội dung phản hồi..."
                         autoSize={{ minRows: 2, maxRows: 4 }}
-                        onPressEnter={(e) => {
-                            if (!e.shiftKey) {
-                                e.preventDefault();
+                        onPressEnter={(event) => {
+                            if (!event.shiftKey) {
+                                event.preventDefault();
                                 handleReply();
                             }
                         }}

@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { message, Typography, Tabs } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { App, Typography, Tabs } from "antd";
 import api from "@/utils/axios";
 
 // 🔴 Import các Sub-Components đã chia nhỏ
@@ -12,46 +12,47 @@ import TransactionLogTab from "./components/TransactionLogTab";
 const { Title } = Typography;
 
 export default function AdminUsersPage() {
+    const { message } = App.useApp();
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingLogs, setLoadingLogs] = useState(false);
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get("/users");
             setUsers(res.data);
-        } catch (error) {
+        } catch {
             message.error("Không thể lấy danh sách người dùng");
         } finally {
             setLoading(false);
         }
-    };
+    }, [message]);
 
-    const fetchLogs = async (searchValue = "") => {
+    const fetchLogs = useCallback(async (searchValue = "") => {
         try {
             setLoadingLogs(true);
             const res = await api.get(`/users/logs${searchValue ? `?search=${searchValue}` : ""}`);
             setLogs(res.data);
-        } catch (error) {
+        } catch {
             message.error("Không thể lấy nhật ký hệ thống");
         } finally {
             setLoadingLogs(false);
         }
-    };
+    }, [message]);
 
     useEffect(() => {
         fetchUsers();
         fetchLogs();
-    }, []);
+    }, [fetchLogs, fetchUsers]);
 
     const handleChangeRole = async (userId, newRole) => {
         try {
             await api.put(`/users/${userId}/role`, { role: newRole });
             message.success("Cập nhật quyền thành công");
             fetchUsers();
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi cập nhật quyền");
         }
     };

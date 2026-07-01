@@ -1,6 +1,16 @@
 import axios from "axios";
 
-// 🔴 Tối ưu: Hàm tiện ích xử lý LocalStorage an toàn cho Next.js (SSR)
+const getBaseURL = () => {
+    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+    if (typeof window !== "undefined") {
+        const localHosts = ["localhost", "127.0.0.1", "::1"];
+        if (!localHosts.includes(window.location.hostname)) {
+            return `${window.location.origin}/api`;
+        }
+    }
+    return "http://localhost:5000/api";
+};
+
 const storage = {
     get: (key) => (typeof window !== "undefined" ? localStorage.getItem(key) : null),
     set: (key, value) => {
@@ -18,7 +28,7 @@ const storage = {
 };
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+    baseURL: getBaseURL(),
     headers: {
         "Content-Type": "application/json",
     },
@@ -40,24 +50,20 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Xử lý tài khoản bị khóa
         if (error.response?.status === 403 && error.response?.data?.message === "ACCOUNT_BANNED") {
             storage.clear();
             storage.redirect("/banned");
             return Promise.reject(error);
         }
 
-        // Xử lý hết hạn Access Token
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
                 const refreshToken = storage.get("refreshToken");
                 if (!refreshToken) throw new Error("Không có refresh token");
 
-                const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/auth/refresh`, {
-                    refreshToken,
-                });
+                const res = await axios.post(`${getBaseURL()}/auth/refresh`, { refreshToken });
                 const newToken = res.data.token;
 
                 storage.set("token", newToken);
@@ -69,6 +75,7 @@ api.interceptors.response.use(
                 storage.remove("refreshToken");
                 storage.remove("userName");
                 storage.remove("userRole");
+                storage.remove("avatarUrl");
                 storage.redirect("/login");
 
                 return Promise.reject(refreshError);

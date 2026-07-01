@@ -6,22 +6,19 @@ const { Title, Paragraph } = Typography;
 export default function ProductDescription({ description }) {
     return (
         <div>
-            <Title level={4} style={{ marginBottom: 16 }}>
-                Mô tả chi tiết sản phẩm
+            <Title level={3} style={{ marginBottom: 12 }}>
+                Mô tả sản phẩm
             </Title>
             <Paragraph
                 style={{
-                    fontSize: "15px",
-                    lineHeight: "1.8",
+                    fontSize: 15,
+                    lineHeight: 1.8,
                     whiteSpace: "pre-line",
-                    color: "#595959",
-                    background: "#fafafa",
-                    padding: "24px",
-                    borderRadius: "12px",
-                    border: "1px solid #f0f0f0",
+                    color: "var(--dp-muted)",
+                    marginBottom: 0,
                 }}
             >
-                {description || "Đang cập nhật thông tin chi tiết cho sản phẩm này."}
+                {description || "Thông tin chi tiết cho sản phẩm này đang được cập nhật."}
             </Paragraph>
         </div>
     );

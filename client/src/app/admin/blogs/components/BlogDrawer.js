@@ -1,16 +1,15 @@
 "use client";
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+    App,
     Drawer,
     Form,
     Input,
     Button,
     Switch,
-    message,
     Space,
-    Flex,
-    Typography,
     Divider,
+    Typography,
 } from "antd";
 import api from "@/utils/axios";
 import dynamic from "next/dynamic";
@@ -19,9 +18,10 @@ import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "react-quill-new/dist/quill.snow.css";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 export default function BlogDrawer({ isVisible, onClose, selectedBlog, refreshData }) {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const quillRef = useRef(null);
@@ -43,7 +43,7 @@ export default function BlogDrawer({ isVisible, onClose, selectedBlog, refreshDa
     }, [isVisible, selectedBlog, form]);
 
     // 🔴 Xử lý tải nhiều ảnh lên bài viết
-    const imageHandler = () => {
+    const imageHandler = useCallback(() => {
         const input = document.createElement("input");
         input.setAttribute("type", "file");
         input.setAttribute("accept", "image/*");
@@ -70,11 +70,11 @@ export default function BlogDrawer({ isVisible, onClose, selectedBlog, refreshDa
                 const range = quill.getSelection();
                 quill.insertEmbed(range.index, "image", url);
                 message.success({ content: "Đã chèn ảnh!", key: "uploading" });
-            } catch (error) {
+            } catch {
                 message.error({ content: "Tải ảnh thất bại", key: "uploading" });
             }
         };
-    };
+    }, [message]);
 
     const modules = useMemo(
         () => ({
@@ -89,7 +89,7 @@ export default function BlogDrawer({ isVisible, onClose, selectedBlog, refreshDa
                 handlers: { image: imageHandler },
             },
         }),
-        [],
+        [imageHandler],
     );
 
     const onFinish = async (values) => {

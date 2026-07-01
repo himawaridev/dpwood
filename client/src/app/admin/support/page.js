@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Table, Tag, Select, message, Typography, Flex, Button } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
+import { App, Table, Tag, Select, Typography, Flex, Button } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
@@ -10,6 +10,7 @@ import TicketDetailDrawer from "./components/TicketDetailDrawer";
 const { Title, Text } = Typography;
 
 export default function AdminSupportPage() {
+    const { message } = App.useApp();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -17,28 +18,28 @@ export default function AdminSupportPage() {
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
 
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get("/support/admin/all");
             setTickets(res.data);
-        } catch (error) {
+        } catch {
             message.error("Lỗi lấy danh sách Ticket");
         } finally {
             setLoading(false);
         }
-    };
+    }, [message]);
 
     useEffect(() => {
         fetchTickets();
-    }, []);
+    }, [fetchTickets]);
 
     const handleStatusChange = async (ticketId, newStatus) => {
         try {
             await api.put(`/support/admin/${ticketId}/status`, { status: newStatus });
             message.success("Đã cập nhật trạng thái");
             fetchTickets();
-        } catch (error) {
+        } catch {
             message.error("Lỗi cập nhật");
         }
     };

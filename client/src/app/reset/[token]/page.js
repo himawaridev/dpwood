@@ -1,48 +1,45 @@
-// src/app/reset/[token]/page.js
 "use client";
-import { Form, Input, Button, Card, message, Typography } from "antd";
-import { useRouter, useParams } from "next/navigation";
+
+import { App, Button, Card, Form, Input, Typography } from "antd";
+import { LockOutlined } from "@ant-design/icons";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import api from "@/utils/axios";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function ResetPasswordPage() {
+    const { message } = App.useApp();
     const router = useRouter();
-    const params = useParams(); // Lấy token từ thanh địa chỉ (URL)
+    const params = useParams();
 
     const onFinish = async (values) => {
         try {
             await api.post("/auth/reset", {
-                token: params.token, // Truyền token xuống backend
+                token: params.token,
                 password: values.password,
             });
 
-            message.success("Đổi mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.");
+            message.success("Đổi mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới.");
             router.push("/login");
         } catch (error) {
-            message.error(error.response?.data?.message || "Link đã hết hạn hoặc không hợp lệ.");
+            message.error(error.response?.data?.message || "Liên kết đã hết hạn hoặc không hợp lệ.");
         }
     };
 
     return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100vh",
-                background: "#f0f2f5",
-            }}
-        >
-            <Card style={{ width: 400, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-                <Title level={3} style={{ textAlign: "center", marginBottom: 24 }}>
-                    Tạo Mật Khẩu Mới
+        <div className="dp-page" style={{ display: "grid", placeItems: "center" }}>
+            <Card className="dp-panel" style={{ width: "min(100%, 440px)" }}>
+                <Title level={3} style={{ marginBottom: 8 }}>
+                    Tạo mật khẩu mới
                 </Title>
-                <Form layout="vertical" onFinish={onFinish}>
+                <Text className="dp-muted">Nhập mật khẩu mới để tiếp tục sử dụng tài khoản DPWOOD.</Text>
+
+                <Form layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
                     <Form.Item
                         label="Mật khẩu mới"
                         name="password"
-                        rules={[{ required: true, message: "Vui lòng nhập mật khẩu mới!" }]}
+                        rules={[{ required: true, message: "Vui lòng nhập mật khẩu mới" }]}
                     >
                         <Input.Password size="large" placeholder="Nhập mật khẩu mới" />
                     </Form.Item>
@@ -52,15 +49,13 @@ export default function ResetPasswordPage() {
                         name="confirmPassword"
                         dependencies={["password"]}
                         rules={[
-                            { required: true, message: "Vui lòng xác nhận mật khẩu!" },
+                            { required: true, message: "Vui lòng xác nhận mật khẩu" },
                             ({ getFieldValue }) => ({
                                 validator(_, value) {
                                     if (!value || getFieldValue("password") === value) {
                                         return Promise.resolve();
                                     }
-                                    return Promise.reject(
-                                        new Error("Mật khẩu xác nhận không khớp!"),
-                                    );
+                                    return Promise.reject(new Error("Mật khẩu xác nhận không khớp"));
                                 },
                             }),
                         ]}
@@ -68,11 +63,13 @@ export default function ResetPasswordPage() {
                         <Input.Password size="large" placeholder="Nhập lại mật khẩu" />
                     </Form.Item>
 
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" size="large" block>
-                            Xác Nhận Đổi
-                        </Button>
-                    </Form.Item>
+                    <Button type="primary" htmlType="submit" size="large" block icon={<LockOutlined />}>
+                        Xác nhận đổi mật khẩu
+                    </Button>
+
+                    <div style={{ textAlign: "center", marginTop: 16 }}>
+                        <Link href="/login">Quay lại đăng nhập</Link>
+                    </div>
                 </Form>
             </Card>
         </div>

@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { message } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { App } from "antd";
 import api from "@/utils/axios";
 
 // 🔴 Import các Component đã chia nhỏ
@@ -8,27 +8,28 @@ import ProductTable from "./components/ProductTable";
 import ProductModal from "./components/ProductModal";
 
 export default function AdminProductsPage() {
+    const { message } = App.useApp();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
 
-    const fetchProducts = async () => {
+    const fetchProducts = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get("/products");
             setProducts(res.data);
-        } catch (error) {
+        } catch {
             message.error("Không thể lấy danh sách sản phẩm");
         } finally {
             setLoading(false);
         }
-    };
+    }, [message]);
 
     useEffect(() => {
         fetchProducts();
-    }, []);
+    }, [fetchProducts]);
 
     const handleAdd = () => {
         setEditingProduct(null);
@@ -73,7 +74,7 @@ export default function AdminProductsPage() {
             await api.delete(`/products/${id}`);
             message.success("Đã xóa sản phẩm");
             fetchProducts();
-        } catch (error) {
+        } catch {
             message.error("Không thể xóa sản phẩm");
         }
     };

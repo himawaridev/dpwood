@@ -8,7 +8,7 @@ import {
     ReloadOutlined,
 } from "@ant-design/icons";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 export default function ProductTable({ products, loading, onAdd, onEdit, onDelete, onRefresh }) {
     const [searchText, setSearchText] = useState("");

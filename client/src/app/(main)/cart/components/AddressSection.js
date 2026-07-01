@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Card,
     Button,
@@ -12,11 +12,38 @@ import {
     Radio,
     Popconfirm,
     Select,
+    Alert,
 } from "antd";
 import { EnvironmentOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
-import axios from "axios";
 
 const { Title, Text } = Typography;
+
+const PHONE_PREFIX_OPTIONS = [
+    { value: "+84", label: "+84 Việt Nam" },
+    { value: "+1", label: "+1 US/Canada" },
+    { value: "+81", label: "+81 Nhật Bản" },
+    { value: "+82", label: "+82 Hàn Quốc" },
+    { value: "+86", label: "+86 Trung Quốc" },
+    { value: "+65", label: "+65 Singapore" },
+];
+
+const toLocationOptions = (items = []) =>
+    items.map((item) => ({
+        value: String(item.code),
+        label: item.name,
+    }));
+
+const fetchLocation = async (url) => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Cannot load address data");
+    return response.json();
+};
+
+const formatPhoneNumber = (phoneNumber = "") => {
+    if (phoneNumber.startsWith("+")) return phoneNumber;
+    if (phoneNumber.startsWith("0")) return `+84${phoneNumber.slice(1)}`;
+    return phoneNumber;
+};
 
 export default function AddressSection({
     isAuth,
@@ -30,43 +57,112 @@ export default function AddressSection({
     addressForm,
     handleSaveNewAddress,
     handleDeleteAddress,
-    userEmail,
 }) {
-    const [provinces, setProvinces] = useState([]);
-    const [districts, setDistricts] = useState([]);
-    const [wards, setWards] = useState([]);
+    const [provinceOptions, setProvinceOptions] = useState([]);
+    const [districtOptions, setDistrictOptions] = useState([]);
+    const [wardOptions, setWardOptions] = useState([]);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [locationError, setLocationError] = useState("");
+
+    const phonePrefix = Form.useWatch("phoneCountryCode", addressForm) || "+84";
+
+    const phoneValidator = useMemo(
+        () => async (_, value) => {
+            const digits = String(value || "").replace(/\D/g, "");
+            if (!digits) throw new Error("Vui lòng nhập số điện thoại");
+
+            if (phonePrefix === "+84") {
+                let nationalNumber = digits;
+                if (nationalNumber.startsWith("84")) nationalNumber = nationalNumber.slice(2);
+                if (nationalNumber.startsWith("0")) nationalNumber = nationalNumber.slice(1);
+
+                if (nationalNumber.length !== 9) {
+                    throw new Error("+84 cần đủ 9 chữ số sau mã quốc gia, ví dụ 0912345678.");
+                }
+                return;
+            }
+
+            if (digits.length < 6 || digits.length > 14) {
+                throw new Error("Số điện thoại cần từ 6 đến 14 chữ số.");
+            }
+        },
+        [phonePrefix],
+    );
 
     useEffect(() => {
-        if (isAddingAddress) {
-            axios.get("https://provinces.open-api.vn/api/?depth=1")
-                .then(res => setProvinces(res.data))
-                .catch(err => console.error(err));
-        }
-    }, [isAddingAddress]);
+        if (!isAddressModalVisible || !isAddingAddress) return;
 
-    const handleProvinceChange = (value, option) => {
-        addressForm.setFieldsValue({ district: undefined, ward: undefined });
-        setWards([]);
-        axios.get(`https://provinces.open-api.vn/api/p/${option.key}?depth=2`)
-            .then(res => setDistricts(res.data.districts))
-            .catch(err => console.error(err));
-    };
+        const currentName = addressForm.getFieldValue("recipientName");
+        const currentPrefix = addressForm.getFieldValue("phoneCountryCode");
 
-    const handleDistrictChange = (value, option) => {
-        addressForm.setFieldsValue({ ward: undefined });
-        axios.get(`https://provinces.open-api.vn/api/d/${option.key}?depth=2`)
-            .then(res => setWards(res.data.wards))
-            .catch(err => console.error(err));
-    };
-
-    const onFinishForm = (values) => {
-        const fullAddress = `${values.streetInput}, ${values.ward}, ${values.district}, ${values.province}`;
-        handleSaveNewAddress({
-            recipientName: values.recipientName,
-            phoneNumber: values.phoneNumber,
-            email: values.email,
-            fullAddress,
+        addressForm.setFieldsValue({
+            recipientName: currentName || localStorage.getItem("userName") || "",
+            phoneCountryCode: currentPrefix || "+84",
         });
+
+        if (provinceOptions.length > 0) return;
+
+        let cancelled = false;
+        setLocationLoading(true);
+        setLocationError("");
+
+        fetchLocation("https://provinces.open-api.vn/api/?depth=1")
+            .then((data) => {
+                if (!cancelled) setProvinceOptions(toLocationOptions(data));
+            })
+            .catch(() => {
+                if (!cancelled) setLocationError("Không thể tải danh sách tỉnh/thành. Vui lòng thử lại.");
+            })
+            .finally(() => {
+                if (!cancelled) setLocationLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [addressForm, isAddingAddress, isAddressModalVisible, provinceOptions.length]);
+
+    const handleProvinceChange = async (value, option) => {
+        addressForm.setFieldsValue({
+            provinceName: option?.label,
+            districtCode: undefined,
+            districtName: undefined,
+            wardCode: undefined,
+            wardName: undefined,
+        });
+        setDistrictOptions([]);
+        setWardOptions([]);
+        setLocationLoading(true);
+        setLocationError("");
+
+        try {
+            const data = await fetchLocation(`https://provinces.open-api.vn/api/p/${value}?depth=2`);
+            setDistrictOptions(toLocationOptions(data.districts));
+        } catch {
+            setLocationError("Không thể tải danh sách quận/huyện. Vui lòng chọn lại tỉnh/thành.");
+        } finally {
+            setLocationLoading(false);
+        }
+    };
+
+    const handleDistrictChange = async (value, option) => {
+        addressForm.setFieldsValue({
+            districtName: option?.label,
+            wardCode: undefined,
+            wardName: undefined,
+        });
+        setWardOptions([]);
+        setLocationLoading(true);
+        setLocationError("");
+
+        try {
+            const data = await fetchLocation(`https://provinces.open-api.vn/api/d/${value}?depth=2`);
+            setWardOptions(toLocationOptions(data.wards));
+        } catch {
+            setLocationError("Không thể tải danh sách phường/xã. Vui lòng chọn lại quận/huyện.");
+        } finally {
+            setLocationLoading(false);
+        }
     };
 
     if (!isAuth) return null;
@@ -74,21 +170,17 @@ export default function AddressSection({
     return (
         <>
             <Card
-                variant="borderless"
-                style={{
-                    marginBottom: 24,
-                    borderRadius: 12,
-                    border: "2px solid #91caff",
-                    boxShadow: "0 4px 12px rgba(22, 119, 255, 0.05)",
-                }}
+                variant="outlined"
+                className="dp-panel"
+                style={{ marginBottom: 22 }}
                 styles={{ body: { padding: "20px 24px" } }}
             >
-                <Flex justify="space-between" align="flex-start" wrap="wrap" gap="middle">
-                    <div>
+                <Flex justify="space-between" align="flex-start" wrap="wrap" gap={16}>
+                    <div style={{ flex: 1, minWidth: 260 }}>
                         <Title
                             level={5}
                             style={{
-                                color: "#1677ff",
+                                color: "var(--dp-primary)",
                                 marginTop: 0,
                                 display: "flex",
                                 alignItems: "center",
@@ -99,32 +191,17 @@ export default function AddressSection({
                         </Title>
                         {selectedAddress ? (
                             <Space size="middle" wrap>
-                                <Text strong style={{ fontSize: "16px" }}>
-                                    {selectedAddress.recipientName} (+84){" "}
-                                    {selectedAddress.phoneNumber.replace(/^0/, "")}
+                                <Text strong style={{ fontSize: 16 }}>
+                                    {selectedAddress.recipientName} {formatPhoneNumber(selectedAddress.phoneNumber)}
                                 </Text>
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        width: "1px",
-                                        height: "14px",
-                                        backgroundColor: "#d9d9d9",
-                                        margin: "0 2px",
-                                        verticalAlign: "middle",
-                                    }}
-                                />
-                                <Text>{selectedAddress.fullAddress}</Text>
-                                {selectedAddress.isDefault && (
-                                    <Tag color="blue" variant="solid">
-                                        Mặc định
-                                    </Tag>
-                                )}
+                                <Text className="dp-muted">{selectedAddress.fullAddress}</Text>
+                                {selectedAddress.isDefault && <Tag color="success">Mặc định</Tag>}
                             </Space>
                         ) : (
                             <Text type="danger">Vui lòng thêm địa chỉ giao hàng để tiếp tục.</Text>
                         )}
                     </div>
-                    <Button type="default" onClick={() => setIsAddressModalVisible(true)}>
+                    <Button onClick={() => setIsAddressModalVisible(true)}>
                         {selectedAddress ? "Thay đổi địa chỉ" : "Thêm địa chỉ"}
                     </Button>
                 </Flex>
@@ -138,11 +215,20 @@ export default function AddressSection({
                     setIsAddingAddress(false);
                 }}
                 footer={null}
-                width={600}
+                width={720}
                 forceRender
             >
                 <div style={{ display: isAddingAddress ? "block" : "none", marginTop: 16 }}>
-                    <Form form={addressForm} layout="vertical" onFinish={onFinishForm}>
+                    <Form form={addressForm} layout="vertical" onFinish={handleSaveNewAddress}>
+                        {locationError && (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                message={locationError}
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+
                         <Form.Item
                             name="recipientName"
                             label="Họ và tên"
@@ -150,76 +236,102 @@ export default function AddressSection({
                         >
                             <Input size="large" placeholder="Tên người nhận" />
                         </Form.Item>
-                        <Form.Item
-                            name="phoneNumber"
-                            label="Số điện thoại"
-                            rules={[
-                                { required: true, message: "Vui lòng nhập số điện thoại" },
-                                { pattern: /^[0-9]{10}$/, message: "Số điện thoại phải đủ 10 số và không chứa ký tự đặc biệt" }
-                            ]}
-                        >
-                            <Input size="large" placeholder="Số điện thoại liên hệ (10 chữ số)" />
+
+                        <Flex gap={12} wrap="wrap">
+                            <Form.Item
+                                name="phoneCountryCode"
+                                label="Mã vùng"
+                                initialValue="+84"
+                                rules={[{ required: true, message: "Chọn mã vùng" }]}
+                                style={{ flex: "0 0 150px" }}
+                            >
+                                <Select size="large" options={PHONE_PREFIX_OPTIONS} />
+                            </Form.Item>
+                            <Form.Item
+                                name="phoneLocalNumber"
+                                label="Số điện thoại"
+                                rules={[{ validator: phoneValidator }]}
+                                style={{ flex: "1 1 260px" }}
+                            >
+                                <Input size="large" placeholder="0912345678" inputMode="tel" />
+                            </Form.Item>
+                        </Flex>
+
+                        <Flex gap={12} wrap="wrap">
+                            <Form.Item
+                                name="provinceCode"
+                                label="Tỉnh/Thành phố"
+                                rules={[{ required: true, message: "Vui lòng chọn tỉnh/thành" }]}
+                                style={{ flex: "1 1 200px" }}
+                            >
+                                <Select
+                                    size="large"
+                                    showSearch
+                                    loading={locationLoading}
+                                    options={provinceOptions}
+                                    optionFilterProp="label"
+                                    placeholder="Chọn tỉnh/thành"
+                                    onChange={handleProvinceChange}
+                                />
+                            </Form.Item>
+                            <Form.Item
+                                name="districtCode"
+                                label="Quận/Huyện"
+                                rules={[{ required: true, message: "Vui lòng chọn quận/huyện" }]}
+                                style={{ flex: "1 1 200px" }}
+                            >
+                                <Select
+                                    size="large"
+                                    showSearch
+                                    loading={locationLoading}
+                                    disabled={districtOptions.length === 0}
+                                    options={districtOptions}
+                                    optionFilterProp="label"
+                                    placeholder="Chọn quận/huyện"
+                                    onChange={handleDistrictChange}
+                                />
+                            </Form.Item>
+                            <Form.Item
+                                name="wardCode"
+                                label="Phường/Xã"
+                                rules={[{ required: true, message: "Vui lòng chọn phường/xã" }]}
+                                style={{ flex: "1 1 200px" }}
+                            >
+                                <Select
+                                    size="large"
+                                    showSearch
+                                    loading={locationLoading}
+                                    disabled={wardOptions.length === 0}
+                                    options={wardOptions}
+                                    optionFilterProp="label"
+                                    placeholder="Chọn phường/xã"
+                                    onChange={(_, option) => addressForm.setFieldValue("wardName", option?.label)}
+                                />
+                            </Form.Item>
+                        </Flex>
+
+                        <Form.Item name="provinceName" hidden>
+                            <Input />
                         </Form.Item>
-                        <Form.Item
-                            name="email"
-                            label="Email xác nhận"
-                            rules={[
-                                { required: true, message: "Vui lòng nhập email" },
-                                { type: "email", message: "Email không hợp lệ" },
-                                {
-                                    validator: (_, value) => {
-                                        if (!value || value === userEmail) {
-                                            return Promise.resolve();
-                                        }
-                                        return Promise.reject(new Error("Email phải trùng khớp với email của tài khoản đang đăng nhập!"));
-                                    }
-                                }
-                            ]}
-                        >
-                            <Input size="large" placeholder="Nhập lại email tài khoản của bạn" />
+                        <Form.Item name="districtName" hidden>
+                            <Input />
                         </Form.Item>
-                        <Form.Item label="Khu vực" style={{ marginBottom: 0 }}>
-                            <Flex gap="small">
-                                <Form.Item
-                                    name="province"
-                                    rules={[{ required: true, message: "Chọn Tỉnh/Thành phố" }]}
-                                    style={{ flex: 1 }}
-                                >
-                                    <Select size="large" placeholder="Tỉnh/Thành phố" onChange={handleProvinceChange} showSearch optionFilterProp="children">
-                                        {provinces.map(p => <Select.Option key={p.code} value={p.name}>{p.name}</Select.Option>)}
-                                    </Select>
-                                </Form.Item>
-                                <Form.Item
-                                    name="district"
-                                    rules={[{ required: true, message: "Chọn Quận/Huyện" }]}
-                                    style={{ flex: 1 }}
-                                >
-                                    <Select size="large" placeholder="Quận/Huyện" onChange={handleDistrictChange} showSearch optionFilterProp="children" disabled={districts.length === 0}>
-                                        {districts.map(d => <Select.Option key={d.code} value={d.name}>{d.name}</Select.Option>)}
-                                    </Select>
-                                </Form.Item>
-                                <Form.Item
-                                    name="ward"
-                                    rules={[{ required: true, message: "Chọn Phường/Xã" }]}
-                                    style={{ flex: 1 }}
-                                >
-                                    <Select size="large" placeholder="Phường/Xã" showSearch optionFilterProp="children" disabled={wards.length === 0}>
-                                        {wards.map(w => <Select.Option key={w.code} value={w.name}>{w.name}</Select.Option>)}
-                                    </Select>
-                                </Form.Item>
-                            </Flex>
+                        <Form.Item name="wardName" hidden>
+                            <Input />
                         </Form.Item>
+
                         <Form.Item
-                            name="streetInput"
+                            name="streetAddress"
                             label="Địa chỉ cụ thể"
-                            rules={[{ required: true, message: "Vui lòng nhập địa chỉ cụ thể" }]}
+                            rules={[{ required: true, message: "Vui lòng nhập số nhà, tên đường" }]}
                         >
                             <Input.TextArea
                                 size="large"
-                                rows={2}
-                                placeholder="Số nhà, tên đường, ngõ hẻm..."
+                                rows={3}
+                                placeholder="Số nhà, tên đường, tòa nhà, ghi chú giao hàng..."
                             />
                         </Form.Item>
+
                         <Flex justify="flex-end" gap="small">
                             <Button size="large" onClick={() => setIsAddingAddress(false)}>
                                 Quay lại
@@ -233,78 +345,74 @@ export default function AddressSection({
 
                 <div style={{ display: !isAddingAddress ? "block" : "none", marginTop: 16 }}>
                     {addresses.length === 0 ? (
-                        <Text type="secondary">Bạn chưa có địa chỉ nào. Hãy thêm mới nhé.</Text>
+                        <Text type="secondary">Bạn chưa có địa chỉ nào. Hãy thêm mới.</Text>
                     ) : (
-                        <Flex vertical gap="middle" style={{ width: "100%" }}>
-                            {addresses.map((addr) => (
-                                <Card
-                                    key={addr.id}
-                                    size="small"
-                                    hoverable
-                                    onClick={() => setSelectedAddress(addr)}
-                                    style={{
-                                        borderColor:
-                                            selectedAddress?.id === addr.id
-                                                ? "#1677ff"
-                                                : "#d9d9d9",
-                                        background:
-                                            selectedAddress?.id === addr.id
-                                                ? "#e6f4ff"
-                                                : "#fff",
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    <Flex justify="space-between" align="center">
-                                        <Flex gap="middle" align="center">
-                                            <Radio checked={selectedAddress?.id === addr.id} />
-                                            <div>
+                        <Radio.Group
+                            style={{ width: "100%" }}
+                            value={selectedAddress?.id}
+                            onChange={(e) =>
+                                setSelectedAddress(addresses.find((a) => a.id === e.target.value))
+                            }
+                        >
+                            <Flex vertical gap={12} style={{ width: "100%" }}>
+                                {addresses.map((addr) => (
+                                    <Card
+                                        key={addr.id}
+                                        size="small"
+                                        hoverable
+                                        onClick={() => setSelectedAddress(addr)}
+                                        style={{
+                                            borderColor:
+                                                selectedAddress?.id === addr.id
+                                                    ? "var(--dp-primary)"
+                                                    : "var(--dp-soft-border)",
+                                            background:
+                                                selectedAddress?.id === addr.id
+                                                    ? "#eaf7f4"
+                                                    : "#fff",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        <Flex justify="space-between" align="flex-start" gap={12}>
+                                            <Radio value={addr.id}>
                                                 <Text strong>{addr.recipientName}</Text>
-                                                <span
-                                                    style={{
-                                                        display: "inline-block",
-                                                        width: "1px",
-                                                        height: "12px",
-                                                        backgroundColor: "#d9d9d9",
-                                                        margin: "0 8px",
-                                                        verticalAlign: "middle",
-                                                    }}
-                                                />
-                                                <Text type="secondary">{addr.phoneNumber}</Text>
-                                                <div style={{ marginTop: 4, color: "#595959" }}>
+                                                <Text type="secondary" style={{ marginLeft: 8 }}>
+                                                    {formatPhoneNumber(addr.phoneNumber)}
+                                                </Text>
+                                                <div style={{ marginTop: 8, color: "var(--dp-muted)" }}>
                                                     {addr.fullAddress}
                                                 </div>
+                                            </Radio>
+                                            <div
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                }}
+                                            >
+                                                <Popconfirm
+                                                    title="Xóa địa chỉ này?"
+                                                    description="Hành động này không thể hoàn tác."
+                                                    onConfirm={(e) => {
+                                                        e?.stopPropagation();
+                                                        handleDeleteAddress(addr.id);
+                                                    }}
+                                                    onCancel={(e) => e?.stopPropagation()}
+                                                    okText="Xóa"
+                                                    cancelText="Quay lại"
+                                                >
+                                                    <Button
+                                                        type="text"
+                                                        danger
+                                                        icon={<DeleteOutlined />}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </Popconfirm>
                                             </div>
                                         </Flex>
-                                        <div
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                            }}
-                                        >
-                                            <Popconfirm
-                                                title="Xóa địa chỉ này?"
-                                                description="Hành động này không thể hoàn tác."
-                                                onConfirm={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteAddress(addr.id);
-                                                }}
-                                                onCancel={(e) => e.stopPropagation()}
-                                                okText="Xóa"
-                                                cancelText="Quay lại"
-                                            >
-                                                <Button
-                                                    type="primary"
-                                                    danger
-                                                    icon={<DeleteOutlined />}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    Xóa
-                                                </Button>
-                                            </Popconfirm>
-                                        </div>
-                                    </Flex>
-                                </Card>
-                            ))}
-                        </Flex>
+                                    </Card>
+                                ))}
+                            </Flex>
+                        </Radio.Group>
                     )}
                     <Button
                         type="dashed"
@@ -314,7 +422,7 @@ export default function AddressSection({
                         onClick={() => setIsAddingAddress(true)}
                         style={{ marginTop: 24 }}
                     >
-                        Thêm Địa Chỉ Mới
+                        Thêm địa chỉ mới
                     </Button>
                     <Button
                         type="primary"

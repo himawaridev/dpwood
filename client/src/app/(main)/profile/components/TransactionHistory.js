@@ -5,8 +5,8 @@ const { Text } = Typography;
 
 export default function TransactionHistory({ logs }) {
     const getActionTag = (action) => {
-        const a = action?.toUpperCase();
-        switch (a) {
+        const normalizedAction = action?.toUpperCase();
+        switch (normalizedAction) {
             case "LOGIN":
                 return <Tag color="green">ĐĂNG NHẬP</Tag>;
             case "LOGOUT":
@@ -22,7 +22,7 @@ export default function TransactionHistory({ logs }) {
             case "SYSTEM":
                 return <Tag color="purple">HỆ THỐNG</Tag>;
             default:
-                return <Tag color="default">{a}</Tag>;
+                return <Tag color="default">{normalizedAction}</Tag>;
         }
     };
 
@@ -31,50 +31,38 @@ export default function TransactionHistory({ logs }) {
             title: "Thời gian",
             dataIndex: "createdAt",
             width: 150,
-            render: (d) => {
-                const date = new Date(d);
+            render: (value) => {
+                const date = new Date(value);
                 return (
                     <div style={{ display: "flex", flexDirection: "column" }}>
                         <Text strong>{date.toLocaleDateString("vi-VN")}</Text>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
                             {date.toLocaleTimeString("vi-VN")}
                         </Text>
                     </div>
                 );
             },
         },
-        { title: "Hành động", dataIndex: "action", width: 140, render: (a) => getActionTag(a) },
+        { title: "Hành động", dataIndex: "action", width: 150, render: (action) => getActionTag(action) },
         {
-            title: "Mã Đơn",
-            width: 100,
+            title: "Mã đơn",
+            width: 110,
             render: (_, record) => {
                 const match = record.details?.match(/#(\d{6})/);
-                return match ? (
-                    <Text strong style={{ color: "#1677ff" }}>
-                        #{match[1]}
-                    </Text>
-                ) : (
-                    <Text type="secondary">-</Text>
-                );
+                return match ? <Text code>#{match[1]}</Text> : <Text type="secondary">-</Text>;
             },
         },
         {
             title: "Số tiền",
-            width: 120,
+            width: 140,
             render: (_, record) => {
                 const match = record.details?.match(/(\d{1,3}(?:\.\d{3})*đ)/);
-                return match ? (
-                    <Text type="danger" strong>
-                        {match[1]}
-                    </Text>
-                ) : (
-                    <Text type="secondary">-</Text>
-                );
+                return match ? <Text className="dp-price">{match[1]}</Text> : <Text type="secondary">-</Text>;
             },
         },
         {
-            title: "Mã GD (Bank)",
-            width: 220,
+            title: "Mã giao dịch",
+            width: 200,
             render: (_, record) => {
                 const match = record.details?.match(/Mã GD:\s*([a-zA-Z0-9]+)/);
                 return match && match[1] && match[1] !== "undefined" ? (
@@ -93,8 +81,8 @@ export default function TransactionHistory({ logs }) {
                 if (!details) return "";
                 if (details.includes("PayOS tự động xác nhận"))
                     return <Text type="success">Xác nhận thanh toán tự động</Text>;
-                if (details.includes("Khách hàng hủy thanh toán đơn"))
-                    return <Text type="danger">Khách hàng yêu cầu hủy đơn</Text>;
+                if (details.includes("hủy") || details.includes("Hủy"))
+                    return <Text type="danger">Yêu cầu hủy đơn</Text>;
                 if (details.includes("Tạo đơn hàng #")) return <Text>Khởi tạo đơn hàng mới</Text>;
                 return <Text>{details}</Text>;
             },
