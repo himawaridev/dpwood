@@ -25,6 +25,36 @@ const getProductById = async (req, res) => {
     }
 };
 
+const rateProduct = async (req, res) => {
+    try {
+        const product = await Product.findByPk(req.params.id);
+        if (!product) return res.status(404).json({ message: "Sản phẩm không tồn tại" });
+
+        const ratingValue = Number(req.body.rating);
+        if (!Number.isFinite(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+            return res.status(400).json({ message: "Điểm đánh giá phải từ 1 đến 5 sao" });
+        }
+
+        const currentRating = Number(product.rating || 0);
+        const currentCount = Number(product.ratingCount || 0);
+        const nextCount = currentCount + 1;
+        const nextRating = ((currentRating * currentCount) + ratingValue) / nextCount;
+
+        await product.update({
+            rating: Number(nextRating.toFixed(2)),
+            ratingCount: nextCount,
+        });
+
+        res.status(200).json({
+            message: "Cảm ơn bạn đã đánh giá sản phẩm",
+            product,
+        });
+    } catch (error) {
+        console.error("Lỗi rateProduct:", error);
+        res.status(500).json({ message: "Lỗi khi đánh giá sản phẩm", error: error.message });
+    }
+};
+
 // ==========================================
 // [ADMIN] ROUTE QUẢN TRỊ VIÊN
 // ==========================================
@@ -75,4 +105,4 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct };
+module.exports = { getAllProducts, getProductById, rateProduct, createProduct, updateProduct, deleteProduct };

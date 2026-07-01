@@ -206,6 +206,28 @@ const startServer = async () => {
             console.log("QueryInterface Orders check skipped:", e.message);
         }
 
+        try {
+            const tableDesc = await queryInterface.describeTable("Products");
+            if (!tableDesc.rating) {
+                await queryInterface.addColumn("Products", "rating", {
+                    type: DataTypes.DECIMAL(3, 2),
+                    allowNull: false,
+                    defaultValue: 0,
+                });
+                console.log("Added rating column to Products via QueryInterface");
+            }
+            if (!tableDesc.ratingCount) {
+                await queryInterface.addColumn("Products", "ratingCount", {
+                    type: DataTypes.INTEGER,
+                    allowNull: false,
+                    defaultValue: 0,
+                });
+                console.log("Added ratingCount column to Products via QueryInterface");
+            }
+        } catch (e) {
+            console.log("QueryInterface Products check skipped:", e.message);
+        }
+
         server.listen(PORT, () => {
             console.log(`🚀 Server running at http://localhost:${PORT}`);
             console.log(`⚡ Socket.io is ready to connect`);

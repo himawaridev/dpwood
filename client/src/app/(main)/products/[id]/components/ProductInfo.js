@@ -1,5 +1,5 @@
 import React from "react";
-import { Typography, Flex, Tag, InputNumber, Button, Space, Divider } from "antd";
+import { Typography, Flex, Tag, InputNumber, Button, Space, Divider, Rate } from "antd";
 import {
     FireOutlined,
     SafetyCertificateOutlined,
@@ -21,8 +21,14 @@ export default function ProductInfo({
     setQuantity,
     handleAddToCart,
     bestSellerThreshold,
+    onRateProduct,
+    ratingSubmitting,
+    hasRatedProduct,
+    userRating,
 }) {
     const inStock = Number(product.stock || 0) > 0;
+    const rating = Number(product.rating || 0);
+    const ratingCount = Number(product.ratingCount || 0);
 
     return (
         <Flex vertical gap={22}>
@@ -53,6 +59,31 @@ export default function ProductInfo({
                     {product.name}
                 </Title>
                 <Text className="dp-muted">SKU: {product.id?.substring(0, 8).toUpperCase()}</Text>
+            </div>
+
+            <div className="dp-product-rating-panel">
+                <div>
+                    <Text strong>Đánh giá sản phẩm</Text>
+                    <Flex align="center" gap={10} wrap="wrap" style={{ marginTop: 8 }}>
+                        <Rate disabled allowHalf value={rating} />
+                        <Text className="dp-muted">
+                            {ratingCount > 0
+                                ? `${rating.toFixed(1)} / 5 từ ${ratingCount} lượt đánh giá`
+                                : "Chưa có đánh giá"}
+                        </Text>
+                    </Flex>
+                </div>
+
+                <div>
+                    <Text className="dp-muted" style={{ display: "block", marginBottom: 8 }}>
+                        {hasRatedProduct ? "Bạn đã đánh giá sản phẩm này" : "Chọn số sao của bạn"}
+                    </Text>
+                    <Rate
+                        value={userRating || 0}
+                        disabled={ratingSubmitting || hasRatedProduct}
+                        onChange={onRateProduct}
+                    />
+                </div>
             </div>
 
             <div>

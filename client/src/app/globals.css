@@ -508,6 +508,16 @@ a {
   overflow-wrap: anywhere;
 }
 
+.dp-product-rating-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--dp-soft-border);
+  background: #f8f8f8;
+}
+
 .ant-card,
 .ant-modal-content,
 .ant-table-wrapper .ant-table {
@@ -1616,6 +1626,10 @@ a {
   .dp-product-detail-title.ant-typography {
     font-size: 34px;
     line-height: 1.14;
+  }
+
+  .dp-product-rating-panel {
+    grid-template-columns: 1fr;
   }
 
   .ant-table-wrapper {

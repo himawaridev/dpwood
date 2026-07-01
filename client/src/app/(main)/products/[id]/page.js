@@ -22,6 +22,8 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState("");
     const [imageList, setImageList] = useState([]);
+    const [userRating, setUserRating] = useState(0);
+    const [ratingSubmitting, setRatingSubmitting] = useState(false);
     const bestSellerThreshold = 20;
 
     useEffect(() => {
@@ -37,6 +39,8 @@ export default function ProductDetailPage() {
 
                 const data = productRes.data;
                 setProduct(data);
+                const storedRating = localStorage.getItem(`dpwoodProductRating:${data.id}`);
+                setUserRating(storedRating ? Number(storedRating) : 0);
 
                 const fetchedImages =
                     Array.isArray(data.images) && data.images.length > 0
@@ -87,6 +91,23 @@ export default function ProductDetailPage() {
             router.push("/cart");
         } else {
             message.success(`Đã thêm ${safeQuantity} sản phẩm vào giỏ hàng`);
+        }
+    };
+
+    const handleRateProduct = async (rating) => {
+        if (!rating || ratingSubmitting || userRating) return;
+
+        try {
+            setRatingSubmitting(true);
+            const response = await api.post(`/products/${product.id}/rating`, { rating });
+            setProduct(response.data.product);
+            setUserRating(rating);
+            localStorage.setItem(`dpwoodProductRating:${product.id}`, String(rating));
+            message.success("Cảm ơn bạn đã đánh giá sản phẩm.");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể gửi đánh giá lúc này.");
+        } finally {
+            setRatingSubmitting(false);
         }
     };
 
@@ -150,6 +171,10 @@ export default function ProductDetailPage() {
                                 setQuantity={setQuantity}
                                 handleAddToCart={handleAddToCart}
                                 bestSellerThreshold={bestSellerThreshold}
+                                onRateProduct={handleRateProduct}
+                                ratingSubmitting={ratingSubmitting}
+                                hasRatedProduct={Boolean(userRating)}
+                                userRating={userRating}
                             />
                         </Col>
                     </Row>

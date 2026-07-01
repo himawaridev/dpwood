@@ -13,8 +13,7 @@ const formatCurrency = (value) =>
 const getRatingValue = (product) => {
     const explicitRating = Number(product.rating ?? product.averageRating ?? product.rate);
     if (explicitRating > 0) return Math.min(5, explicitRating);
-    const seed = String(product.id || product.name || "").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
-    return 4 + (seed % 3) * 0.5;
+    return 0;
 };
 
 export default function ProductCard({ product, badge, onClickDetail }) {

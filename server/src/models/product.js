@@ -39,6 +39,16 @@ const Product = sequelize.define(
             type: DataTypes.INTEGER,
             defaultValue: 0,
         },
+        rating: {
+            type: DataTypes.DECIMAL(3, 2),
+            allowNull: false,
+            defaultValue: 0,
+        },
+        ratingCount: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
     },
     {
         timestamps: true,

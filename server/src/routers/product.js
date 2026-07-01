@@ -10,6 +10,7 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 // ==========================================
 router.get("/", productController.getAllProducts);
 router.get("/:id", productController.getProductById);
+router.post("/:id/rating", productController.rateProduct);
 
 // ==========================================
 // [ADMIN] ROUTES - Quản lý sản phẩm
