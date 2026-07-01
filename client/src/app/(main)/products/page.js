@@ -37,6 +37,11 @@ export default function ProductsPage() {
         fetchProducts();
     }, [fetchProducts]);
 
+    useEffect(() => {
+        const nextSearch = new URLSearchParams(window.location.search).get("search");
+        if (nextSearch) setQuery(nextSearch);
+    }, []);
+
     const addToCartLogic = (product) => {
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
         const existingItemIndex = cart.findIndex((item) => item.productId === product.id);
@@ -64,13 +69,13 @@ export default function ProductsPage() {
 
     const filteredProducts = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
+        const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
         const nextProducts = products
             .filter((product) => {
-                const matchesQuery = !normalizedQuery
+                const searchableText = `${product.name || ""} ${product.description || ""}`.toLowerCase();
+                const matchesQuery = !queryTerms.length
                     ? true
-                    : `${product.name || ""} ${product.description || ""}`
-                          .toLowerCase()
-                          .includes(normalizedQuery);
+                    : queryTerms.some((term) => searchableText.includes(term));
                 const matchesStock = onlyInStock ? Number(product.stock || 0) > 0 : true;
                 return matchesQuery && matchesStock;
             })

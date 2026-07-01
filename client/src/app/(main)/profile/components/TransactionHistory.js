@@ -1,28 +1,28 @@
 import React from "react";
-import { Table, Tag, Typography } from "antd";
+import { Table, Tag, Typography, Empty, Alert } from "antd";
 
 const { Text } = Typography;
 
-export default function TransactionHistory({ logs }) {
+export default function TransactionHistory({ logs, hasError }) {
     const getActionTag = (action) => {
         const normalizedAction = action?.toUpperCase();
         switch (normalizedAction) {
             case "LOGIN":
-                return <Tag color="green">ĐĂNG NHẬP</Tag>;
+                return <Tag color="green">Đăng nhập</Tag>;
             case "LOGOUT":
-                return <Tag color="volcano">ĐĂNG XUẤT</Tag>;
+                return <Tag color="volcano">Đăng xuất</Tag>;
             case "ORDER_CREATED":
-                return <Tag color="blue">TẠO ĐƠN HÀNG</Tag>;
+                return <Tag color="blue">Tạo đơn hàng</Tag>;
             case "PAYMENT_RECEIVED":
-                return <Tag color="cyan">THANH TOÁN</Tag>;
+                return <Tag color="cyan">Thanh toán</Tag>;
             case "ORDER_CANCELED":
-                return <Tag color="magenta">HỦY ĐƠN</Tag>;
+                return <Tag color="magenta">Hủy đơn</Tag>;
             case "ADMIN_UPDATE_ORDER":
-                return <Tag color="purple">QTV CẬP NHẬT</Tag>;
+                return <Tag color="purple">QTV cập nhật</Tag>;
             case "SYSTEM":
-                return <Tag color="purple">HỆ THỐNG</Tag>;
+                return <Tag color="purple">Hệ thống</Tag>;
             default:
-                return <Tag color="default">{normalizedAction}</Tag>;
+                return <Tag>{normalizedAction || "N/A"}</Tag>;
         }
     };
 
@@ -30,72 +30,55 @@ export default function TransactionHistory({ logs }) {
         {
             title: "Thời gian",
             dataIndex: "createdAt",
-            width: 150,
+            width: 160,
             render: (value) => {
                 const date = new Date(value);
                 return (
-                    <div style={{ display: "flex", flexDirection: "column" }}>
+                    <div className="dp-profile-date-cell">
                         <Text strong>{date.toLocaleDateString("vi-VN")}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                            {date.toLocaleTimeString("vi-VN")}
-                        </Text>
+                        <Text type="secondary">{date.toLocaleTimeString("vi-VN")}</Text>
                     </div>
                 );
             },
         },
-        { title: "Hành động", dataIndex: "action", width: 150, render: (action) => getActionTag(action) },
+        { title: "Hành động", dataIndex: "action", width: 160, render: (action) => getActionTag(action) },
         {
             title: "Mã đơn",
-            width: 110,
+            width: 120,
             render: (_, record) => {
                 const match = record.details?.match(/#(\d{6})/);
                 return match ? <Text code>#{match[1]}</Text> : <Text type="secondary">-</Text>;
             },
         },
         {
-            title: "Số tiền",
-            width: 140,
-            render: (_, record) => {
-                const match = record.details?.match(/(\d{1,3}(?:\.\d{3})*đ)/);
-                return match ? <Text className="dp-price">{match[1]}</Text> : <Text type="secondary">-</Text>;
-            },
-        },
-        {
-            title: "Mã giao dịch",
-            width: 200,
-            render: (_, record) => {
-                const match = record.details?.match(/Mã GD:\s*([a-zA-Z0-9]+)/);
-                return match && match[1] && match[1] !== "undefined" ? (
-                    <Text code style={{ whiteSpace: "nowrap" }}>
-                        {match[1]}
-                    </Text>
-                ) : (
-                    <Text type="secondary">-</Text>
-                );
-            },
-        },
-        {
             title: "Ghi chú",
             dataIndex: "details",
-            render: (details) => {
-                if (!details) return "";
-                if (details.includes("PayOS tự động xác nhận"))
-                    return <Text type="success">Xác nhận thanh toán tự động</Text>;
-                if (details.includes("hủy") || details.includes("Hủy"))
-                    return <Text type="danger">Yêu cầu hủy đơn</Text>;
-                if (details.includes("Tạo đơn hàng #")) return <Text>Khởi tạo đơn hàng mới</Text>;
-                return <Text>{details}</Text>;
-            },
+            render: (details) => <Text>{details || "-"}</Text>,
         },
     ];
 
+    if (hasError) {
+        return (
+            <Alert
+                type="warning"
+                showIcon
+                title="Chưa tải được lịch sử hoạt động"
+                description="Phần này không ảnh hưởng tới thông tin tài khoản và đơn hàng."
+            />
+        );
+    }
+
     return (
         <Table
+            className="dp-profile-table"
             dataSource={logs}
             rowKey="id"
-            pagination={{ pageSize: 5 }}
+            pagination={{ pageSize: 5, showSizeChanger: false }}
             scroll={{ x: "max-content" }}
             columns={columns}
+            locale={{
+                emptyText: <Empty description="Chưa có hoạt động nào" />,
+            }}
         />
     );
 }

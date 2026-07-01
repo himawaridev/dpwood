@@ -43,7 +43,7 @@ export default function AdminCouponsPage() {
             setLoading(true);
             const res = await api.get("/coupons/admin");
             setCoupons(res.data);
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi tải danh sách mã giảm giá");
         } finally {
             setLoading(false);
@@ -110,7 +110,7 @@ export default function AdminCouponsPage() {
             await api.delete(`/coupons/admin/${id}`);
             message.success("Đã xóa mã giảm giá");
             fetchCoupons();
-        } catch (error) {
+        } catch {
             message.error("Lỗi khi xóa mã giảm giá");
         }
     };

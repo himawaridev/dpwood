@@ -27,10 +27,7 @@ export default function EditProfileModal({ isOpen, onClose, user, onSuccess }) {
 
         try {
             setUploading(true);
-            const res = await axios.post(
-                "https://api.cloudinary.com/v1_1/desgym0rq/image/upload",
-                formData,
-            );
+            const res = await axios.post("https://api.cloudinary.com/v1_1/desgym0rq/image/upload", formData);
             setTempAvatar(res.data.secure_url);
             onUploadSuccess("ok");
             message.success("Tải ảnh thành công!");
@@ -57,33 +54,17 @@ export default function EditProfileModal({ isOpen, onClose, user, onSuccess }) {
     };
 
     return (
-        <Modal
-            title="Cập nhật thông tin cá nhân"
-            open={isOpen}
-            onCancel={onClose}
-            footer={null}
-            forceRender // 🔴 CHÌA KHÓA FIX LỖI: Ép Modal load ngầm Form từ đầu
-        >
+        <Modal title="Cập nhật thông tin cá nhân" open={isOpen} onCancel={onClose} footer={null} forceRender>
             <Form form={form} layout="vertical" onFinish={handleUpdateProfile}>
-                <div style={{ textAlign: "center", marginBottom: 24 }}>
-                    <Avatar
-                        size={100}
-                        src={tempAvatar || undefined}
-                        icon={!tempAvatar && <UserOutlined />}
-                        style={{ marginBottom: 12 }}
-                    />
-                    <div>
-                        <Upload
-                            customRequest={handleUpload}
-                            showUploadList={false}
-                            accept="image/*"
-                        >
-                            <Button icon={<UploadOutlined />} loading={uploading}>
-                                Thay đổi ảnh
-                            </Button>
-                        </Upload>
-                    </div>
+                <div className="dp-profile-edit-avatar">
+                    <Avatar size={104} src={tempAvatar || undefined} icon={!tempAvatar && <UserOutlined />} />
+                    <Upload customRequest={handleUpload} showUploadList={false} accept="image/*">
+                        <Button icon={<UploadOutlined />} loading={uploading}>
+                            Thay đổi ảnh
+                        </Button>
+                    </Upload>
                 </div>
+
                 <Form.Item
                     label="Tên hiển thị"
                     name="name"
@@ -91,17 +72,10 @@ export default function EditProfileModal({ isOpen, onClose, user, onSuccess }) {
                 >
                     <Input size="large" />
                 </Form.Item>
-                <Form.Item label="Email (Cố định)">
+                <Form.Item label="Email">
                     <Input value={user?.email} disabled size="large" />
                 </Form.Item>
-                <Button
-                    type="primary"
-                    htmlType="submit"
-                    block
-                    size="large"
-                    loading={uploading}
-                    style={{ marginTop: 10 }}
-                >
+                <Button type="primary" htmlType="submit" block size="large" loading={uploading}>
                     Lưu thay đổi
                 </Button>
             </Form>

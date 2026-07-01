@@ -5,7 +5,6 @@ import { Layout, FloatButton } from "antd";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import AppFooter from "./components/AppFooter";
-import VoucherSection from "@/components/VoucherSection";
 import WelcomeModal from "@/components/WelcomeModal";
 import api from "@/utils/axios";
 
@@ -73,7 +72,6 @@ export default function MainLayout({ children }) {
                 onCheckboxChange={setSnoozeWelcome}
                 notifications={notifications}
             />
-            <VoucherSection />
             <AppFooter />
             <FloatButton.BackTop
                 duration={400}

@@ -184,6 +184,28 @@ const startServer = async () => {
             console.log("QueryInterface Blogs check skipped:", e.message);
         }
 
+        try {
+            const tableDesc = await queryInterface.describeTable("Orders");
+            if (!tableDesc.couponCode) {
+                await queryInterface.addColumn("Orders", "couponCode", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added couponCode column to Orders via QueryInterface");
+            }
+            if (!tableDesc.discountCode) {
+                await queryInterface.addColumn("Orders", "discountCode", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added discountCode column to Orders via QueryInterface");
+            }
+            if (!tableDesc.discountAmount) {
+                await queryInterface.addColumn("Orders", "discountAmount", {
+                    type: DataTypes.DECIMAL(15, 0),
+                    allowNull: false,
+                    defaultValue: 0,
+                });
+                console.log("Added discountAmount column to Orders via QueryInterface");
+            }
+        } catch (e) {
+            console.log("QueryInterface Orders check skipped:", e.message);
+        }
+
         server.listen(PORT, () => {
             console.log(`🚀 Server running at http://localhost:${PORT}`);
             console.log(`⚡ Socket.io is ready to connect`);

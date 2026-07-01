@@ -1,5 +1,5 @@
 import React from "react";
-import { Row, Col, Avatar, Button, Typography, Space, Tag, Divider, Descriptions } from "antd";
+import { Avatar, Button, Typography, Tag, Descriptions } from "antd";
 import {
     UserOutlined,
     SettingOutlined,
@@ -9,7 +9,7 @@ import {
     SafetyCertificateOutlined,
 } from "@ant-design/icons";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function UserInfo({ user, onOpenEdit }) {
     const renderRoleTag = (role) => {
@@ -35,7 +35,7 @@ export default function UserInfo({ user, onOpenEdit }) {
                 );
             default:
                 return (
-                    <Tag color="blue" icon={<UserOutlined />}>
+                    <Tag color="#f09b90" icon={<UserOutlined />}>
                         USER
                     </Tag>
                 );
@@ -50,7 +50,7 @@ export default function UserInfo({ user, onOpenEdit }) {
                     <MailOutlined /> Email
                 </span>
             ),
-            children: <div style={{ whiteSpace: "nowrap" }}>{user?.email || "Chưa cập nhật"}</div>,
+            children: <span className="dp-profile-field-value">{user?.email || "Chưa cập nhật"}</span>,
         },
         {
             key: "role",
@@ -73,51 +73,36 @@ export default function UserInfo({ user, onOpenEdit }) {
     ];
 
     return (
-        <Row gutter={[24, 24]} align="middle">
-            <Col xs={24} md={5} style={{ textAlign: "center" }}>
+        <div className="dp-profile-user">
+            <div className="dp-profile-avatar-wrap">
                 <Avatar
-                    size={118}
+                    size={124}
                     icon={!user?.avatarUrl ? <UserOutlined /> : null}
                     {...(user?.avatarUrl ? { src: user.avatarUrl } : {})}
-                    style={{
-                        border: "4px solid #eaf7f4",
-                        boxShadow: "0 10px 24px rgba(15, 118, 110, 0.14)",
-                    }}
+                    className="dp-profile-avatar"
                 />
-            </Col>
-            <Col xs={24} md={19}>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        gap: 16,
-                        flexWrap: "wrap",
-                    }}
-                >
-                    <div>
-                        <Title level={2} style={{ margin: 0 }}>
-                            {user?.name || "Tài khoản DPWOOD"}
-                        </Title>
-                        <Space style={{ marginTop: 10 }} wrap>
+            </div>
+
+            <div className="dp-profile-user-content">
+                <div className="dp-profile-user-top">
+                    <div className="dp-profile-user-title">
+                        <Title level={2}>{user?.name || "Tài khoản DPWOOD"}</Title>
+                        <Text className="dp-muted">Cảm ơn bạn đã đồng hành cùng DPWOOD.</Text>
+                        <div className="dp-profile-tags">
                             {renderRoleTag(user?.role)}
                             <Tag color="success" icon={<SafetyCertificateOutlined />}>
                                 Tài khoản tin cậy
                             </Tag>
-                        </Space>
+                        </div>
                     </div>
-                    <Button
-                        type="primary"
-                        size="large"
-                        icon={<SettingOutlined />}
-                        onClick={onOpenEdit}
-                    >
+
+                    <Button type="primary" size="large" icon={<SettingOutlined />} onClick={onOpenEdit}>
                         Cập nhật
                     </Button>
                 </div>
-                <Divider style={{ margin: "18px 0" }} />
-                <Descriptions column={{ xs: 1, sm: 2, lg: 3 }} items={profileDescriptions} />
-            </Col>
-        </Row>
+
+                <Descriptions className="dp-profile-descriptions" column={{ xs: 1, sm: 2, lg: 3 }} items={profileDescriptions} />
+            </div>
+        </div>
     );
 }

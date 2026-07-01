@@ -102,7 +102,7 @@ export default function ConfirmOrderModal({
                     style={{ marginTop: 20 }}
                     type="info"
                     showIcon
-                    message="Thông báo đơn hàng"
+                    title="Thông báo đơn hàng"
                     description="Trạng thái đơn hàng và hóa đơn điện tử sẽ được gửi về email tài khoản của bạn. Vui lòng kiểm tra số lượng và địa chỉ trước khi chốt đơn."
                 />
             </div>

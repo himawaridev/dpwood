@@ -1,18 +1,17 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Layout, Menu, Button, Badge, Avatar, Dropdown, Drawer, Grid, Space } from "antd";
+import { Layout, Menu, Button, Badge, Avatar, Dropdown, Drawer, Grid } from "antd";
 import {
     ShoppingCartOutlined,
+    GiftOutlined,
     UserOutlined,
     LogoutOutlined,
     LoginOutlined,
     TeamOutlined,
-    AppstoreOutlined,
-    ReadOutlined,
-    CustomerServiceOutlined,
     MenuOutlined,
-    HomeOutlined,
+    SearchOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -82,29 +81,31 @@ export default function Navbar() {
 
     const navItems = useMemo(
         () => [
-            { key: "/", icon: <HomeOutlined />, label: "Trang chủ" },
-            { key: "/products", icon: <AppstoreOutlined />, label: "Sản phẩm" },
-            { key: "/blogs", icon: <ReadOutlined />, label: "Bài viết" },
-            { key: "/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ" },
+            { key: "/", label: "Home" },
+            { key: "/products", label: "Products" },
+            { key: "/blogs", label: "Blog" },
+            { key: "/support", label: "Contact Us" },
         ],
         [],
     );
 
     const selectedKey =
-        navItems.find((item) => (item.key === "/" ? pathname === "/" : pathname.startsWith(item.key)))
-            ?.key || "";
+        navItems.find((item) => {
+            const baseKey = item.key.split("?")[0];
+            return item.key === "/" ? pathname === "/" : pathname.startsWith(baseKey);
+        })?.key || "";
 
     const userMenu = [
         {
             key: "profile",
             icon: <UserOutlined />,
-            label: "Hồ sơ cá nhân",
+            label: "Profile",
             onClick: () => goTo("/profile"),
         },
         (authState.userRole === "admin" || authState.userRole === "root") && {
             key: "admin",
             icon: <TeamOutlined />,
-            label: "Trang quản trị",
+            label: "Admin",
             onClick: () => goTo("/admin/dashboard"),
         },
         { type: "divider" },
@@ -112,132 +113,78 @@ export default function Navbar() {
             key: "logout",
             danger: true,
             icon: <LogoutOutlined />,
-            label: "Đăng xuất",
+            label: "Log out",
             onClick: handleLogout,
         },
     ].filter(Boolean);
 
     const brand = (
-        <button
-            type="button"
-            onClick={() => goTo("/")}
-            style={{
-                border: 0,
-                background: "transparent",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: 0,
-            }}
-        >
-            <span
-                style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 8,
-                    background: "var(--dp-primary)",
-                    color: "#fff",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 900,
-                    letterSpacing: 0,
-                }}
-            >
-                DP
-            </span>
-            <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.05 }}>
-                <span style={{ color: "var(--dp-ink)", fontSize: 20, fontWeight: 900 }}>
-                    DPWOOD
-                </span>
-                <span style={{ color: "var(--dp-muted)", fontSize: 11, fontWeight: 600 }}>
-                    Nội thất gỗ chọn lọc
-                </span>
-            </span>
+        <button type="button" onClick={() => goTo("/")} className="webcake-brand">
+            <img src="/logo.png" alt="DPWOOD Store" className="webcake-brand-logo" />
+            <span className="webcake-brand-text">DPWOOD</span>
         </button>
     );
 
+    const accountButton = authState.isAuth ? (
+        <Dropdown menu={{ items: userMenu }} placement="bottomRight" arrow>
+            <button type="button" className="webcake-account-button" aria-label="Account">
+                <Avatar
+                    className="webcake-avatar"
+                    icon={!authState.avatarUrl ? <UserOutlined /> : null}
+                    {...(authState.avatarUrl ? { src: authState.avatarUrl } : {})}
+                />
+                {!isMobile && <span className="webcake-account-name">{authState.userName || "Account"}</span>}
+            </button>
+        </Dropdown>
+    ) : (
+        <Button type="text" icon={<LoginOutlined />} onClick={() => goTo("/login")} className="webcake-login-button">
+            Login
+        </Button>
+    );
+
     const rightActions = (
-        <Space size={16} align="center">
-            <Badge count={cartCount} size="small" offset={[2, 2]}>
+        <div className="webcake-nav-actions">
+            <div className="webcake-utility-group">
                 <Button
                     type="text"
-                    aria-label="Giỏ hàng"
-                    icon={<ShoppingCartOutlined style={{ fontSize: 22 }} />}
-                    onClick={() => goTo("/cart")}
-                    style={{ width: 40, height: 40 }}
+                    aria-label="Search"
+                    className="webcake-icon-button"
+                    icon={<SearchOutlined />}
+                    onClick={() => goTo("/products")}
                 />
-            </Badge>
-
-            {authState.isAuth ? (
-                <Dropdown menu={{ items: userMenu }} placement="bottomRight" arrow>
-                    <button
-                        type="button"
-                        style={{
-                            border: 0,
-                            background: "transparent",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            maxWidth: isMobile ? 44 : 190,
-                        }}
-                    >
-                        <Avatar
-                            style={{ backgroundColor: "var(--dp-primary)", flexShrink: 0 }}
-                            icon={!authState.avatarUrl ? <UserOutlined /> : null}
-                            {...(authState.avatarUrl ? { src: authState.avatarUrl } : {})}
-                        />
-                        {!isMobile && (
-                            <span
-                                style={{
-                                    fontWeight: 700,
-                                    color: "var(--dp-ink)",
-                                    overflow: "hidden",
-                                    whiteSpace: "nowrap",
-                                    textOverflow: "ellipsis",
-                                }}
-                                title={authState.userName}
-                            >
-                                {authState.userName || "Tài khoản"}
-                            </span>
-                        )}
-                    </button>
-                </Dropdown>
-            ) : (
-                <Button type="primary" icon={<LoginOutlined />} onClick={() => goTo("/login")}>
-                    Đăng nhập
-                </Button>
+                <Button
+                    type="text"
+                    aria-label="Coupons"
+                    className="webcake-icon-button"
+                    icon={<GiftOutlined />}
+                    onClick={() => goTo("/#special-offers")}
+                />
+                <Badge count={cartCount} size="small" offset={[1, 1]}>
+                    <Button
+                        type="text"
+                        aria-label="Cart"
+                        className="webcake-icon-button"
+                        icon={<ShoppingCartOutlined />}
+                        onClick={() => goTo("/cart")}
+                    />
+                </Badge>
+            </div>
+            <div className="webcake-account-slot">{accountButton}</div>
+            {isMobile && (
+                <Button
+                    type="text"
+                    aria-label="Open menu"
+                    className="webcake-icon-button"
+                    icon={<MenuOutlined />}
+                    onClick={() => setDrawerOpen(true)}
+                />
             )}
-        </Space>
+        </div>
     );
 
     return (
-        <Header
-            style={{
-                height: 72,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(255, 255, 255, 0.96)",
-                backdropFilter: "blur(12px)",
-                padding: "0 20px",
-                position: "sticky",
-                top: 0,
-                zIndex: 1000,
-                borderBottom: "1px solid var(--dp-soft-border)",
-            }}
-        >
-            <div
-                className="dp-container"
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 18,
-                }}
-            >
+        <Header className="webcake-navbar">
+            <div className="webcake-nav-container">
                 {brand}
 
                 {!isMobile && (
@@ -246,43 +193,23 @@ export default function Navbar() {
                         mode="horizontal"
                         selectedKeys={[selectedKey]}
                         items={navItems}
-                        style={{
-                            flex: 1,
-                            justifyContent: "center",
-                            borderBottom: "none",
-                            fontWeight: 700,
-                            minWidth: 0,
-                            background: "transparent",
-                        }}
+                        className="webcake-nav-menu"
                         onClick={(e) => goTo(e.key)}
                     />
                 )}
 
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="webcake-nav-right">
                     {rightActions}
-                    {isMobile && (
-                        <Button
-                            aria-label="Mở menu"
-                            icon={<MenuOutlined />}
-                            onClick={() => setDrawerOpen(true)}
-                        />
-                    )}
                 </div>
             </div>
 
-            <Drawer
-                title={brand}
-                placement="right"
-                open={drawerOpen}
-                onClose={() => setDrawerOpen(false)}
-                size={310}
-            >
+            <Drawer title={brand} placement="right" open={drawerOpen} onClose={() => setDrawerOpen(false)} size={310}>
                 <Menu
                     mode="inline"
                     selectedKeys={[selectedKey]}
                     items={navItems}
                     onClick={(e) => goTo(e.key)}
-                    style={{ borderInlineEnd: 0, fontWeight: 700 }}
+                    style={{ borderInlineEnd: 0, fontWeight: 600 }}
                 />
             </Drawer>
         </Header>

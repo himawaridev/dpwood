@@ -1,140 +1,73 @@
+/* eslint-disable @next/next/no-img-element */
 import React from "react";
-import { Card, Typography, Flex, Tag, Button, Image } from "antd";
-import {
-    EyeOutlined,
-    ShoppingCartOutlined,
-    FireOutlined,
-    StopOutlined,
-} from "@ant-design/icons";
+import { Card, Flex, Rate, Tag, Typography } from "antd";
+import { FireOutlined, EyeOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
 const formatCurrency = (value) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 
-export default function ProductCard({ product, onBuyNow, onClickDetail }) {
+const getRatingValue = (product) => {
+    const explicitRating = Number(product.rating ?? product.averageRating ?? product.rate);
+    if (explicitRating > 0) return Math.min(5, explicitRating);
+    const seed = String(product.id || product.name || "").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+    return 4 + (seed % 3) * 0.5;
+};
+
+export default function ProductCard({ product, badge, onClickDetail }) {
     const inStock = Number(product.stock || 0) > 0;
+    const rating = getRatingValue(product);
+    const reviewCount = Number(product.reviewCount ?? product.reviewsCount ?? product.ratingCount ?? 0);
     const image =
         product.imageUrl ||
         (Array.isArray(product.images) && product.images[0]) ||
-        "https://via.placeholder.com/420x320?text=DPWOOD";
+        "https://content.pancake.vn/web-media/81/98/66/19/ec8bfc121e82a52efcf4d4882a8a74aeacb97dc0cd893ce475f3f5fc-w:823-h:1034-l:29602-t:image/webp.webp";
 
     return (
         <Card
             hoverable
-            className="dp-card-hover"
-            variant="outlined"
-            style={{
-                height: "100%",
-                overflow: "hidden",
-                borderColor: "var(--dp-soft-border)",
-                background: "var(--dp-surface)",
-            }}
+            className="webcake-product-card"
+            variant="borderless"
             styles={{
                 body: {
-                    padding: 16,
+                    padding: "16px 0 0",
                     display: "flex",
                     flexDirection: "column",
-                    minHeight: 214,
+                    minHeight: 124,
                 },
             }}
             cover={
-                <button
-                    type="button"
-                    onClick={onClickDetail}
-                    style={{
-                        border: 0,
-                        padding: 0,
-                        width: "100%",
-                        height: 230,
-                        cursor: "pointer",
-                        background: "#eef2ea",
-                        position: "relative",
-                        overflow: "hidden",
-                    }}
-                >
-                    <Image
-                        alt={product.name || "Sản phẩm DPWOOD"}
-                        src={image}
-                        preview={false}
-                        className="dp-image-cover"
-                    />
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: 12,
-                            left: 12,
-                            right: 12,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: 8,
-                        }}
-                    >
-                        {Number(product.sold || 0) >= 20 ? (
-                            <Tag color="error" icon={<FireOutlined />} style={{ margin: 0 }}>
-                                Bán chạy
-                            </Tag>
-                        ) : (
-                            <span />
-                        )}
-                        <Tag
-                            color={inStock ? "success" : "default"}
-                            icon={inStock ? null : <StopOutlined />}
-                            style={{ margin: 0 }}
-                        >
-                            {inStock ? `Còn ${product.stock}` : "Hết hàng"}
-                        </Tag>
-                    </div>
+                <button type="button" className="webcake-product-image" onClick={onClickDetail}>
+                    <img alt={product.name || "DPWOOD product"} src={image} />
+                    {badge && (
+                        <span className="webcake-product-hot-badge">
+                            <FireOutlined />
+                            {badge !== "icon-only" && badge}
+                        </span>
+                    )}
+                    {!inStock && <Tag className="webcake-product-badge">Out of stock</Tag>}
+                    <span className="webcake-product-actions" aria-hidden="true">
+                        <span>
+                            <EyeOutlined />
+                        </span>
+                        <span>
+                            <ShoppingCartOutlined />
+                        </span>
+                    </span>
                 </button>
             }
         >
-            <Flex vertical gap={10} style={{ height: "100%" }}>
-                <button
-                    type="button"
-                    onClick={onClickDetail}
-                    className="dp-line-clamp-2"
-                    style={{
-                        border: 0,
-                        background: "transparent",
-                        padding: 0,
-                        textAlign: "left",
-                        cursor: "pointer",
-                        color: "var(--dp-ink)",
-                        fontSize: 16,
-                        fontWeight: 800,
-                        minHeight: 48,
-                    }}
-                >
+            <Flex vertical align="center" gap={8}>
+                <button type="button" onClick={onClickDetail} className="webcake-product-name">
                     {product.name}
                 </button>
 
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                    SKU: {product.id?.substring(0, 8).toUpperCase()}
-                </Text>
-
-                <div style={{ marginTop: "auto" }}>
-                    <Text className="dp-price" style={{ fontSize: 21 }}>
-                        {formatCurrency(product.price)}
-                    </Text>
+                <Text className="webcake-product-price">{formatCurrency(product.price)}</Text>
+                <div className="webcake-product-rating">
+                    <Rate disabled allowHalf value={rating} />
+                    <span>({reviewCount})</span>
                 </div>
-
-                <Flex gap={8} wrap style={{ marginTop: 8 }}>
-                    <Button
-                        type="primary"
-                        icon={<ShoppingCartOutlined />}
-                        onClick={onBuyNow}
-                        disabled={!inStock}
-                        style={{ flex: "1 1 150px" }}
-                    >
-                        Mua ngay
-                    </Button>
-                    <Button
-                        aria-label="Xem chi tiết"
-                        icon={<EyeOutlined />}
-                        onClick={onClickDetail}
-                        style={{ flex: "0 0 auto" }}
-                    />
-                </Flex>
             </Flex>
         </Card>
     );

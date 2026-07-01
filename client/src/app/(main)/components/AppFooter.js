@@ -1,123 +1,60 @@
 import React from "react";
-import { Layout, Row, Col, Typography, Space, Divider } from "antd";
-import {
-    EnvironmentOutlined,
-    FacebookOutlined,
-    InstagramOutlined,
-    MailOutlined,
-    PhoneOutlined,
-    YoutubeOutlined,
-} from "@ant-design/icons";
+import { Button, Col, Input, Layout, Row, Space, Typography } from "antd";
+import { EnvironmentOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
 
 const { Footer } = Layout;
 const { Title, Text, Link } = Typography;
 
+const footerLinks = {
+    Products: ["Contact Us", "Shipping", "Sitemap", "FAQs", "Stores"],
+    "Quick Links": ["Delivery Information", "About Us", "Privacy Policy", "Terms and Conditions", "Search"],
+    "Our Company": ["Terms Conditions", "Policy for Sellers", "Policy for Buyers", "Shipping & Refund"],
+};
+
 export default function AppFooter() {
     return (
-        <Footer
-            style={{
-                background: "#10231e",
-                color: "rgba(255, 255, 255, 0.72)",
-                padding: "46px 20px 22px",
-            }}
-        >
-            <div className="dp-container">
-                <Row gutter={[32, 28]}>
-                    <Col xs={24} md={9}>
-                        <Space orientation="vertical" size={14}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <span
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 8,
-                                        background: "var(--dp-primary)",
-                                        color: "#fff",
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontWeight: 900,
-                                    }}
-                                >
-                                    DP
-                                </span>
-                                <div>
-                                    <Title level={4} style={{ color: "#fff", margin: 0 }}>
-                                        DPWOOD
-                                    </Title>
-                                    <Text style={{ color: "rgba(255,255,255,0.58)" }}>
-                                        Nội thất gỗ chọn lọc
-                                    </Text>
-                                </div>
-                            </div>
-                            <Text style={{ color: "rgba(255,255,255,0.72)", lineHeight: 1.8 }}>
-                                DPWOOD mang đến các sản phẩm nội thất gỗ phù hợp không gian sống
-                                hiện đại, với quy trình đặt hàng rõ ràng và hỗ trợ sau bán.
-                            </Text>
-                            <Space size={16}>
-                                <Link href="#" style={{ color: "#fff", fontSize: 20 }}>
-                                    <FacebookOutlined />
-                                </Link>
-                                <Link href="#" style={{ color: "#fff", fontSize: 20 }}>
-                                    <InstagramOutlined />
-                                </Link>
-                                <Link href="#" style={{ color: "#fff", fontSize: 20 }}>
-                                    <YoutubeOutlined />
-                                </Link>
-                            </Space>
-                        </Space>
-                    </Col>
+        <Footer className="webcake-footer">
+            <div className="webcake-container">
+                <div className="webcake-newsletter">
+                    <Title level={3}>Subscribe Our Newsletter</Title>
+                    <Space.Compact className="webcake-newsletter-form">
+                        <Input placeholder="Enter your email" />
+                        <Button type="primary">SUBCRIBE</Button>
+                    </Space.Compact>
+                </div>
 
-                    <Col xs={24} sm={12} md={7}>
-                        <Title level={5} style={{ color: "#fff", marginBottom: 16 }}>
-                            Hỗ trợ khách hàng
-                        </Title>
-                        <Space orientation="vertical" size={10}>
-                            {[
-                                "Hướng dẫn mua hàng",
-                                "Chính sách thanh toán",
-                                "Chính sách giao hàng",
-                                "Đổi trả & bảo hành",
-                                "Bảo mật thông tin",
-                            ].map((item) => (
-                                <Link key={item} href="#" style={{ color: "rgba(255,255,255,0.72)" }}>
-                                    {item}
-                                </Link>
-                            ))}
-                        </Space>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={8}>
-                        <Title level={5} style={{ color: "#fff", marginBottom: 16 }}>
-                            Liên hệ
-                        </Title>
-                        <Space orientation="vertical" size={14}>
-                            <Text style={{ color: "rgba(255,255,255,0.72)" }}>
-                                <EnvironmentOutlined /> 59 Hồ Xuân Hương, Phủ Lý, Hà Nam
+                <Row gutter={[34, 30]}>
+                    <Col xs={24} lg={7}>
+                        <Title level={5}>Store information</Title>
+                        <Space orientation="vertical" size={12}>
+                            <Text>
+                                <EnvironmentOutlined /> 59 Ho Xuan Huong, Phu Ly, Ha Nam
                             </Text>
-                            <Text style={{ color: "rgba(255,255,255,0.72)" }}>
-                                <PhoneOutlined /> Hotline: <strong style={{ color: "#fff" }}>0522535155</strong>
-                            </Text>
-                            <Text style={{ color: "rgba(255,255,255,0.72)" }}>
+                            <Text>
                                 <MailOutlined /> itokazukiqygnn@gmail.com
                             </Text>
+                            <Text>
+                                <PhoneOutlined /> 0522535155
+                            </Text>
                         </Space>
                     </Col>
+
+                    {Object.entries(footerLinks).map(([title, links]) => (
+                        <Col xs={24} sm={8} lg={5} key={title}>
+                            <Title level={5}>{title}</Title>
+                            <Space orientation="vertical" size={10}>
+                                {links.map((item) => (
+                                    <Link href="#" key={item}>
+                                        {item}
+                                    </Link>
+                                ))}
+                            </Space>
+                        </Col>
+                    ))}
                 </Row>
 
-                <Divider style={{ borderColor: "rgba(255,255,255,0.12)", margin: "30px 0 18px" }} />
-
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        flexWrap: "wrap",
-                        color: "rgba(255,255,255,0.5)",
-                        fontSize: 13,
-                    }}
-                >
-                    <span>DPWOOD ©{new Date().getFullYear()}</span>
+                <div className="webcake-footer-bottom">
+                    <span>Copyright by DPWOOD | Inspired by Pancake Vietnam</span>
                     <span>dpwood.store</span>
                 </div>
             </div>

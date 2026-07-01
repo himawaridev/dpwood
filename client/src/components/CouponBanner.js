@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { Button, Tag, Typography, message, Flex, Spin, Tooltip } from "antd";
+import { Button, Tag, Typography, Flex } from "antd";
 import {
     GiftOutlined,
     ClockCircleOutlined,
     CheckCircleOutlined,
     LeftOutlined,
     RightOutlined,
-    CopyOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useCoupons } from "@/hooks/useCoupons";
