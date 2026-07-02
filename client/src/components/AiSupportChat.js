@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { App, Avatar, Button, Drawer, Flex, FloatButton, Input, Tag, Typography } from "antd";
+import { App, Avatar, Button, Drawer, Flex, Input, Tag, Typography } from "antd";
 import { RobotOutlined, SendOutlined, UserOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
@@ -19,7 +19,7 @@ const welcomeMessage = {
         "Xin chào, mình là trợ lý AI của DPWOOD. Mình có thể hỗ trợ bạn về sản phẩm, mã giảm giá, giỏ hàng, thanh toán, tài khoản và đơn hàng.",
 };
 
-export default function AiSupportChat() {
+export default function AiSupportChat({ onOpenChange }) {
     const { message } = App.useApp();
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState("");
@@ -67,16 +67,30 @@ export default function AiSupportChat() {
         }
     };
 
+    const openChat = () => {
+        setOpen(true);
+        onOpenChange?.(true);
+    };
+
+    const closeChat = () => {
+        setOpen(false);
+        onOpenChange?.(false);
+    };
+
     return (
         <>
-            <FloatButton
-                className="dp-ai-chat-float"
-                icon={<RobotOutlined />}
-                description="AI"
-                tooltip="AI hỗ trợ DPWOOD"
-                onClick={() => setOpen(true)}
-                style={{ right: 24, bottom: 88 }}
-            />
+            {!open && (
+                <button
+                    type="button"
+                    className="dp-floating-action dp-ai-chat-action"
+                    onClick={openChat}
+                    aria-label="AI hỗ trợ DPWOOD"
+                    title="AI hỗ trợ DPWOOD"
+                >
+                    <RobotOutlined className="dp-floating-action-icon" />
+                    <span className="dp-floating-action-label">AI</span>
+                </button>
+            )}
 
             <Drawer
                 title={
@@ -91,7 +105,7 @@ export default function AiSupportChat() {
                     </Flex>
                 }
                 open={open}
-                onClose={() => setOpen(false)}
+                onClose={closeChat}
                 width={420}
                 className="dp-ai-chat-drawer"
             >

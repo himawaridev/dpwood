@@ -4,7 +4,7 @@ const { sequelize } = require("../config/connectSequelize");
 const Product = require("../models/product");
 
 const imageByCategory = {
-    cookware: "https://images.unsplash.com/photo-1584990347449-a89291d7b127?auto=format&fit=crop&w=900&q=80",
+    cookware: "https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=900&q=80",
     tableware: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=900&q=80",
     utensils: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
     storage: "https://images.unsplash.com/photo-1606914469633-bd39206ea739?auto=format&fit=crop&w=900&q=80",

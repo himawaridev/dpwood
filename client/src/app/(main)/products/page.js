@@ -51,6 +51,10 @@ export default function ProductsPage() {
     useEffect(() => {
         const nextSearch = new URLSearchParams(window.location.search).get("search");
         if (nextSearch) setQuery(nextSearch);
+        const nextCategory = new URLSearchParams(window.location.search).get("category");
+        if (nextCategory && KITCHEN_CATEGORY_OPTIONS.some((item) => item.value === nextCategory)) {
+            setCategory(nextCategory);
+        }
     }, []);
 
     const addToCartLogic = (product) => {

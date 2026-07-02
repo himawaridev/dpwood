@@ -1,4 +1,5 @@
 const { generateJson } = require("../services/geminiService");
+const Product = require("../models/product");
 
 const CATEGORY_VALUES = ["cookware", "tableware", "utensils", "storage", "appliances", "cleaning"];
 
@@ -11,6 +12,73 @@ const clampNumber = (value, min, max, fallback) => {
 const cleanText = (value, fallback = "") => String(value || fallback).trim();
 
 const cleanBoolean = (value) => value === true || value === "true";
+
+const normalizeSearchText = (value) =>
+    cleanText(value)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+const getProductImages = (product) => {
+    const images = Array.isArray(product.images) ? product.images : [];
+    return [product.imageUrl, ...images]
+        .map((item) => cleanText(item))
+        .filter((item) => /^https?:\/\//i.test(item));
+};
+
+const getImageCandidatesFromCatalog = async (searchText, limit = 4) => {
+    const products = await Product.findAll({
+        attributes: [
+            "name",
+            "description",
+            "imageUrl",
+            "images",
+            "category",
+            "material",
+            "color",
+            "brand",
+            "capacity",
+        ],
+        limit: 80,
+        order: [["createdAt", "DESC"]],
+    });
+
+    const tokens = normalizeSearchText(searchText)
+        .split(" ")
+        .filter((token) => token.length >= 3);
+
+    const scored = products
+        .map((product) => {
+            const haystack = normalizeSearchText(
+                [
+                    product.name,
+                    product.description,
+                    product.category,
+                    product.material,
+                    product.color,
+                    product.brand,
+                    product.capacity,
+                ].join(" "),
+            );
+            const score = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0);
+            return { product, score };
+        })
+        .filter((item) => item.score > 0 || tokens.length === 0)
+        .sort((a, b) => b.score - a.score);
+
+    const urls = [];
+    for (const item of scored) {
+        for (const url of getProductImages(item.product)) {
+            if (!urls.includes(url)) urls.push(url);
+            if (urls.length >= limit) return urls;
+        }
+    }
+
+    return urls;
+};
 
 const ensurePrompt = (prompt) => {
     const cleaned = cleanText(prompt);
@@ -39,21 +107,27 @@ const sanitizeChatMessages = (messages) => {
         .filter((message) => message.content);
 };
 
-const sanitizeBlogDraft = (draft) => ({
-    title: cleanText(draft.title, "Bai viet moi tu DPWOOD").slice(0, 180),
-    thumbnail: cleanText(draft.thumbnail),
-    summary: cleanText(draft.summary).slice(0, 500),
-    content: cleanText(draft.content, "<p>Noi dung dang duoc cap nhat.</p>"),
-    author: cleanText(draft.author, "DPWOOD"),
-    isPublished: false,
-    metaTitle: cleanText(draft.metaTitle || draft.title).slice(0, 180),
-    metaDescription: cleanText(draft.metaDescription || draft.summary).slice(0, 300),
-    metaKeywords: Array.isArray(draft.metaKeywords)
-        ? draft.metaKeywords.map((item) => cleanText(item)).filter(Boolean).join(", ")
-        : cleanText(draft.metaKeywords),
-});
+const sanitizeBlogDraft = (draft, imageCandidates = []) => {
+    const thumbnail = /^https?:\/\//i.test(cleanText(draft.thumbnail))
+        ? cleanText(draft.thumbnail)
+        : imageCandidates[0] || "";
 
-const sanitizeProductDraft = (draft) => {
+    return {
+        title: cleanText(draft.title, "Bai viet moi tu DPWOOD").slice(0, 180),
+        thumbnail,
+        summary: cleanText(draft.summary).slice(0, 500),
+        content: cleanText(draft.content, "<p>Noi dung dang duoc cap nhat.</p>"),
+        author: cleanText(draft.author, "DPWOOD"),
+        isPublished: false,
+        metaTitle: cleanText(draft.metaTitle || draft.title).slice(0, 180),
+        metaDescription: cleanText(draft.metaDescription || draft.summary).slice(0, 300),
+        metaKeywords: Array.isArray(draft.metaKeywords)
+            ? draft.metaKeywords.map((item) => cleanText(item)).filter(Boolean).join(", ")
+            : cleanText(draft.metaKeywords),
+    };
+};
+
+const sanitizeProductDraft = (draft, imageCandidates = []) => {
     const variants = Array.isArray(draft.variants)
         ? draft.variants.slice(0, 12).map((variant, index) => ({
               variantId: `ai-${Date.now()}-${index}`,
@@ -66,9 +140,10 @@ const sanitizeProductDraft = (draft) => {
         : [];
 
     const category = CATEGORY_VALUES.includes(draft.category) ? draft.category : "cookware";
-    const images = Array.isArray(draft.images)
+    const aiImages = Array.isArray(draft.images)
         ? draft.images.map((item) => cleanText(item)).filter((item) => /^https?:\/\//i.test(item)).slice(0, 6)
         : [];
+    const images = aiImages.length ? aiImages : imageCandidates.slice(0, 4);
 
     return {
         name: cleanText(draft.name, "San pham nha bep moi").slice(0, 180),
@@ -109,8 +184,8 @@ Tra ve JSON voi dung cac truong:
 {
   "title": "string",
   "summary": "string",
-  "content": "HTML string with h2, p, ul/li when useful",
-  "thumbnail": "",
+            "content": "HTML string with h2, p, ul/li when useful",
+  "thumbnail": "leave empty if you do not have a real existing image URL",
   "author": "DPWOOD",
   "metaTitle": "string",
   "metaDescription": "string",
@@ -120,7 +195,12 @@ Khong chen markdown, khong giai thich ngoai JSON.
             `,
         });
 
-        res.status(200).json({ draft: sanitizeBlogDraft(draft) });
+        const imageCandidates = await getImageCandidatesFromCatalog(
+            [prompt, draft.title, draft.summary, draft.metaKeywords].join(" "),
+            3,
+        );
+
+        res.status(200).json({ draft: sanitizeBlogDraft(draft, imageCandidates) });
     } catch (error) {
         console.error("createBlogDraft error:", error.message);
         res.status(error.statusCode || 500).json({ message: error.message || "Khong the tao nhap blog bang AI" });
@@ -164,7 +244,21 @@ Khong chen markdown, khong giai thich ngoai JSON.
             `,
         });
 
-        res.status(200).json({ draft: sanitizeProductDraft(draft) });
+        const imageCandidates = await getImageCandidatesFromCatalog(
+            [
+                prompt,
+                draft.name,
+                draft.description,
+                draft.category,
+                draft.material,
+                draft.color,
+                draft.brand,
+                draft.capacity,
+            ].join(" "),
+            4,
+        );
+
+        res.status(200).json({ draft: sanitizeProductDraft(draft, imageCandidates) });
     } catch (error) {
         console.error("createProductDraft error:", error.message);
         res.status(error.statusCode || 500).json({ message: error.message || "Khong the tao nhap san pham bang AI" });

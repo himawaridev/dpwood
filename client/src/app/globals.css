@@ -1820,6 +1820,16 @@ a {
   overflow: hidden;
 }
 
+.webcake-category-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
 .webcake-category-card img {
   width: 100%;
   aspect-ratio: 380 / 424;
@@ -1832,17 +1842,40 @@ a {
   transform: scale(1.05);
 }
 
+.webcake-category-card:hover::after,
+.webcake-category-card:focus-visible::after {
+  opacity: 1;
+}
+
+.webcake-category-skeleton .ant-skeleton-image {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 380 / 424;
+  display: block !important;
+}
+
 .webcake-category-label {
   position: absolute;
   left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
+  top: 50%;
+  z-index: 2;
+  transform: translate(-50%, -42%);
   min-width: 150px;
   padding: 14px 22px 13px;
   background: #fff;
   color: #222;
   text-align: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.webcake-category-card:hover .webcake-category-label,
+.webcake-category-card:focus-visible .webcake-category-label {
+  opacity: 1;
+  transform: translate(-50%, -50%);
 }
 
 .webcake-category-icon {
@@ -1856,31 +1889,13 @@ a {
   justify-content: center;
 }
 
-.webcake-category-label strong,
-.webcake-category-label small,
-.webcake-category-label em {
+.webcake-category-label strong {
   display: block;
 }
 
 .webcake-category-label strong {
   font-size: 15px;
   font-weight: 700;
-}
-
-.webcake-category-label small {
-  margin-top: 5px;
-  color: var(--dp-coral);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.webcake-category-label em {
-  margin-top: 4px;
-  color: #777;
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 500;
 }
 
 .webcake-services {
@@ -2169,19 +2184,73 @@ a {
   top: -9px;
 }
 
-.dp-ai-chat-float .ant-float-btn-body {
-  background: var(--dp-coral) !important;
-  color: #fff !important;
+.dp-floating-action {
+  position: fixed;
+  right: 24px;
+  z-index: 1200;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #111;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 
-.dp-ai-chat-float .ant-float-btn-icon {
-  color: #fff !important;
+.dp-floating-action:hover,
+.dp-floating-action:focus-visible {
+  background: #f09b90;
+  color: #fff;
+  outline: none;
 }
 
-.dp-ai-chat-float .ant-float-btn-description {
-  color: #fff !important;
-  font-weight: 700;
-  letter-spacing: 0;
+.dp-floating-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: inherit;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.dp-floating-action-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dp-ai-chat-action {
+  bottom: 88px;
+}
+
+.dp-backtop-action {
+  bottom: 32px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+}
+
+.dp-backtop-action.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .dp-ai-chat-drawer .ant-drawer-content,
@@ -2193,6 +2262,7 @@ a {
 .dp-ai-chat-drawer .ant-drawer-body {
   padding: 0;
   background: #f8f8f8;
+  overflow: hidden;
 }
 
 .dp-ai-chat-avatar {
@@ -2206,10 +2276,13 @@ a {
 .dp-ai-chat-panel {
   height: 100%;
   min-height: 520px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .dp-ai-chat-messages {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: 18px;
 }
@@ -2219,6 +2292,12 @@ a {
   gap: 10px;
   align-items: flex-start;
   margin-bottom: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.dp-ai-chat-row .ant-avatar {
+  flex: 0 0 30px;
 }
 
 .dp-ai-chat-row.is-user {
@@ -2226,10 +2305,24 @@ a {
 }
 
 .dp-ai-chat-bubble {
-  max-width: min(78%, 300px);
+  flex: 0 1 auto;
+  max-width: min(calc(100% - 46px), 292px);
+  min-width: 0;
+  box-sizing: border-box;
   padding: 11px 13px;
   background: #fff;
   border: 1px solid var(--dp-soft-border);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.dp-ai-chat-bubble .ant-typography {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .dp-ai-chat-row.is-user .dp-ai-chat-bubble {
@@ -2242,9 +2335,20 @@ a {
   padding: 12px 14px;
   border-top: 1px solid var(--dp-soft-border);
   background: #fff;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.dp-ai-chat-quick {
+  align-items: flex-start;
 }
 
 .dp-ai-chat-suggestion {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
   margin: 0;
   padding: 5px 9px;
   border-radius: 0;
@@ -2252,6 +2356,10 @@ a {
   background: #fff5f3;
   color: #222;
   cursor: pointer;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
 }
 
 .dp-ai-chat-suggestion:hover {
@@ -2265,14 +2373,35 @@ a {
   border-radius: 0 !important;
 }
 
+.dp-ai-chat-input .ant-input {
+  min-width: 0;
+}
+
+.dp-ai-chat-input .ant-btn {
+  flex: 0 0 42px;
+}
+
 @media (max-width: 640px) {
-  .dp-ai-chat-float {
-    right: 18px !important;
-    bottom: 82px !important;
+  .dp-floating-action {
+    right: 18px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .dp-ai-chat-action {
+    bottom: 82px;
+  }
+
+  .dp-backtop-action {
+    bottom: 28px;
   }
 
   .dp-ai-chat-drawer .ant-drawer-content-wrapper {
     width: min(100vw, 420px) !important;
+  }
+
+  .dp-ai-chat-bubble {
+    max-width: calc(100vw - 108px);
   }
 }
 
@@ -2573,6 +2702,9 @@ a {
 
 .webcake-blog-card {
   text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .webcake-blog-image {
@@ -2611,14 +2743,26 @@ a {
   font-size: 20px;
   font-weight: 600;
   line-height: 1.35;
+  min-height: 54px;
 }
 
-.webcake-blog-card p.ant-typography {
+.webcake-blog-card .dp-line-clamp-2 {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.webcake-blog-card p.ant-typography,
+.webcake-blog-card .webcake-blog-summary.ant-typography {
   color: #777;
   line-height: 1.75;
+  min-height: 49px;
+  margin-bottom: 18px;
 }
 
 .webcake-blog-card .ant-btn-link {
+  margin-top: auto;
   color: #222;
   font-weight: 700;
 }

@@ -16,7 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import ProductCard from "@/app/(main)/products/components/ProductCard";
 import api from "@/utils/axios";
-import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
+import { getKitchenCategoryLabel, KITCHEN_CATEGORY_OPTIONS } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
 
 const { Title, Text, Paragraph } = Typography;
@@ -59,6 +59,27 @@ function ProductEmptyState({ onRetry }) {
 
 const getProductImage = (product) =>
     product?.imageUrl || (Array.isArray(product?.images) && product.images[0]);
+
+const isUsableCategoryImage = (url = "") =>
+    /^https?:\/\//i.test(url) && !url.includes("4kwallpapers.com") && !url.includes("thumbs_2t");
+
+const categoryFallbackImages = {
+    cookware: "https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=900&q=80",
+    tableware: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=900&q=80",
+    utensils: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
+    storage: "https://images.unsplash.com/photo-1606914469633-bd39206ea739?auto=format&fit=crop&w=900&q=80",
+    appliances: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=900&q=80",
+    cleaning: "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=900&q=80",
+};
+
+const categoryDescriptions = {
+    cookware: "Nồi, chảo và bộ dụng cụ nấu",
+    tableware: "Bát, đĩa và set bàn ăn",
+    utensils: "Dao, muỗng và phụ kiện bếp",
+    storage: "Hộp, lọ và đồ bảo quản",
+    appliances: "Thiết bị nhỏ cho căn bếp",
+    cleaning: "Dụng cụ vệ sinh tiện lợi",
+};
 
 const formatCompactCurrency = (value) => {
     const numberValue = Number(value || 0);
@@ -157,7 +178,7 @@ export default function LatestProducts() {
             ]);
 
             setProducts(productResponse.status === "fulfilled" ? productResponse.value : []);
-            setBlogs(blogResponse.status === "fulfilled" ? (blogResponse.value.data || []).slice(0, 3) : []);
+            setBlogs(blogResponse.status === "fulfilled" ? blogResponse.value.data || [] : []);
             setCoupons(couponResponse.status === "fulfilled" ? couponResponse.value.data || [] : []);
 
             if (token) {
@@ -197,10 +218,11 @@ export default function LatestProducts() {
     const catalogProducts = useMemo(() => products.slice(0, 12), [products]);
     const couponSource = coupons;
     const blogSource = blogs.filter((blog) => blog?.title);
+    const homepageBlogs = useMemo(() => blogSource.slice(0, 3), [blogSource]);
     const heroProducts = useMemo(
         () =>
             [...products]
-                .filter((product) => getProductImage(product))
+                .filter((product) => isUsableCategoryImage(getProductImage(product)))
                 .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
                 .slice(0, 3)
                 .map((product, index) => ({
@@ -216,10 +238,56 @@ export default function LatestProducts() {
         [products],
     );
 
+    const categoryCards = useMemo(() => {
+        const fallbackProducts = products.filter((product) => isUsableCategoryImage(getProductImage(product)));
+
+        return KITCHEN_CATEGORY_OPTIONS.map((category, index) => {
+            const categoryProducts = products.filter((product) => product.category === category.value);
+            const imageProduct =
+                categoryProducts.find((product) => isUsableCategoryImage(getProductImage(product))) ||
+                fallbackProducts[index % Math.max(fallbackProducts.length, 1)];
+            const categoryImage = getProductImage(imageProduct);
+
+            return {
+                ...category,
+                count: categoryProducts.length,
+                image: categoryFallbackImages[category.value] || categoryImage,
+                fallbackImage: categoryFallbackImages[category.value],
+                description: categoryDescriptions[category.value] || "Khám phá danh mục",
+            };
+        }).filter((category) => category.count > 0 && category.image);
+    }, [products]);
+
     const goToProduct = (product) => {
         if (!product?.id) return;
         router.push(`/products/${product.id}`);
     };
+
+    const goToCategory = (categoryValue) => {
+        router.push(`/products?category=${encodeURIComponent(categoryValue)}`);
+    };
+
+    const renderBlogCard = (blog) => (
+        <article className="webcake-blog-card">
+            {blog.thumbnail && (
+                <button
+                    type="button"
+                    className="webcake-blog-image"
+                    onClick={() => router.push(blog.slug ? `/blogs/${blog.slug}` : "/blogs")}
+                >
+                    <img src={blog.thumbnail} alt={blog.title || "DPWOOD blog"} />
+                </button>
+            )}
+            <Text className="webcake-blog-date">{blog.date || "DPWOOD"}</Text>
+            <Title level={4} className="dp-line-clamp-2">
+                {blog.title}
+            </Title>
+            <Paragraph className="webcake-blog-summary dp-line-clamp-2">{blog.summary}</Paragraph>
+            <Button type="link" onClick={() => router.push(blog.slug ? `/blogs/${blog.slug}` : "/blogs")}>
+                Đọc thêm <ArrowRightOutlined />
+            </Button>
+        </article>
+    );
 
     const handleCouponAction = async (coupon) => {
         const couponClaimKeys = getCouponClaimKeys(coupon);
@@ -314,6 +382,55 @@ export default function LatestProducts() {
                         </div>
                     )}
                 </Carousel>
+            </section>
+
+            <section className="webcake-section webcake-category-section">
+                <div className="webcake-container">
+                    <Title level={2} className="webcake-section-title">
+                        Danh mục sản phẩm
+                    </Title>
+
+                    {loading ? (
+                        <Row gutter={[30, 30]}>
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <Col xs={24} sm={12} lg={8} key={index}>
+                                    <div className="webcake-category-skeleton">
+                                        <Skeleton.Image active />
+                                    </div>
+                                </Col>
+                            ))}
+                        </Row>
+                    ) : (
+                        <Row gutter={[30, 30]}>
+                            {categoryCards.map((category) => (
+                                <Col xs={24} sm={12} lg={8} key={category.value}>
+                                    <button
+                                        type="button"
+                                        className="webcake-category-card"
+                                        onClick={() => goToCategory(category.value)}
+                                        aria-label={`Xem danh mục ${category.label}`}
+                                    >
+                                        <img
+                                            src={category.image}
+                                            alt={category.label}
+                                            onError={(event) => {
+                                                if (event.currentTarget.src !== category.fallbackImage) {
+                                                    event.currentTarget.src = category.fallbackImage;
+                                                }
+                                            }}
+                                        />
+                                        <span className="webcake-category-label">
+                                            <span className="webcake-category-icon">
+                                                <AppstoreOutlined />
+                                            </span>
+                                            <strong>{category.label}</strong>
+                                        </span>
+                                    </button>
+                                </Col>
+                            ))}
+                        </Row>
+                    )}
+                </div>
             </section>
 
             <section className="webcake-services">
@@ -509,31 +626,17 @@ export default function LatestProducts() {
                             Bài viết mới
                         </Title>
                         <Row gutter={[30, 30]}>
-                            {blogSource.map((blog) => (
-                                <Col xs={24} md={8} key={blog.id || blog.title}>
-                                    <article className="webcake-blog-card">
-                                        {blog.thumbnail && (
-                                            <button
-                                                type="button"
-                                                className="webcake-blog-image"
-                                                onClick={() => router.push(blog.slug ? `/blogs/${blog.slug}` : "/blogs")}
-                                            >
-                                                <img src={blog.thumbnail} alt={blog.title || "DPWOOD blog"} />
-                                            </button>
-                                        )}
-                                        <Text className="webcake-blog-date">{blog.date || "DPWOOD"}</Text>
-                                        <Title level={4}>{blog.title}</Title>
-                                        <Paragraph>{blog.summary}</Paragraph>
-                                        <Button
-                                            type="link"
-                                            onClick={() => router.push(blog.slug ? `/blogs/${blog.slug}` : "/blogs")}
-                                        >
-                                            Đọc thêm <ArrowRightOutlined />
-                                        </Button>
-                                    </article>
+                            {homepageBlogs.map((blog) => (
+                                <Col xs={24} md={8} key={blog.id || blog.slug || blog.title}>
+                                    {renderBlogCard(blog)}
                                 </Col>
                             ))}
                         </Row>
+                        <div className="webcake-view-all">
+                            <Button icon={<AppstoreOutlined />} onClick={() => router.push("/blogs")}>
+                                XEM TẤT CẢ BÀI VIẾT
+                            </Button>
+                        </div>
                     </div>
                 </section>
             )}
