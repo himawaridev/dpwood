@@ -2988,6 +2988,19 @@ a {
   padding: 18px;
 }
 
+.dp-blog-card-title.ant-typography {
+  min-height: 58px;
+  margin-top: 0;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.dp-blog-card-summary.ant-typography {
+  min-height: 50px;
+  margin-bottom: 18px;
+  line-height: 1.65;
+}
+
 .webcake-footer {
   background: #f8f8f8;
   color: #666;

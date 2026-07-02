@@ -87,10 +87,10 @@ export default function ClientBlogPage() {
                                     <Tag color="green" style={{ width: "fit-content", marginBottom: 12 }}>
                                         DPWOOD Journal
                                     </Tag>
-                                    <Title level={4} style={{ marginTop: 0 }} ellipsis={{ rows: 2 }}>
+                                    <Title level={4} className="dp-blog-card-title" ellipsis={{ rows: 2 }}>
                                         {blog.title}
                                     </Title>
-                                    <Paragraph className="dp-muted" ellipsis={{ rows: 3 }} style={{ flex: 1 }}>
+                                    <Paragraph className="dp-muted dp-blog-card-summary" ellipsis={{ rows: 2 }}>
                                         {blog.summary || "Khám phá thêm câu chuyện và kinh nghiệm nội thất."}
                                     </Paragraph>
                                     <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
