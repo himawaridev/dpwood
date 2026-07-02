@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, Flex, Alert, Image, Divider, Typography, Button, Spin } from "antd";
-import { QrcodeOutlined, LinkOutlined, ReloadOutlined } from "@ant-design/icons";
+import { QrcodeOutlined, LinkOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -8,7 +8,6 @@ export default function PaymentQRModal({
     isQrModalVisible,
     payosData,
     checkingPayment,
-    handleCheckPayment,
     handleCancelPayment,
 }) {
     return (
@@ -22,18 +21,19 @@ export default function PaymentQRModal({
             open={isQrModalVisible}
             footer={null}
             closable={false}
-            mask={{ closable: false }}
+            maskClosable={false}
             centered
             width={500}
         >
             <Flex vertical align="center" gap={18}>
                 <Alert
                     title="Hệ thống sẽ tự cập nhật khi PayOS xác nhận tiền"
-                    description="Sau khi chuyển khoản, bấm kiểm tra để cập nhật trạng thái đơn hàng."
+                    description="Sau khi chuyển khoản thành công, modal sẽ tự đóng và chuyển bạn đến trang đơn hàng."
                     type="info"
                     showIcon
                     style={{ width: "100%" }}
                 />
+
                 <div
                     style={{
                         padding: 16,
@@ -52,11 +52,13 @@ export default function PaymentQRModal({
                                 preview={false}
                                 alt="Mã QR thanh toán"
                             />
+
                             <Divider plain style={{ margin: "8px 0" }}>
                                 <Text type="secondary" style={{ fontSize: 13 }}>
                                     Thông tin chuyển khoản
                                 </Text>
                             </Divider>
+
                             <div
                                 style={{
                                     background: "var(--dp-surface-muted)",
@@ -69,18 +71,23 @@ export default function PaymentQRModal({
                                 <Flex vertical gap="small">
                                     <Flex justify="space-between" align="center" gap={12}>
                                         <Text type="secondary">Ngân hàng</Text>
-                                        <Text strong>{payosData.bin ? `Mã BIN: ${payosData.bin}` : "Theo mã QR"}</Text>
+                                        <Text strong>
+                                            {payosData.bin ? `Mã BIN: ${payosData.bin}` : "Theo mã QR"}
+                                        </Text>
                                     </Flex>
+
                                     <Flex justify="space-between" align="center" gap={12}>
                                         <Text type="secondary">Chủ tài khoản</Text>
                                         <Text strong>{payosData.accountName || "PayOS"}</Text>
                                     </Flex>
+
                                     <Flex justify="space-between" align="center" gap={12}>
                                         <Text type="secondary">Số tài khoản</Text>
                                         <Text strong copyable={{ tooltips: ["Sao chép", "Đã chép"] }}>
                                             {payosData.accountNumber || "Theo mã QR"}
                                         </Text>
                                     </Flex>
+
                                     <Flex justify="space-between" align="center" gap={12}>
                                         <Text type="secondary">Số tiền</Text>
                                         <Text
@@ -93,6 +100,7 @@ export default function PaymentQRModal({
                                             {new Intl.NumberFormat("vi-VN").format(payosData.amount || 0)}đ
                                         </Text>
                                     </Flex>
+
                                     <Flex
                                         justify="space-between"
                                         align="center"
@@ -115,6 +123,7 @@ export default function PaymentQRModal({
                                     </Flex>
                                 </Flex>
                             </div>
+
                             {payosData.checkoutUrl && (
                                 <Button
                                     type="link"
@@ -135,17 +144,23 @@ export default function PaymentQRModal({
                         </Flex>
                     )}
                 </div>
+
                 <Flex vertical gap="small" style={{ width: "100%" }}>
-                    <Button
-                        type="primary"
-                        block
-                        size="large"
-                        loading={checkingPayment}
-                        onClick={handleCheckPayment}
-                        icon={<ReloadOutlined />}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 10,
+                            minHeight: 44,
+                            border: "1px solid var(--dp-soft-border)",
+                            background: "var(--dp-surface-muted)",
+                        }}
                     >
-                        Tôi đã chuyển khoản xong
-                    </Button>
+                        <Spin size="small" spinning={checkingPayment} />
+                        <Text strong>Đang tự động xác nhận thanh toán</Text>
+                    </div>
+
                     <Button type="text" block size="large" onClick={handleCancelPayment} danger>
                         Hủy thanh toán đơn này
                     </Button>

@@ -9,6 +9,7 @@ const {
     getSystemLogs,
     getMe,
     updateMe,
+    updateUserPhone,
     restoreUser,
 } = require("../controllers/userController");
 const authMiddleware = require("../middlewares/authMiddleware");
@@ -26,6 +27,7 @@ router.get("/logs", authMiddleware, getSystemLogs); // Cho ph√©p user xem log c·
 // ==========================================
 router.get("/", authMiddleware, roleMiddleware("root", "admin"), getAllUsers);
 router.put("/:id/role", authMiddleware, roleMiddleware("root", "admin"), updateRole);
+router.put("/:id/phone", authMiddleware, roleMiddleware("root", "admin"), updateUserPhone);
 router.delete("/:id", authMiddleware, roleMiddleware("root", "admin"), deleteUser);
 router.put("/:id/ban", authMiddleware, roleMiddleware("root", "admin"), toggleBanUser);
 router.put("/:id/restore", authMiddleware, roleMiddleware("root", "admin"), restoreUser);

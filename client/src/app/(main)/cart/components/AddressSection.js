@@ -45,6 +45,18 @@ const formatPhoneNumber = (phoneNumber = "") => {
     return phoneNumber;
 };
 
+const getAccountPhoneDefaults = (phone = "") => {
+    const digits = String(phone).replace(/\D/g, "");
+    if (!digits) return {};
+    if (digits.startsWith("84") && digits.length === 11) {
+        return { phoneCountryCode: "+84", phoneLocalNumber: `0${digits.slice(2)}` };
+    }
+    if (digits.startsWith("0")) {
+        return { phoneCountryCode: "+84", phoneLocalNumber: digits };
+    }
+    return { phoneCountryCode: "+84", phoneLocalNumber: digits };
+};
+
 export default function AddressSection({
     isAuth,
     addresses,
@@ -57,6 +69,7 @@ export default function AddressSection({
     addressForm,
     handleSaveNewAddress,
     handleDeleteAddress,
+    currentUser,
 }) {
     const [provinceOptions, setProvinceOptions] = useState([]);
     const [districtOptions, setDistrictOptions] = useState([]);
@@ -94,10 +107,13 @@ export default function AddressSection({
 
         const currentName = addressForm.getFieldValue("recipientName");
         const currentPrefix = addressForm.getFieldValue("phoneCountryCode");
+        const currentPhone = addressForm.getFieldValue("phoneLocalNumber");
+        const accountPhoneDefaults = getAccountPhoneDefaults(currentUser?.phone || localStorage.getItem("userPhone"));
 
         addressForm.setFieldsValue({
             recipientName: currentName || localStorage.getItem("userName") || "",
-            phoneCountryCode: currentPrefix || "+84",
+            phoneCountryCode: currentPrefix || accountPhoneDefaults.phoneCountryCode || "+84",
+            phoneLocalNumber: currentPhone || accountPhoneDefaults.phoneLocalNumber || "",
         });
 
         if (provinceOptions.length > 0) return;
@@ -120,7 +136,7 @@ export default function AddressSection({
         return () => {
             cancelled = true;
         };
-    }, [addressForm, isAddingAddress, isAddressModalVisible, provinceOptions.length]);
+    }, [addressForm, currentUser?.phone, isAddingAddress, isAddressModalVisible, provinceOptions.length]);
 
     const handleProvinceChange = async (value, option) => {
         addressForm.setFieldsValue({

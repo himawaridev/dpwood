@@ -1,10 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { App, Button, Card, Divider, Form, Input, Space, Typography } from "antd";
-import { LoginOutlined, SafetyCertificateOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { App, Button, Card, Divider, Form, Input, Typography } from "antd";
+import {
+    LockOutlined,
+    LoginOutlined,
+    MailOutlined,
+    SafetyCertificateOutlined,
+    ShoppingCartOutlined,
+} from "@ant-design/icons";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import api from "@/utils/axios";
 
@@ -33,7 +40,7 @@ export default function LoginPage() {
             localStorage.removeItem("avatarUrl");
         }
 
-        message.success("Đăng nhập thành công.");
+        message.success("Dang nhap thanh cong.");
         router.push("/");
     };
 
@@ -45,7 +52,7 @@ export default function LoginPage() {
             });
             handleLoginSuccess(response.data);
         } catch (error) {
-            message.error(error.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại.");
+            message.error(error.response?.data?.message || "Dang nhap that bai. Vui long thu lai.");
         }
     };
 
@@ -54,84 +61,80 @@ export default function LoginPage() {
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
             handleLoginSuccess(response.data);
         } catch (error) {
-            message.error(error.response?.data?.message || "Đăng nhập Google thất bại.");
+            message.error(error.response?.data?.message || "Dang nhap Google that bai.");
         }
     };
 
     return (
-        <div className="dp-page" style={{ display: "grid", placeItems: "center" }}>
-            <div
-                className="dp-container dp-panel dp-auth-layout"
-                style={{
-                    maxWidth: 980,
-                    display: "grid",
-                    overflow: "hidden",
-                }}
-            >
-                <div
-                    style={{
-                        padding: "48px clamp(24px, 5vw, 52px)",
-                        background: "#10231e",
-                        color: "#fff",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                    }}
-                >
-                    <span className="dp-eyebrow" style={{ color: "#7dd3c7" }}>
-                        DPWOOD account
-                    </span>
-                    <Title style={{ color: "#fff", margin: "10px 0", lineHeight: 1.15 }}>
-                        Tiếp tục mua sắm và theo dõi đơn hàng
-                    </Title>
-                    <Paragraph style={{ color: "rgba(255,255,255,0.72)", marginBottom: 24 }}>
-                        Đăng nhập để lưu địa chỉ, xem lịch sử đơn hàng và thanh toán nhanh hơn.
+        <div className="dp-page dp-auth-page">
+            <div className="dp-container dp-auth-layout dp-auth-shell">
+                <aside className="dp-auth-aside">
+                    <div className="dp-auth-brand-mark">
+                        <Image src="/logo.png" alt="DPWOOD" width={40} height={40} priority />
+                    </div>
+                    <span className="dp-eyebrow">DPWOOD account</span>
+                    <Title className="dp-auth-aside-title">Tiep tuc mua sam va theo doi don hang</Title>
+                    <Paragraph className="dp-auth-aside-copy">
+                        Dang nhap de luu dia chi, su dung kho ma giam gia, theo doi don hang va thanh toan nhanh hon.
                     </Paragraph>
-                    <Space orientation="vertical" size={12}>
-                        <Text style={{ color: "rgba(255,255,255,0.82)" }}>
-                            <ShoppingCartOutlined /> Giỏ hàng và đơn hàng được đồng bộ
-                        </Text>
-                        <Text style={{ color: "rgba(255,255,255,0.82)" }}>
-                            <SafetyCertificateOutlined /> Bảo vệ tài khoản và phiên thanh toán
-                        </Text>
-                    </Space>
-                </div>
 
-                <Card variant="borderless" style={{ boxShadow: "none", borderRadius: 0 }}>
-                    <Title level={3} style={{ marginBottom: 8 }}>
-                        Đăng nhập
-                    </Title>
-                    <Text className="dp-muted">Chào mừng bạn quay lại DPWOOD.</Text>
+                    <div className="dp-auth-benefits">
+                        <div>
+                            <ShoppingCartOutlined />
+                            <span>Gio hang va ma uu dai duoc dong bo</span>
+                        </div>
+                        <div>
+                            <SafetyCertificateOutlined />
+                            <span>Phien dang nhap va thanh toan duoc bao ve</span>
+                        </div>
+                    </div>
+                </aside>
 
-                    <Form layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
+                <Card variant="borderless" className="dp-auth-card">
+                    <div className="dp-auth-heading">
+                        <span className="dp-eyebrow">Welcome back</span>
+                        <Title level={2}>Dang nhap</Title>
+                        <Text className="dp-muted">Chao mung ban quay lai DPWOOD.</Text>
+                    </div>
+
+                    <Form layout="vertical" onFinish={onFinish} className="dp-auth-form">
                         <Form.Item
-                            label="Tài khoản"
+                            label="Tai khoan"
                             name="login"
-                            rules={[{ required: true, message: "Vui lòng nhập tài khoản" }]}
+                            rules={[{ required: true, message: "Vui long nhap tai khoan" }]}
                         >
-                            <Input size="large" placeholder="Email, username hoặc số điện thoại" />
+                            <Input
+                                size="large"
+                                prefix={<MailOutlined />}
+                                placeholder="Email, username hoac so dien thoai"
+                            />
                         </Form.Item>
 
                         <Form.Item
-                            label="Mật khẩu"
+                            label="Mat khau"
                             name="password"
-                            rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
+                            rules={[{ required: true, message: "Vui long nhap mat khau" }]}
                         >
-                            <Input.Password size="large" placeholder="Nhập mật khẩu" />
+                            <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhap mat khau" />
                         </Form.Item>
+
+                        <div className="dp-auth-links-row">
+                            <span />
+                            <Link href="/forgot-password">Quen mat khau?</Link>
+                        </div>
 
                         <Button type="primary" htmlType="submit" size="large" block icon={<LoginOutlined />}>
-                            Đăng nhập
+                            Dang nhap
                         </Button>
 
-                        <Divider plain>Hoặc đăng nhập bằng</Divider>
+                        <Divider plain>Hoac dang nhap bang</Divider>
 
                         {googleClientId ? (
                             <GoogleOAuthProvider clientId={googleClientId}>
-                                <div style={{ display: "flex", justifyContent: "center" }}>
+                                <div className="dp-auth-google">
                                     <GoogleLogin
                                         onSuccess={onGoogleSuccess}
-                                        onError={() => message.error("Đăng nhập Google thất bại")}
+                                        onError={() => message.error("Dang nhap Google that bai")}
                                         ux_mode="popup"
                                         use_fedcm_for_button={false}
                                         text="signin_with"
@@ -140,16 +143,13 @@ export default function LoginPage() {
                                 </div>
                             </GoogleOAuthProvider>
                         ) : (
-                            <Text type="secondary" style={{ display: "block", textAlign: "center" }}>
-                                Chưa cấu hình Google Client ID.
+                            <Text type="secondary" className="dp-auth-note">
+                                Chua cau hinh Google Client ID.
                             </Text>
                         )}
 
-                        <div style={{ textAlign: "center", marginTop: 16 }}>
-                            <Link href="/forgot-password">Quên mật khẩu?</Link>
-                        </div>
-                        <div style={{ textAlign: "center", marginTop: 8 }}>
-                            Chưa có tài khoản? <Link href="/register">Đăng ký ngay</Link>
+                        <div className="dp-auth-switch">
+                            Chua co tai khoan? <Link href="/register">Dang ky ngay</Link>
                         </div>
                     </Form>
                 </Card>

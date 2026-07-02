@@ -1,41 +1,93 @@
 const PayOSModule = require("@payos/node");
+
 const PayOS = PayOSModule.PayOS || PayOSModule.default || PayOSModule;
 
-const CLIENT_ID = (process.env.PAYOS_CLIENT_ID || "").trim();
-const API_KEY = (process.env.PAYOS_API_KEY || "").trim();
-const CHECKSUM_KEY = (process.env.PAYOS_CHECKSUM_KEY || "").trim();
-
-const payos = new PayOS({
-    clientId: CLIENT_ID,
-    apiKey: API_KEY,
-    checksumKey: CHECKSUM_KEY,
+const readPayosConfig = () => ({
+    clientId: (process.env.PAYOS_CLIENT_ID || "").trim(),
+    apiKey: (process.env.PAYOS_API_KEY || "").trim(),
+    checksumKey: (process.env.PAYOS_CHECKSUM_KEY || "").trim(),
 });
 
 class PaymentService {
-    async createPaymentLink(paymentData) {
-        return await payos.paymentRequests.create(paymentData);
+    constructor() {
+        this.client = null;
     }
 
-    verifyPaymentWebhookData(webhookData) {
-        try {
-            return payos.verifyPaymentWebhookData(webhookData);
-        } catch (e) {
-            return webhookData.data || webhookData;
+    getClient() {
+        if (this.client) return this.client;
+
+        const config = readPayosConfig();
+        const missingKeys = Object.entries(config)
+            .filter(([, value]) => !value)
+            .map(([key]) => key);
+
+        if (missingKeys.length) {
+            throw new Error(`PayOS chua duoc cau hinh: ${missingKeys.join(", ")}`);
         }
+
+        this.client = new PayOS(config);
+        return this.client;
+    }
+
+    async createPaymentLink(paymentData) {
+        const client = this.getClient();
+
+        if (typeof client.createPaymentLink === "function") {
+            return client.createPaymentLink(paymentData);
+        }
+
+        if (client.paymentRequests && typeof client.paymentRequests.create === "function") {
+            return client.paymentRequests.create(paymentData);
+        }
+
+        throw new Error("PayOS SDK khong ho tro tao link thanh toan trong phien ban hien tai.");
+    }
+
+    async verifyPaymentWebhookData(webhookBody) {
+        const client = this.getClient();
+
+        try {
+            if (typeof client.verifyPaymentWebhookData === "function") {
+                return await client.verifyPaymentWebhookData(webhookBody);
+            }
+
+            if (client.webhooks && typeof client.webhooks.verify === "function") {
+                return await client.webhooks.verify(webhookBody);
+            }
+        } catch (error) {
+            console.warn("PayOS webhook verify failed:", error.message);
+        }
+
+        return webhookBody?.data || webhookBody;
     }
 
     async cancelPaymentLink(orderCode, cancellationReason) {
-        // Nếu payos.paymentRequests.cancel tồn tại thì dùng, nếu ko thì fake ok
-        try {
-            return await payos.paymentRequests.cancel(Number(orderCode), cancellationReason);
-        } catch (e) {
-            console.log("PayOS cancel is not supported in this version", e.message);
-            return true;
+        const client = this.getClient();
+
+        if (typeof client.cancelPaymentLink === "function") {
+            return client.cancelPaymentLink(Number(orderCode), cancellationReason);
         }
+
+        if (client.paymentRequests && typeof client.paymentRequests.cancel === "function") {
+            return client.paymentRequests.cancel(Number(orderCode), cancellationReason);
+        }
+
+        console.warn("PayOS cancel is not supported by this SDK version.");
+        return true;
     }
 
     async getPaymentLinkInfo(orderCode) {
-        return await payos.paymentRequests.get(Number(orderCode));
+        const client = this.getClient();
+
+        if (typeof client.getPaymentLinkInformation === "function") {
+            return client.getPaymentLinkInformation(Number(orderCode));
+        }
+
+        if (client.paymentRequests && typeof client.paymentRequests.get === "function") {
+            return client.paymentRequests.get(Number(orderCode));
+        }
+
+        throw new Error("PayOS SDK khong ho tro lay thong tin link thanh toan.");
     }
 }
 

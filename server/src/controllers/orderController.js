@@ -1,4 +1,4 @@
-const { sequelize } = require("../config/connectSequelize");
+﻿const { sequelize } = require("../config/connectSequelize");
 const { Op } = require("sequelize");
 const Product = require("../models/product");
 const Order = require("../models/order");
@@ -9,109 +9,115 @@ const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
 const { syncLegacyDiscountsToCoupons } = require("../services/couponSyncService");
 const sendEmail = require("../utils/sendEmail");
+const { generateOrderHtml: buildOrderEmail } = require("../templates/emailTemplates");
+const paymentService = require("../services/paymentService");
 
-const PayOSModule = require("@payos/node");
-const PayOS = PayOSModule.PayOS || PayOSModule.default || PayOSModule;
+const getFrontendUrl = () =>
+    (process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
 
-const CLIENT_ID = (process.env.PAYOS_CLIENT_ID || "").trim();
-const API_KEY = (process.env.PAYOS_API_KEY || "").trim();
-const CHECKSUM_KEY = (process.env.PAYOS_CHECKSUM_KEY || "").trim();
+const normalizePayosStatus = (paymentInfo) =>
+    String(paymentInfo?.status || paymentInfo?.data?.status || "").toUpperCase();
 
-const payos = new PayOS({
-    clientId: CLIENT_ID,
-    apiKey: API_KEY,
-    checksumKey: CHECKSUM_KEY,
-});
+const markOrderAsPaid = async (order, paymentInfo = {}) => {
+    if (!order || order.status !== "PENDING") return order;
 
-const generateOrderHtml = (orderInfo, orderItems, isPaid) => {
-    const itemsHtml = orderItems
-        .map(
-            (item) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: #cf1322;">
-                ${new Intl.NumberFormat("vi-VN").format(item.price * item.quantity)}₫
-            </td>
-        </tr>
-    `,
-        )
-        .join("");
+    order.status = "PAID";
+    await order.save();
 
-    const statusBadge = isPaid
-        ? `<span style="background: #52c41a; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">ĐÃ THANH TOÁN (QR)</span>`
-        : `<span style="background: #1677ff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">CHỜ THANH TOÁN KHI NHẬN HÀNG (COD)</span>`;
+    const items = await OrderItem.findAll({
+        where: { orderId: order.id },
+        include: [{ model: Product }],
+    });
+    const transaction = paymentInfo.transactions?.[0] || {};
+    const transactionCode =
+        transaction.reference ||
+        paymentInfo.transactionReference ||
+        paymentInfo.reference ||
+        "Giao dich Online";
 
-    return `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-            <div style="background-color: #001529; color: white; padding: 20px; text-align: center;">
-                <h1 style="margin: 0;">DPWOOD</h1>
-                <p style="margin: 5px 0 0 0; color: #aaa;">Xác nhận đơn hàng #${orderInfo.orderCode}</p>
-            </div>
-            <div style="padding: 20px;">
-                <p>Xin chào <strong>${orderInfo.customerName}</strong>,</p>
-                <p>Cảm ơn bạn đã mua sắm tại DPWOOD. Đơn hàng của bạn đã được ghi nhận thành công!</p>
-                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                    <p style="margin: 5px 0;"><strong>Người nhận:</strong> ${orderInfo.shippingName} - ${orderInfo.shippingPhone}</p>
-                    <p style="margin: 5px 0;"><strong>Địa chỉ:</strong> ${orderInfo.shippingAddress}</p>
-                    <p style="margin: 5px 0;"><strong>Trạng thái:</strong> ${statusBadge}</p>
-                </div>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead><tr style="background-color: #fafafa;"><th style="text-align: left;">Sản phẩm</th><th>SL</th><th style="text-align: right;">Thành tiền</th></tr></thead>
-                    <tbody>${itemsHtml}</tbody>
-                    <tfoot><tr><td colspan="2" style="text-align: right; font-weight: bold;">Tổng thanh toán:</td><td style="text-align: right; font-weight: bold; font-size: 18px; color: #cf1322;">${new Intl.NumberFormat("vi-VN").format(orderInfo.totalAmount)}₫</td></tr></tfoot>
-                </table>
-            </div>
-        </div>
-    `;
+    await AuditLog.create({
+        userId: order.userId,
+        action: "PAYMENT_RECEIVED",
+        details: `PayOS xac nhan ${new Intl.NumberFormat("vi-VN").format(order.totalAmount)}d cho don #${order.orderCode}. Ma GD: ${transactionCode}`,
+    });
+
+    if (order.User && order.User.email) {
+        const emailItemsInfo = items.map((item) => ({
+            name: item.Product?.name || "San pham",
+            quantity: item.quantity,
+            price: item.priceAtPurchase,
+        }));
+        const orderInfo = {
+            orderCode: order.orderCode,
+            customerName: order.User.name,
+            shippingName: order.shippingName,
+            shippingPhone: order.shippingPhone,
+            shippingAddress: order.shippingAddress,
+            totalAmount: order.totalAmount,
+        };
+        sendEmail(
+            order.User.email,
+            `[DPWOOD] Da thanh toan don #${order.orderCode}`,
+            buildOrderEmail(orderInfo, emailItemsInfo, true),
+        );
+    }
+
+    return order;
 };
 
 const checkout = async (req, res) => {
-    // 1. Khởi tạo Transaction để đảm bảo tính toàn vẹn dữ liệu (Nếu lỗi ở bất kỳ bước nào, Database sẽ quay xe - Rollback)
+    // 1. Khá»Ÿi táº¡o Transaction Ä‘á»ƒ Ä‘áº£m báº£o tÃ­nh toÃ n váº¹n dá»¯ liá»‡u (Náº¿u lá»—i á»Ÿ báº¥t ká»³ bÆ°á»›c nÃ o, Database sáº½ quay xe - Rollback)
     const t = await sequelize.transaction();
     try {
         const { items, paymentMethod, shippingInfo, discountCode } = req.body;
         const userId = req.user.id;
 
         if (!items || items.length === 0) {
-            return res.status(400).json({ message: "Giỏ hàng không được để trống" });
+            return res.status(400).json({ message: "Giá» hÃ ng khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng" });
+        }
+
+        const accountUser = await User.findByPk(userId, { transaction: t });
+        if (!accountUser?.phone) {
+            const error = new Error("Vui long cap nhat so dien thoai trong ho so truoc khi thanh toan.");
+            error.status = 400;
+            throw error;
         }
 
         let subTotal = 0;
         const orderItemsData = [];
 
-        // 2. DUYỆT GIỎ HÀNG VÀ TÍNH TOÁN GIÁ TRỊ THỰC TẾ TỪ DATABASE
+        // 2. DUYá»†T GIá»Ž HÃ€NG VÃ€ TÃNH TOÃN GIÃ TRá»Š THá»°C Táº¾ Tá»ª DATABASE
         for (const item of items) {
             const product = await Product.findByPk(item.productId, { transaction: t });
 
             if (!product) {
-                throw new Error(`Sản phẩm với ID ${item.productId} không tồn tại`);
+                throw new Error(`Sáº£n pháº©m vá»›i ID ${item.productId} khÃ´ng tá»“n táº¡i`);
             }
             if (product.stock < item.quantity) {
                 throw new Error(
-                    `Sản phẩm ${product.name} chỉ còn ${product.stock} sản phẩm trong kho`,
+                    `Sáº£n pháº©m ${product.name} chá»‰ cÃ²n ${product.stock} sáº£n pháº©m trong kho`,
                 );
             }
 
-            // Tính tiền hàng dựa trên giá thực tế trong Database (Chống hack F12)
+            // TÃ­nh tiá»n hÃ ng dá»±a trÃªn giÃ¡ thá»±c táº¿ trong Database (Chá»‘ng hack F12)
             const itemPrice = parseFloat(product.price);
             subTotal += itemPrice * item.quantity;
 
-            // Chuẩn bị dữ liệu để lưu vào bảng OrderItem sau này
+            // Chuáº©n bá»‹ dá»¯ liá»‡u Ä‘á»ƒ lÆ°u vÃ o báº£ng OrderItem sau nÃ y
             orderItemsData.push({
                 productId: product.id,
                 quantity: item.quantity,
-                priceAtPurchase: itemPrice, // Lưu giá lúc mua để sau này Admin đổi giá không làm sai lịch sử
-                name: product.name, // Dùng để gửi mail hoặc tạo đơn PayOS
+                priceAtPurchase: itemPrice, // LÆ°u giÃ¡ lÃºc mua Ä‘á»ƒ sau nÃ y Admin Ä‘á»•i giÃ¡ khÃ´ng lÃ m sai lá»‹ch sá»­
+                name: product.name, // DÃ¹ng Ä‘á»ƒ gá»­i mail hoáº·c táº¡o Ä‘Æ¡n PayOS
             });
 
-            // Cập nhật tồn kho và số lượng đã bán
+            // Cáº­p nháº­t tá»“n kho vÃ  sá»‘ lÆ°á»£ng Ä‘Ã£ bÃ¡n
             product.stock -= item.quantity;
             product.sold += item.quantity;
             await product.save({ transaction: t });
         }
 
-        // 3. XỬ LÝ MÃ GIẢM GIÁ (BẢO MẬT TRÊN SERVER)
+        // 3. Xá»¬ LÃ MÃƒ GIáº¢M GIÃ (Báº¢O Máº¬T TRÃŠN SERVER)
         let discountAmount = 0;
         let finalAppliedCode = null;
 
@@ -129,13 +135,13 @@ const checkout = async (req, res) => {
             });
 
             if (!coupon) {
-                const error = new Error("Mã giảm giá không tồn tại hoặc đã hết hạn.");
+                const error = new Error("MÃ£ giáº£m giÃ¡ khÃ´ng tá»“n táº¡i hoáº·c Ä‘Ã£ háº¿t háº¡n.");
                 error.status = 400;
                 throw error;
             }
 
             if (coupon.usageLimit && Number(coupon.usedCount || 0) >= Number(coupon.usageLimit)) {
-                const error = new Error("Mã giảm giá đã hết lượt sử dụng.");
+                const error = new Error("MÃ£ giáº£m giÃ¡ Ä‘Ã£ háº¿t lÆ°á»£t sá»­ dá»¥ng.");
                 error.status = 400;
                 throw error;
             }
@@ -147,22 +153,22 @@ const checkout = async (req, res) => {
             });
 
             if (!userCoupon) {
-                const error = new Error("Bạn chưa lưu mã giảm giá này.");
+                const error = new Error("Báº¡n chÆ°a lÆ°u mÃ£ giáº£m giÃ¡ nÃ y.");
                 error.status = 400;
                 throw error;
             }
 
             if (userCoupon.isUsed) {
-                const error = new Error("Bạn đã sử dụng mã này rồi.");
+                const error = new Error("Báº¡n Ä‘Ã£ sá»­ dá»¥ng mÃ£ nÃ y rá»“i.");
                 error.status = 400;
                 throw error;
             }
 
             if (subTotal < Number(coupon.minOrderAmount || 0)) {
                 const error = new Error(
-                    `Đơn hàng tối thiểu ${new Intl.NumberFormat("vi-VN").format(
+                    `ÄÆ¡n hÃ ng tá»‘i thiá»ƒu ${new Intl.NumberFormat("vi-VN").format(
                         coupon.minOrderAmount,
-                    )}đ để áp dụng mã này.`,
+                    )}Ä‘ Ä‘á»ƒ Ã¡p dá»¥ng mÃ£ nÃ y.`,
                 );
                 error.status = 400;
                 throw error;
@@ -193,12 +199,12 @@ const checkout = async (req, res) => {
 
         const finalTotalAmount = subTotal - discountAmount;
 
-        // Kiểm tra điều kiện PayOS (Tối thiểu 2,000đ)
+        // Kiá»ƒm tra Ä‘iá»u kiá»‡n PayOS (Tá»‘i thiá»ƒu 2,000Ä‘)
         if (paymentMethod === "QR" && finalTotalAmount < 2000) {
-            throw new Error("PayOS yêu cầu đơn hàng thanh toán qua QR phải từ 2,000 VNĐ trở lên.");
+            throw new Error("PayOS yÃªu cáº§u Ä‘Æ¡n hÃ ng thanh toÃ¡n qua QR pháº£i tá»« 2,000 VNÄ trá»Ÿ lÃªn.");
         }
 
-        // 4. TẠO MÃ ĐƠN HÀNG VÀ LƯU VÀO DATABASE
+        // 4. Táº O MÃƒ ÄÆ N HÃ€NG VÃ€ LÆ¯U VÃ€O DATABASE
         const orderCodeNum = Math.floor(100000 + Math.random() * 900000);
         const order = await Order.create(
             {
@@ -217,13 +223,13 @@ const checkout = async (req, res) => {
             { transaction: t },
         );
 
-        // Lưu danh sách sản phẩm của đơn hàng
+        // LÆ°u danh sÃ¡ch sáº£n pháº©m cá»§a Ä‘Æ¡n hÃ ng
         await OrderItem.bulkCreate(
             orderItemsData.map((item) => ({ ...item, orderId: order.id })),
             { transaction: t },
         );
 
-        // 5. XỬ LÝ THANH TOÁN QR (PAYOS)
+        // 5. Xá»¬ LÃ THANH TOÃN QR (PAYOS)
         let payosData = null;
         if (paymentMethod === "QR") {
             const paymentBody = {
@@ -235,37 +241,45 @@ const checkout = async (req, res) => {
                     quantity: i.quantity,
                     price: i.priceAtPurchase,
                 })),
-                returnUrl: `http://localhost:3000/cart?success=true&orderCode=${orderCodeNum}`,
-                cancelUrl: `http://localhost:3000/cart?cancel=true&orderCode=${orderCodeNum}`,
+                returnUrl: `${getFrontendUrl()}/cart?success=true&orderCode=${orderCodeNum}`,
+                cancelUrl: `${getFrontendUrl()}/cart?cancel=true&orderCode=${orderCodeNum}`,
             };
 
-            payosData = await payos.createPaymentLink(paymentBody);
+            payosData = await paymentService.createPaymentLink(paymentBody);
         }
 
-        // 6. HOÀN TẤT VÀ PHẢN HỒI
-        await t.commit(); // Lưu vĩnh viễn mọi thay đổi vào Database
+        // 6. HOÃ€N Táº¤T VÃ€ PHáº¢N Há»’I
+        await t.commit(); // LÆ°u vÄ©nh viá»…n má»i thay Ä‘á»•i vÃ o Database
 
-        // Gửi email thông báo (Chạy ngầm không cần await để nhanh hơn nếu muốn)
+        // Gá»­i email thÃ´ng bÃ¡o (Cháº¡y ngáº§m khÃ´ng cáº§n await Ä‘á»ƒ nhanh hÆ¡n náº¿u muá»‘n)
         const user = await User.findByPk(userId);
-        const emailHtml = generateOrderHtml(order, orderItemsData, paymentMethod === "QR");
-        sendEmail(user.email, `Xác nhận đơn hàng #${orderCodeNum}`, emailHtml);
+        const orderInfo = {
+            orderCode: order.orderCode,
+            customerName: user?.name,
+            shippingName: order.shippingName,
+            shippingPhone: order.shippingPhone,
+            shippingAddress: order.shippingAddress,
+            totalAmount: order.totalAmount,
+        };
+        const emailHtml = buildOrderEmail(orderInfo, orderItemsData, paymentMethod === "QR");
+        sendEmail(user.email, `[DPWOOD] Xac nhan don hang #${orderCodeNum}`, emailHtml);
 
         res.status(201).json({
-            message: "Đặt hàng thành công",
+            message: "Äáº·t hÃ ng thÃ nh cÃ´ng",
             orderCode: orderCodeNum,
-            payosData: payosData, // Trả về link QR nếu thanh toán online
+            payosData: payosData, // Tráº£ vá» link QR náº¿u thanh toÃ¡n online
         });
     } catch (error) {
-        // Nếu có bất kỳ lỗi nào, hủy bỏ toàn bộ quá trình (Trả lại tồn kho...)
+        // Náº¿u cÃ³ báº¥t ká»³ lá»—i nÃ o, há»§y bá» toÃ n bá»™ quÃ¡ trÃ¬nh (Tráº£ láº¡i tá»“n kho...)
         await t.rollback();
-        console.error("🔥 LỖI THANH TOÁN:", error);
-        res.status(error.status || 500).json({ message: error.message || "Lỗi xử lý đặt hàng" });
+        console.error("ðŸ”¥ Lá»–I THANH TOÃN:", error);
+        res.status(error.status || 500).json({ message: error.message || "Lá»—i xá»­ lÃ½ Ä‘áº·t hÃ ng" });
     }
 };
 
 const handleWebhook = async (req, res) => {
     try {
-        const webhookData = req.body.data;
+        const webhookData = await paymentService.verifyPaymentWebhookData(req.body);
         if (!webhookData || !webhookData.orderCode) return res.json({ success: true });
 
         const orderCode = String(webhookData.orderCode);
@@ -276,46 +290,15 @@ const handleWebhook = async (req, res) => {
 
         if (!order) return res.json({ success: true });
 
-        order.status = "PAID";
-        await order.save();
+        const isPaid =
+            String(webhookData.code || "") === "00" ||
+            String(webhookData.desc || "").toLowerCase().includes("thanh") ||
+            normalizePayosStatus(webhookData) === "PAID";
 
-        const items = await OrderItem.findAll({ where: { orderId: order.id } });
-        for (const item of items) {
-            const product = await Product.findByPk(item.productId);
-            if (product) {
-                product.sold += item.quantity;
-                await product.save();
-            }
+        if (isPaid) {
+            await markOrderAsPaid(order, webhookData);
         }
 
-        const transactionCode =
-            webhookData.transactionReference || webhookData.reference || "Giao dịch Online";
-        await AuditLog.create({
-            userId: order.userId,
-            action: "PAYMENT_RECEIVED",
-            details: `PayOS tự động xác nhận ${new Intl.NumberFormat("vi-VN").format(webhookData.amount)}đ cho đơn #${orderCode}. Mã GD: ${transactionCode}`,
-        });
-
-        if (order.User && order.User.email) {
-            const emailItemsInfo = items.map((i) => ({
-                name: "Sản phẩm",
-                quantity: i.quantity,
-                price: i.priceAtPurchase,
-            }));
-            const orderInfo = {
-                orderCode: order.orderCode,
-                customerName: order.User.name,
-                shippingName: order.shippingName,
-                shippingPhone: order.shippingPhone,
-                shippingAddress: order.shippingAddress,
-                totalAmount: order.totalAmount,
-            };
-            sendEmail(
-                order.User.email,
-                `[DPWOOD] Đã thanh toán đơn #${orderCode}`,
-                generateOrderHtml(orderInfo, emailItemsInfo, true),
-            );
-        }
         return res.json({ success: true });
     } catch (error) {
         return res.json({ success: false });
@@ -325,9 +308,31 @@ const handleWebhook = async (req, res) => {
 const getOrderStatus = async (req, res) => {
     try {
         const { orderCode } = req.params;
-        const order = await Order.findOne({ where: { orderCode } });
-        if (!order) return res.status(404).json({ message: "Không tìm thấy" });
-        res.json({ status: order.status });
+        const order = await Order.findOne({
+            where: { orderCode },
+            include: [{ model: User, attributes: ["email", "name"] }],
+        });
+        if (!order) return res.status(404).json({ message: "Khong tim thay don hang" });
+
+        let paymentStatus = order.status;
+
+        if (order.status === "PENDING" && order.paymentMethod === "QR") {
+            try {
+                const paymentInfo = await paymentService.getPaymentLinkInfo(order.orderCode);
+                paymentStatus = normalizePayosStatus(paymentInfo) || order.status;
+                if (paymentStatus === "PAID") {
+                    await markOrderAsPaid(order, paymentInfo);
+                }
+            } catch (error) {
+                console.warn(`Cannot refresh PayOS status for order #${orderCode}:`, error.message);
+            }
+        }
+
+        res.json({
+            status: order.status,
+            paymentStatus,
+            orderCode: order.orderCode,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -341,7 +346,7 @@ const cancelOrder = async (req, res) => {
             where: { orderCode, status: "PENDING" },
             transaction: t,
         });
-        if (!order) throw new Error("Không thể hủy");
+        if (!order) throw new Error("KhÃ´ng thá»ƒ há»§y");
 
         const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
         for (const item of items) {
@@ -361,27 +366,27 @@ const cancelOrder = async (req, res) => {
             {
                 userId: req.user.id,
                 action: "ORDER_CANCELED",
-                details: `Hủy đơn #${orderCode}, đã hoàn tồn kho.`,
+                details: `Há»§y Ä‘Æ¡n #${orderCode}, Ä‘Ã£ hoÃ n tá»“n kho.`,
             },
             { transaction: t },
         );
 
         await t.commit();
-        res.json({ message: "Đã hủy" });
+        res.json({ message: "ÄÃ£ há»§y" });
     } catch (error) {
         await t.rollback();
         res.status(400).json({ message: error.message });
     }
 };
 
-// 🔴 ĐÃ BỔ SUNG: Include OrderItem và Product vào dữ liệu lấy ra
+// ðŸ”´ ÄÃƒ Bá»” SUNG: Include OrderItem vÃ  Product vÃ o dá»¯ liá»‡u láº¥y ra
 const getAllOrdersAdmin = async (req, res) => {
     try {
         const orders = await Order.findAll({
             order: [["createdAt", "DESC"]],
             include: [
                 { model: User, attributes: ["name", "email"] },
-                { model: OrderItem, include: [{ model: Product }] }, // Lấy chi tiết sản phẩm và Hình ảnh
+                { model: OrderItem, include: [{ model: Product }] }, // Láº¥y chi tiáº¿t sáº£n pháº©m vÃ  HÃ¬nh áº£nh
             ],
         });
         res.status(200).json(orders);
@@ -393,16 +398,16 @@ const getAllOrdersAdmin = async (req, res) => {
 const updateOrderStatusAdmin = async (req, res) => {
     try {
         const order = await Order.findByPk(req.params.id);
-        if (!order) return res.status(404).json({ message: "Không tìm thấy" });
+        if (!order) return res.status(404).json({ message: "KhÃ´ng tÃ¬m tháº¥y" });
         order.status = req.body.status;
         await order.save();
-        res.status(200).json({ message: "Cập nhật thành công", order });
+        res.status(200).json({ message: "Cáº­p nháº­t thÃ nh cÃ´ng", order });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// 🔴 ĐÃ BỔ SUNG: Cho trang Profile User cũng xem được chi tiết và Hình ảnh nếu cần
+// ðŸ”´ ÄÃƒ Bá»” SUNG: Cho trang Profile User cÅ©ng xem Ä‘Æ°á»£c chi tiáº¿t vÃ  HÃ¬nh áº£nh náº¿u cáº§n
 const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.findAll({
@@ -412,7 +417,7 @@ const getMyOrders = async (req, res) => {
         });
         res.status(200).json(orders);
     } catch (error) {
-        console.error("🔥 LỖI CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG:", error);
+        console.error("ðŸ”¥ Lá»–I Cáº¬P NHáº¬T TRáº NG THÃI ÄÆ N HÃ€NG:", error);
         res.status(500).json({ message: error.message });
     }
 };

@@ -1,9 +1,8 @@
 import React from "react";
-import { Avatar, Button, Typography, Tag, Descriptions } from "antd";
+import { Avatar, Button, Typography, Tag } from "antd";
 import {
     UserOutlined,
     SettingOutlined,
-    MailOutlined,
     IdcardOutlined,
     CalendarOutlined,
     SafetyCertificateOutlined,
@@ -42,36 +41,6 @@ export default function UserInfo({ user, onOpenEdit }) {
         }
     };
 
-    const profileDescriptions = [
-        {
-            key: "email",
-            label: (
-                <span>
-                    <MailOutlined /> Email
-                </span>
-            ),
-            children: <span className="dp-profile-field-value">{user?.email || "Chưa cập nhật"}</span>,
-        },
-        {
-            key: "role",
-            label: (
-                <span>
-                    <IdcardOutlined /> Quyền hạn
-                </span>
-            ),
-            children: renderRoleTag(user?.role),
-        },
-        {
-            key: "createdAt",
-            label: (
-                <span>
-                    <CalendarOutlined /> Ngày gia nhập
-                </span>
-            ),
-            children: user?.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "N/A",
-        },
-    ];
-
     return (
         <div className="dp-profile-user">
             <div className="dp-profile-avatar-wrap">
@@ -93,6 +62,10 @@ export default function UserInfo({ user, onOpenEdit }) {
                             <Tag color="success" icon={<SafetyCertificateOutlined />}>
                                 Tài khoản tin cậy
                             </Tag>
+                            <Tag icon={<CalendarOutlined />}>
+                                Ngày tham gia:{" "}
+                                {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "N/A"}
+                            </Tag>
                         </div>
                     </div>
 
@@ -100,8 +73,6 @@ export default function UserInfo({ user, onOpenEdit }) {
                         Cập nhật
                     </Button>
                 </div>
-
-                <Descriptions className="dp-profile-descriptions" column={{ xs: 1, sm: 2, lg: 3 }} items={profileDescriptions} />
             </div>
         </div>
     );

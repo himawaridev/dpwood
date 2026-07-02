@@ -1,18 +1,25 @@
 import React, { useState } from "react";
-import { Table, Select, Tag, Button, Typography, Input, Flex } from "antd";
+import { Table, Select, Tag, Button, Typography, Input, Flex, Space } from "antd";
 
 const { Text } = Typography;
 
-export default function RoleManagementTab({ users, loading, onRefresh, onChangeRole }) {
-    const [searchText, setSearchText] = useState("");
+const normalizeAccountPhone = (value = "") => {
+    const digits = String(value).replace(/\D/g, "");
+    if (digits.startsWith("84") && digits.length === 11) return `0${digits.slice(2)}`;
+    return digits;
+};
 
-    // Bộ lọc tìm kiếm người dùng theo Tên, Username hoặc Email
-    const filteredUsers = users.filter((u) => {
+export default function RoleManagementTab({ users, loading, onRefresh, onChangeRole, onUpdatePhone }) {
+    const [searchText, setSearchText] = useState("");
+    const [phoneDrafts, setPhoneDrafts] = useState({});
+
+    const filteredUsers = users.filter((user) => {
         const keyword = searchText.toLowerCase();
         return (
-            (u.name || "").toLowerCase().includes(keyword) ||
-            (u.email || "").toLowerCase().includes(keyword) ||
-            (u.username || "").toLowerCase().includes(keyword)
+            (user.name || "").toLowerCase().includes(keyword) ||
+            (user.email || "").toLowerCase().includes(keyword) ||
+            (user.username || "").toLowerCase().includes(keyword) ||
+            (user.phone || "").toLowerCase().includes(keyword)
         );
     });
 
@@ -24,7 +31,35 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
             title: "Số điện thoại",
             dataIndex: "phone",
             key: "phone",
-            render: (phone) => (phone ? phone : <Text type="secondary">Chưa cập nhật</Text>),
+            render: (_, record) => {
+                const draft = phoneDrafts[record.id] ?? record.phone ?? "";
+                const normalizedDraft = normalizeAccountPhone(draft);
+                const isDirty = normalizedDraft !== (record.phone || "");
+
+                return (
+                    <Space.Compact>
+                        <Input
+                            value={draft}
+                            placeholder="0912345678"
+                            inputMode="tel"
+                            onChange={(event) =>
+                                setPhoneDrafts((prev) => ({
+                                    ...prev,
+                                    [record.id]: event.target.value,
+                                }))
+                            }
+                            style={{ width: 150 }}
+                        />
+                        <Button
+                            type={isDirty ? "primary" : "default"}
+                            disabled={!normalizedDraft || !isDirty}
+                            onClick={() => onUpdatePhone(record.id, normalizedDraft)}
+                        >
+                            Lưu
+                        </Button>
+                    </Space.Compact>
+                );
+            },
         },
         {
             title: "Quyền hiện tại",
@@ -40,7 +75,6 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
             title: "Thay đổi quyền",
             key: "action",
             render: (_, record) => (
-                // 🔴 ANTD V5: Sử dụng options thay vì Select.Option
                 <Select
                     defaultValue={record.role}
                     style={{ width: 120 }}
@@ -58,15 +92,15 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
                 <Input.Search
-                    placeholder="Tìm theo tên, email, username..."
+                    placeholder="Tìm theo tên, email, username, số điện thoại..."
                     allowClear
                     enterButton="Tìm kiếm"
                     size="large"
                     onSearch={(value) => setSearchText(value)}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    style={{ maxWidth: 400 }}
+                    onChange={(event) => setSearchText(event.target.value)}
+                    style={{ maxWidth: 440 }}
                 />
                 <Button size="large" onClick={onRefresh} loading={loading}>
                     Làm mới danh sách
@@ -78,6 +112,7 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                 rowKey="id"
                 loading={loading}
                 scroll={{ x: "max-content" }}
+                locale={{ emptyText: <Text type="secondary">Không có người dùng phù hợp</Text> }}
             />
         </>
     );
