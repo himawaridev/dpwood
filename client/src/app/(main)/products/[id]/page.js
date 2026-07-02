@@ -39,8 +39,14 @@ export default function ProductDetailPage() {
 
                 const data = productRes.data;
                 setProduct(data);
-                const storedRating = localStorage.getItem(`dpwoodProductRating:${data.id}`);
-                setUserRating(storedRating ? Number(storedRating) : 0);
+
+                const token = localStorage.getItem("token");
+                if (token) {
+                    const ratingRes = await api.get(`/products/${data.id}/rating`).catch(() => ({ data: { rating: 0 } }));
+                    setUserRating(Number(ratingRes.data?.rating || 0));
+                } else {
+                    setUserRating(0);
+                }
 
                 const fetchedImages =
                     Array.isArray(data.images) && data.images.length > 0
@@ -52,19 +58,19 @@ export default function ProductDetailPage() {
                 setImageList(fetchedImages);
                 setActiveImage(fetchedImages[0]);
 
-                const products = allProductsRes.data.filter((p) => p.id !== id);
+                const products = allProductsRes.data.filter((item) => item.id !== id);
                 const sorted = products
                     .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
                     .slice(0, 4);
                 setRelatedProducts(sorted);
             } catch (error) {
-                const errorMsg =
-                    error.response?.data?.message || error.response?.data?.error || "Lỗi server";
-                message.error(`Không thể tải sản phẩm: ${errorMsg}`);
+                const errorMsg = error.response?.data?.message || error.response?.data?.error || "Loi server";
+                message.error(`Khong the tai san pham: ${errorMsg}`);
             } finally {
                 setLoading(false);
             }
         };
+
         fetchProductDetailAndRelated();
     }, [id, message]);
 
@@ -84,28 +90,34 @@ export default function ProductDetailPage() {
                 quantity: safeQuantity,
             });
         }
+
         localStorage.setItem("cart", JSON.stringify(cart));
         window.dispatchEvent(new Event("cart-updated"));
 
         if (isBuyNow) {
             router.push("/cart");
         } else {
-            message.success(`Đã thêm ${safeQuantity} sản phẩm vào giỏ hàng`);
+            message.success(`Da them ${safeQuantity} san pham vao gio hang`);
         }
     };
 
     const handleRateProduct = async (rating) => {
-        if (!rating || ratingSubmitting || userRating) return;
+        if (!rating || ratingSubmitting) return;
+
+        if (!localStorage.getItem("token")) {
+            message.warning("Vui long dang nhap de danh gia san pham.");
+            router.push("/login");
+            return;
+        }
 
         try {
             setRatingSubmitting(true);
             const response = await api.post(`/products/${product.id}/rating`, { rating });
             setProduct(response.data.product);
-            setUserRating(rating);
-            localStorage.setItem(`dpwoodProductRating:${product.id}`, String(rating));
-            message.success("Cảm ơn bạn đã đánh giá sản phẩm.");
+            setUserRating(Number(response.data.userRating || rating));
+            message.success(userRating ? "Da cap nhat danh gia san pham." : "Cam on ban da danh gia san pham.");
         } catch (error) {
-            message.error(error.response?.data?.message || "Không thể gửi đánh giá lúc này.");
+            message.error(error.response?.data?.message || "Khong the gui danh gia luc nay.");
         } finally {
             setRatingSubmitting(false);
         }
@@ -123,9 +135,9 @@ export default function ProductDetailPage() {
         return (
             <div className="dp-page" style={{ display: "grid", placeItems: "center" }}>
                 <div className="dp-panel" style={{ padding: 40, textAlign: "center" }}>
-                    <Title level={3}>Sản phẩm không tồn tại hoặc đã bị xóa.</Title>
+                    <Title level={3}>San pham khong ton tai hoac da bi xoa.</Title>
                     <Button type="primary" onClick={() => router.push("/products")}>
-                        Quay lại cửa hàng
+                        Quay lai cua hang
                     </Button>
                 </div>
             </div>
@@ -139,7 +151,7 @@ export default function ProductDetailPage() {
                     style={{ marginBottom: 18 }}
                     items={[
                         { title: <HomeOutlined />, onClick: () => router.push("/") },
-                        { title: "Sản phẩm", onClick: () => router.push("/products") },
+                        { title: "San pham", onClick: () => router.push("/products") },
                         { title: product.name },
                     ]}
                 />
@@ -150,7 +162,7 @@ export default function ProductDetailPage() {
                     onClick={() => router.back()}
                     style={{ paddingLeft: 0, marginBottom: 16, fontWeight: 700 }}
                 >
-                    Quay lại
+                    Quay lai
                 </Button>
 
                 <section className="dp-panel" style={{ padding: "clamp(18px, 4vw, 34px)" }}>
@@ -187,7 +199,7 @@ export default function ProductDetailPage() {
                     <RelatedProducts
                         relatedProducts={relatedProducts}
                         bestSellerThreshold={bestSellerThreshold}
-                        onProductClick={(pId) => router.push(`/products/${pId}`)}
+                        onProductClick={(productId) => router.push(`/products/${productId}`)}
                     />
                 </section>
             </div>

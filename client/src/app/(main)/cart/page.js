@@ -34,7 +34,7 @@ export default function CartPage() {
     const [paymentMethod, setPaymentMethod] = useState("COD");
     const [payosData, setPayosData] = useState(null);
     const [discountCode, setDiscountCode] = useState("");
-    const [discountData, setDiscountData] = useState({ percentage: 0, amount: 0 });
+    const [discountData, setDiscountData] = useState({ amount: 0 });
     const [isQrModalVisible, setIsQrModalVisible] = useState(false);
     const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
     const [isAuth, setIsAuth] = useState(false);

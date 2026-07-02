@@ -19,6 +19,7 @@ const TicketMessage = require("./models/ticketMessage");
 const Blog = require("./models/blog");
 const Coupon = require("./models/coupon");
 const UserCoupon = require("./models/userCoupon");
+const ProductRating = require("./models/productRating");
 
 // Routers
 const authRoutes = require("./routers/auth");
@@ -71,6 +72,13 @@ const setupDatabaseAssociations = () => {
 
     Coupon.hasMany(UserCoupon, { foreignKey: "couponId" });
     UserCoupon.belongsTo(Coupon, { foreignKey: "couponId" });
+
+    // Quan hệ User - ProductRating - Product
+    User.hasMany(ProductRating, { foreignKey: "userId" });
+    ProductRating.belongsTo(User, { foreignKey: "userId" });
+
+    Product.hasMany(ProductRating, { foreignKey: "productId" });
+    ProductRating.belongsTo(Product, { foreignKey: "productId" });
 };
 
 // ==========================================
@@ -226,6 +234,19 @@ const startServer = async () => {
             }
         } catch (e) {
             console.log("QueryInterface Products check skipped:", e.message);
+        }
+
+        try {
+            const tableDesc = await queryInterface.describeTable("Coupons");
+            if (!tableDesc.sourceDiscountId) {
+                await queryInterface.addColumn("Coupons", "sourceDiscountId", {
+                    type: DataTypes.INTEGER,
+                    allowNull: true,
+                });
+                console.log("Added sourceDiscountId column to Coupons via QueryInterface");
+            }
+        } catch (e) {
+            console.log("QueryInterface Coupons check skipped:", e.message);
         }
 
         server.listen(PORT, () => {

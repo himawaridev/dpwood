@@ -1,9 +1,13 @@
 const { sequelize } = require("../config/connectSequelize");
+const { Op } = require("sequelize");
 const Product = require("../models/product");
 const Order = require("../models/order");
 const OrderItem = require("../models/orderItem");
 const AuditLog = require("../models/auditLog");
 const User = require("../models/user");
+const Coupon = require("../models/coupon");
+const UserCoupon = require("../models/userCoupon");
+const { syncLegacyDiscountsToCoupons } = require("../services/couponSyncService");
 const sendEmail = require("../utils/sendEmail");
 
 const PayOSModule = require("@payos/node");
@@ -112,20 +116,79 @@ const checkout = async (req, res) => {
         let finalAppliedCode = null;
 
         if (discountCode) {
-            const Discount = require("../models/discount"); // Import model nếu chưa có ở đầu file
-            const discount = await Discount.findOne({
+            const now = new Date();
+            await syncLegacyDiscountsToCoupons({ code: discountCode, transaction: t });
+            const coupon = await Coupon.findOne({
                 where: {
-                    code: discountCode,
+                    code: String(discountCode).trim().toUpperCase(),
                     isActive: true,
+                    startDate: { [Op.lte]: now },
+                    expiryDate: { [Op.gt]: now },
                 },
                 transaction: t,
             });
 
-            // Chỉ áp dụng nếu mã còn hạn
-            if (discount && new Date(discount.expiryDate) >= new Date()) {
-                discountAmount = Math.floor((subTotal * discount.percentage) / 100);
-                finalAppliedCode = discount.code;
+            if (!coupon) {
+                const error = new Error("Mã giảm giá không tồn tại hoặc đã hết hạn.");
+                error.status = 400;
+                throw error;
             }
+
+            if (coupon.usageLimit && Number(coupon.usedCount || 0) >= Number(coupon.usageLimit)) {
+                const error = new Error("Mã giảm giá đã hết lượt sử dụng.");
+                error.status = 400;
+                throw error;
+            }
+
+            const userCoupon = await UserCoupon.findOne({
+                where: { userId, couponId: coupon.id },
+                transaction: t,
+                lock: true,
+            });
+
+            if (!userCoupon) {
+                const error = new Error("Bạn chưa lưu mã giảm giá này.");
+                error.status = 400;
+                throw error;
+            }
+
+            if (userCoupon.isUsed) {
+                const error = new Error("Bạn đã sử dụng mã này rồi.");
+                error.status = 400;
+                throw error;
+            }
+
+            if (subTotal < Number(coupon.minOrderAmount || 0)) {
+                const error = new Error(
+                    `Đơn hàng tối thiểu ${new Intl.NumberFormat("vi-VN").format(
+                        coupon.minOrderAmount,
+                    )}đ để áp dụng mã này.`,
+                );
+                error.status = 400;
+                throw error;
+            }
+
+            if (coupon.discountType === "percent") {
+                discountAmount = Math.floor((subTotal * Number(coupon.discountValue || 0)) / 100);
+                if (
+                    coupon.maxDiscountAmount &&
+                    discountAmount > Number(coupon.maxDiscountAmount || 0)
+                ) {
+                    discountAmount = Number(coupon.maxDiscountAmount);
+                }
+            } else {
+                discountAmount = Number(coupon.discountValue || 0);
+            }
+
+            discountAmount = Math.min(discountAmount, subTotal);
+            finalAppliedCode = coupon.code;
+
+            userCoupon.isUsed = true;
+            userCoupon.usedAt = new Date();
+            await userCoupon.save({ transaction: t });
+
+            coupon.usedCount = Number(coupon.usedCount || 0) + 1;
+            await coupon.save({ transaction: t });
         }
 
         const finalTotalAmount = subTotal - discountAmount;
@@ -143,6 +206,7 @@ const checkout = async (req, res) => {
                 orderCode: orderCodeNum,
                 totalAmount: finalTotalAmount,
                 discountCode: finalAppliedCode,
+                couponCode: finalAppliedCode,
                 discountAmount: discountAmount,
                 paymentMethod: paymentMethod || "COD",
                 status: "PENDING",
@@ -195,7 +259,7 @@ const checkout = async (req, res) => {
         // Nếu có bất kỳ lỗi nào, hủy bỏ toàn bộ quá trình (Trả lại tồn kho...)
         await t.rollback();
         console.error("🔥 LỖI THANH TOÁN:", error);
-        res.status(500).json({ message: error.message || "Lỗi xử lý đặt hàng" });
+        res.status(error.status || 500).json({ message: error.message || "Lỗi xử lý đặt hàng" });
     }
 };
 

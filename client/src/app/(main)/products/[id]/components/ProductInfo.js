@@ -36,14 +36,17 @@ export default function ProductInfo({
                 <Space size={8} wrap style={{ marginBottom: 14 }}>
                     {Number(product.sold || 0) >= bestSellerThreshold && (
                         <Tag color="error" icon={<FireOutlined />}>
-                            Bán chạy ({product.sold} đã bán)
+                            Ban chay ({product.sold} da ban)
                         </Tag>
                     )}
                     <Tag color="success" icon={<SafetyCertificateOutlined />}>
                         DPWOOD selected
                     </Tag>
-                    <Tag color={inStock ? "processing" : "default"} icon={inStock ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>
-                        {inStock ? "Còn hàng" : "Hết hàng"}
+                    <Tag
+                        color={inStock ? "processing" : "default"}
+                        icon={inStock ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                    >
+                        {inStock ? "Con hang" : "Het hang"}
                     </Tag>
                 </Space>
 
@@ -63,24 +66,25 @@ export default function ProductInfo({
 
             <div className="dp-product-rating-panel">
                 <div>
-                    <Text strong>Đánh giá sản phẩm</Text>
+                    <Text strong>Danh gia san pham</Text>
                     <Flex align="center" gap={10} wrap="wrap" style={{ marginTop: 8 }}>
                         <Rate disabled allowHalf value={rating} />
                         <Text className="dp-muted">
                             {ratingCount > 0
-                                ? `${rating.toFixed(1)} / 5 từ ${ratingCount} lượt đánh giá`
-                                : "Chưa có đánh giá"}
+                                ? `${rating.toFixed(1)} / 5 tu ${ratingCount} luot danh gia`
+                                : "Chua co danh gia"}
                         </Text>
                     </Flex>
                 </div>
 
                 <div>
                     <Text className="dp-muted" style={{ display: "block", marginBottom: 8 }}>
-                        {hasRatedProduct ? "Bạn đã đánh giá sản phẩm này" : "Chọn số sao của bạn"}
+                        {hasRatedProduct ? "Ban co the thay doi danh gia cua minh" : "Chon so sao cua ban"}
                     </Text>
                     <Rate
+                        allowHalf
                         value={userRating || 0}
-                        disabled={ratingSubmitting || hasRatedProduct}
+                        disabled={ratingSubmitting}
                         onChange={onRateProduct}
                     />
                 </div>
@@ -91,7 +95,7 @@ export default function ProductInfo({
                     {formatCurrency(product.price)}
                 </Text>
                 <Paragraph className="dp-muted" style={{ margin: "8px 0 0" }}>
-                    Tồn kho hiện tại: <strong>{product.stock}</strong> sản phẩm
+                    Ton kho hien tai: <strong>{product.stock}</strong> san pham
                 </Paragraph>
             </div>
 
@@ -99,7 +103,7 @@ export default function ProductInfo({
 
             <div>
                 <Text strong style={{ display: "block", marginBottom: 10 }}>
-                    Số lượng
+                    So luong
                 </Text>
                 <InputNumber
                     min={1}
@@ -120,7 +124,7 @@ export default function ProductInfo({
                     disabled={!inStock}
                     style={{ flex: "1 1 180px" }}
                 >
-                    Thêm vào giỏ
+                    Them vao gio
                 </Button>
                 <Button
                     type="primary"
@@ -142,8 +146,8 @@ export default function ProductInfo({
                 }}
             >
                 {[
-                    { icon: <TruckOutlined />, title: "Giao hàng", text: "Theo dõi trạng thái đơn" },
-                    { icon: <SafetyCertificateOutlined />, title: "Thanh toán", text: "COD hoặc QR PayOS" },
+                    { icon: <TruckOutlined />, title: "Giao hang", text: "Theo doi trang thai don" },
+                    { icon: <SafetyCertificateOutlined />, title: "Thanh toan", text: "COD hoac QR PayOS" },
                 ].map((item) => (
                     <div
                         key={item.title}

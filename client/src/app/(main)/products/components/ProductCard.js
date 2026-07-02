@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import React from "react";
-import { Card, Flex, Rate, Tooltip, Typography } from "antd";
-import { FireOutlined, EyeOutlined, ShoppingCartOutlined, StopOutlined } from "@ant-design/icons";
+import { Card, Flex, Tooltip, Typography } from "antd";
+import { FireOutlined, EyeOutlined, ShoppingCartOutlined, StopOutlined, StarFilled } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -10,18 +10,34 @@ const formatCurrency = (value) =>
 
 const getRatingValue = (product) => {
     const explicitRating = Number(product.rating ?? product.averageRating ?? product.rate);
-    if (explicitRating > 0) return Math.min(5, explicitRating);
+    if (explicitRating > 0) return Math.min(5, Math.round(explicitRating * 2) / 2);
     return 0;
 };
+
+function DisplayRatingStars({ value }) {
+    return (
+        <span className="webcake-rating-stars" aria-label={`${value.toFixed(1)} out of 5 stars`}>
+            {Array.from({ length: 5 }).map((_, index) => {
+                const fill = Math.max(0, Math.min(1, value - index));
+
+                return (
+                    <span className="webcake-rating-star" key={index}>
+                        <StarFilled className="webcake-rating-star-base" />
+                        <span className="webcake-rating-star-fill" style={{ width: `${fill * 100}%` }}>
+                            <StarFilled />
+                        </span>
+                    </span>
+                );
+            })}
+        </span>
+    );
+}
 
 export default function ProductCard({ product, badge, onClickDetail }) {
     const inStock = Number(product.stock || 0) > 0;
     const rating = getRatingValue(product);
     const reviewCount = Number(product.reviewCount ?? product.reviewsCount ?? product.ratingCount ?? 0);
-    const image =
-        product.imageUrl ||
-        (Array.isArray(product.images) && product.images[0]) ||
-        "https://content.pancake.vn/web-media/81/98/66/19/ec8bfc121e82a52efcf4d4882a8a74aeacb97dc0cd893ce475f3f5fc-w:823-h:1034-l:29602-t:image/webp.webp";
+    const image = product.imageUrl || (Array.isArray(product.images) && product.images[0]);
 
     return (
         <Card
@@ -38,7 +54,11 @@ export default function ProductCard({ product, badge, onClickDetail }) {
             }}
             cover={
                 <button type="button" className="webcake-product-image" onClick={onClickDetail}>
-                    <img alt={product.name || "DPWOOD product"} src={image} />
+                    {image ? (
+                        <img alt={product.name || "DPWOOD product"} src={image} />
+                    ) : (
+                        <span className="webcake-product-image-placeholder">DPWOOD</span>
+                    )}
                     {(badge || !inStock) && (
                         <span className="webcake-product-status-row">
                             {badge && (
@@ -74,8 +94,8 @@ export default function ProductCard({ product, badge, onClickDetail }) {
 
                 <Text className="webcake-product-price">{formatCurrency(product.price)}</Text>
                 <div className="webcake-product-rating">
-                    <Rate disabled allowHalf value={rating} />
-                    <span>({reviewCount})</span>
+                    <DisplayRatingStars value={rating} />
+                    <span>{rating.toFixed(1)} ({reviewCount})</span>
                 </div>
             </Flex>
         </Card>

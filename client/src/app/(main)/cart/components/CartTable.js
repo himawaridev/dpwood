@@ -34,6 +34,11 @@ const { Search } = Input;
 const formatCurrency = (value) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 
+const formatCouponValue = (coupon) => {
+    if (coupon.discountType === "percent") return `-${Number(coupon.discountValue)}%`;
+    return `-${formatCurrency(coupon.discountValue)}`;
+};
+
 export default function CartTable({
     cartItems,
     handleQuantityChange,
@@ -45,55 +50,65 @@ export default function CartTable({
     handleCheckoutClick,
     discountCode,
     setDiscountCode,
-    discountData = { percentage: 0, amount: 0 },
+    discountData = { amount: 0 },
     setDiscountData,
 }) {
     const { message } = App.useApp();
-    const [activeVouchers, setActiveVouchers] = useState([]);
+    const [savedCoupons, setSavedCoupons] = useState([]);
     const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
     const [isVoucherLoading, setIsVoucherLoading] = useState(false);
 
     useEffect(() => {
-        const fetchActiveVouchers = async () => {
+        const fetchSavedCoupons = async () => {
             try {
                 setIsVoucherLoading(true);
-                const response = await api.get("/discounts/active");
-                setActiveVouchers(response.data || []);
+                const response = await api.get("/coupons/my");
+                setSavedCoupons(
+                    (response.data || [])
+                        .filter((item) => item.Coupon && !item.isUsed)
+                        .map((item) => ({
+                            ...item.Coupon,
+                            userCouponId: item.id,
+                        })),
+                );
             } catch {
-                setActiveVouchers([]);
+                setSavedCoupons([]);
             } finally {
                 setIsVoucherLoading(false);
             }
         };
 
-        fetchActiveVouchers();
+        fetchSavedCoupons();
     }, []);
 
     const handleApplyDiscount = async (value) => {
         const code = value.trim().toUpperCase();
         if (!code) {
             setDiscountCode("");
-            setDiscountData({ percentage: 0, amount: 0 });
+            setDiscountData({ amount: 0 });
             return;
         }
 
         try {
-            const res = await api.post("/discounts/validate", { code });
-            const amount = Math.floor((totalPrice * res.data.percentage) / 100);
+            const res = await api.post("/coupons/apply", { code, totalAmount: totalPrice });
             setDiscountCode(code);
-            setDiscountData({ percentage: res.data.percentage, amount });
-            message.success(`Áp dụng mã thành công. Bạn được giảm ${res.data.percentage}%.`);
+            setDiscountData({
+                amount: Number(res.data.discountAmount || 0),
+                type: res.data.discountType,
+                value: Number(res.data.discountValue || 0),
+            });
+            message.success(res.data.message || "Áp dụng mã thành công.");
         } catch (error) {
             setDiscountCode("");
-            setDiscountData({ percentage: 0, amount: 0 });
-            message.error(error.response?.data?.message || "Mã giảm giá không hợp lệ");
+            setDiscountData({ amount: 0 });
+            message.error(error.response?.data?.message || "Mã giảm giá không hợp lệ.");
         }
     };
 
     const handleDiscountInputChange = (event) => {
         const nextCode = event.target.value.toUpperCase();
         setDiscountCode(nextCode);
-        if (!nextCode) setDiscountData({ percentage: 0, amount: 0 });
+        if (!nextCode) setDiscountData({ amount: 0 });
     };
 
     const handleSelectVoucher = async (voucher) => {
@@ -116,7 +131,7 @@ export default function CartTable({
                         height={76}
                         preview={false}
                         style={{
-                            borderRadius: 8,
+                            borderRadius: 0,
                             objectFit: "cover",
                             border: "1px solid var(--dp-soft-border)",
                         }}
@@ -180,10 +195,7 @@ export default function CartTable({
     if (cartItems.length === 0) {
         return (
             <Card variant="outlined" className="dp-panel">
-                <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Giỏ hàng của bạn đang trống"
-                >
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Giỏ hàng của bạn đang trống">
                     <Button type="primary" href="/products">
                         Tiếp tục mua sắm
                     </Button>
@@ -231,7 +243,7 @@ export default function CartTable({
                             </Radio.Group>
                         </div>
 
-                        <div style={{ maxWidth: 380 }}>
+                        <div style={{ maxWidth: 420 }}>
                             <Text strong>
                                 <TagOutlined /> Ưu đãi & mã giảm giá
                             </Text>
@@ -250,17 +262,17 @@ export default function CartTable({
                                     onClick={() => setIsVoucherModalOpen(true)}
                                     style={{ flex: "0 0 auto" }}
                                 >
-                                    {"Kho m\u00e3"}
+                                    Kho mã
                                 </Button>
                             </Flex>
-                            {discountData?.percentage > 0 && (
+                            {(discountData?.amount || 0) > 0 && (
                                 <Tag
                                     color="success"
                                     closable
                                     onClose={() => handleApplyDiscount("")}
                                     style={{ marginTop: 10, padding: "4px 8px" }}
                                 >
-                                    {discountCode}: giảm {discountData.percentage}%
+                                    {discountCode}: giảm {formatCurrency(discountData.amount)}
                                 </Tag>
                             )}
                         </div>
@@ -273,7 +285,7 @@ export default function CartTable({
                         </Flex>
                         {(discountData?.amount || 0) > 0 && (
                             <Flex justify="space-between">
-                                <Text type="secondary">Giảm giá ({discountData.percentage}%)</Text>
+                                <Text type="secondary">Giảm giá</Text>
                                 <Text type="danger" strong>
                                     -{formatCurrency(discountData.amount)}
                                 </Text>
@@ -303,26 +315,24 @@ export default function CartTable({
             </div>
 
             <Modal
-                title={"Kho m\u00e3 \u01b0u \u0111\u00e3i"}
+                title="Kho mã ưu đãi"
                 open={isVoucherModalOpen}
                 onCancel={() => setIsVoucherModalOpen(false)}
                 footer={null}
                 width={620}
             >
                 {isVoucherLoading ? (
-                    <Text type="secondary">{"\u0110ang t\u1ea3i kho m\u00e3..."}</Text>
-                ) : activeVouchers.length === 0 ? (
+                    <Text type="secondary">Đang tải kho mã...</Text>
+                ) : savedCoupons.length === 0 ? (
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={
-                            "Hi\u1ec7n ch\u01b0a c\u00f3 m\u00e3 \u01b0u \u0111\u00e3i \u0111ang ho\u1ea1t \u0111\u1ed9ng."
-                        }
+                        description="Bạn chưa lưu mã ưu đãi nào. Hãy lấy mã ở trang chủ trước khi thanh toán."
                     />
                 ) : (
                     <Flex vertical gap={12}>
-                        {activeVouchers.map((voucher) => (
+                        {savedCoupons.map((voucher) => (
                             <Card
-                                key={voucher.id}
+                                key={voucher.userCouponId || voucher.id}
                                 size="small"
                                 variant="outlined"
                                 styles={{ body: { padding: 14 } }}
@@ -330,7 +340,7 @@ export default function CartTable({
                                 <Flex justify="space-between" align="flex-start" gap={14} wrap="wrap">
                                     <Flex gap={12} align="flex-start" style={{ flex: 1, minWidth: 260 }}>
                                         <Tag color="warning" style={{ marginTop: 2 }}>
-                                            -{voucher.percentage}%
+                                            {formatCouponValue(voucher)}
                                         </Tag>
                                         <Flex vertical gap={4}>
                                             <Flex align="center" gap={8} wrap="wrap">
@@ -338,17 +348,17 @@ export default function CartTable({
                                                     {voucher.code}
                                                 </Text>
                                                 {discountCode === voucher.code && (
-                                                    <Tag color="success">
-                                                        {"\u0110\u00e3 \u00e1p d\u1ee5ng"}
-                                                    </Tag>
+                                                    <Tag color="success">Đang áp dụng</Tag>
                                                 )}
                                             </Flex>
                                             <Text type="secondary">
                                                 {voucher.description ||
-                                                    "\u00c1p d\u1ee5ng cho \u0111\u01a1n h\u00e0ng ph\u00f9 h\u1ee3p."}
+                                                    `Áp dụng cho đơn hàng từ ${formatCurrency(
+                                                        voucher.minOrderAmount,
+                                                    )}.`}
                                             </Text>
                                             <Text type="secondary" style={{ fontSize: 12 }}>
-                                                {"H\u1ebft h\u1ea1n"}:{" "}
+                                                Hết hạn:{" "}
                                                 {new Date(voucher.expiryDate).toLocaleDateString("vi-VN")}
                                             </Text>
                                         </Flex>
@@ -357,9 +367,7 @@ export default function CartTable({
                                         type={discountCode === voucher.code ? "primary" : "default"}
                                         onClick={() => handleSelectVoucher(voucher)}
                                     >
-                                        {discountCode === voucher.code
-                                            ? "\u0110ang d\u00f9ng"
-                                            : "Ch\u1ecdn m\u00e3"}
+                                        {discountCode === voucher.code ? "Đang dùng" : "Chọn mã"}
                                     </Button>
                                 </Flex>
                             </Card>

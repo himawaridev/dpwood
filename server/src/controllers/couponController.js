@@ -2,6 +2,7 @@ const { Op } = require("sequelize");
 const { sequelize } = require("../config/connectSequelize");
 const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
+const { syncLegacyDiscountsToCoupons } = require("../services/couponSyncService");
 
 // ==========================================
 // [ADMIN] Tạo mã giảm giá
@@ -131,6 +132,7 @@ const deleteCoupon = async (req, res) => {
 // ==========================================
 const getActiveCoupons = async (req, res) => {
     try {
+        await syncLegacyDiscountsToCoupons();
         const now = new Date();
         const coupons = await Coupon.findAll({
             where: {
@@ -231,6 +233,8 @@ const applyCoupon = async (req, res) => {
         if (!code || !totalAmount) {
             return res.status(400).json({ message: "Thiếu thông tin" });
         }
+
+        await syncLegacyDiscountsToCoupons({ code });
 
         const coupon = await Coupon.findOne({ where: { code: code.toUpperCase() } });
         if (!coupon) {

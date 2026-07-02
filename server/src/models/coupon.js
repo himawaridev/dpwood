@@ -58,6 +58,10 @@ const Coupon = sequelize.define(
             allowNull: false,
             defaultValue: true,
         },
+        sourceDiscountId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
     },
     {
         timestamps: true,

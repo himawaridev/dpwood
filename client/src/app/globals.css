@@ -1069,6 +1069,19 @@ a {
   transform: scale(1.06);
 }
 
+.webcake-product-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f7;
+  color: #9b9b9b;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .webcake-product-status-row {
   position: absolute;
   top: 12px;
@@ -1106,6 +1119,91 @@ a {
   margin-left: calc(-50vw + 50%);
   padding: 86px 0 92px;
   background: #f8f8f8;
+}
+
+.webcake-coupon-carousel {
+  margin: 0 -12px;
+  padding-bottom: 36px;
+}
+
+.webcake-coupon-carousel .slick-list {
+  overflow: hidden;
+}
+
+.webcake-coupon-carousel .slick-slide > div {
+  height: 100%;
+}
+
+.webcake-coupon-carousel .slick-dots {
+  bottom: 0;
+}
+
+.webcake-coupon-carousel .slick-dots li button {
+  position: relative;
+  overflow: hidden;
+  height: 4px;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+.webcake-coupon-carousel .slick-dots li button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: #111 !important;
+  border-radius: inherit;
+  opacity: 1 !important;
+}
+
+.webcake-coupon-carousel .slick-dots li button:hover::after,
+.webcake-coupon-carousel .slick-dots li button:focus::after {
+  background: #f09b90 !important;
+}
+
+.webcake-coupon-carousel .slick-dots li.slick-active button,
+.webcake-coupon-carousel .slick-dots li.slick-active button::after {
+  background: #f09b90 !important;
+  opacity: 1 !important;
+}
+
+.webcake-coupon-custom-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+  min-height: 14px;
+}
+
+.webcake-coupon-custom-dots button {
+  width: 16px;
+  height: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #111;
+  box-shadow: none;
+  color: transparent;
+  cursor: pointer;
+  font-size: 0;
+  line-height: 0;
+  outline: none;
+  transition:
+    background 0.2s ease,
+    width 0.2s ease;
+}
+
+.webcake-coupon-custom-dots button:hover,
+.webcake-coupon-custom-dots button:focus-visible,
+.webcake-coupon-custom-dots button.is-active {
+  width: 24px;
+  background: #f09b90;
+}
+
+.webcake-coupon-slide {
+  height: 100%;
+  padding: 0 12px;
 }
 
 .webcake-coupon-card {
@@ -1323,6 +1421,62 @@ a {
   margin-inline-end: 2px !important;
 }
 
+.webcake-product-rating .ant-rate-star-full .ant-rate-star-first,
+.webcake-product-rating .ant-rate-star-full .ant-rate-star-second,
+.webcake-product-rating .ant-rate-star-half .ant-rate-star-first {
+  color: #f09b90 !important;
+}
+
+.webcake-product-rating .ant-rate-star-zero .ant-rate-star-first,
+.webcake-product-rating .ant-rate-star-zero .ant-rate-star-second,
+.webcake-product-rating .ant-rate-star-half .ant-rate-star-second {
+  color: #b7b7b7 !important;
+}
+
+.webcake-product-rating .ant-rate-disabled .ant-rate-star {
+  cursor: default;
+}
+
+.webcake-rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+  line-height: 1;
+}
+
+.webcake-rating-star {
+  position: relative;
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  color: #b7b7b7;
+}
+
+.webcake-rating-star .anticon {
+  display: block;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.webcake-rating-star-base {
+  color: #b7b7b7 !important;
+}
+
+.webcake-rating-star-fill {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  overflow: hidden;
+  color: #f09b90 !important;
+  white-space: nowrap;
+}
+
+.webcake-rating-star-fill .anticon {
+  color: #f09b90 !important;
+  flex: 0 0 14px;
+}
+
 .webcake-product-rating span {
   color: #9a9a9a;
 }
@@ -1345,10 +1499,7 @@ a {
   width: 100vw;
   margin-left: calc(-50vw + 50%);
   padding: 96px 0 102px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.76)),
-    url("https://content.pancake.vn/1/s1903x700/fwebp90/80/94/cc/02/7bbce89f92ab670880e70f1e35d0a4c78ea9342eab3299629c3dd24d-w:1903-h:700-l:142441-t:image/jpeg.jpeg")
-      center / cover;
+  background: #f8f8f8;
   text-align: center;
 }
 
@@ -1465,6 +1616,17 @@ a {
 .webcake-product-skeleton .ant-skeleton,
 .dp-product-grid-skeleton .ant-skeleton {
   margin-top: 16px;
+}
+
+.webcake-empty-products {
+  border: 1px solid var(--dp-soft-border);
+  background: #fff;
+  padding: 34px 24px;
+  text-align: center;
+}
+
+.webcake-empty-products .ant-typography {
+  margin-bottom: 8px;
 }
 
 .dp-blog-card-skeleton {
