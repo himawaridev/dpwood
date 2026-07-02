@@ -80,6 +80,19 @@ export default function AdminSupportPage() {
         },
         { title: "Tiêu đề YC", dataIndex: "title", key: "title" },
         {
+            title: "Xử lý bởi",
+            key: "handlerType",
+            render: (_, record) => {
+                const handlerMap = {
+                    AI: { color: "geekblue", label: "AI" },
+                    ADMIN: { color: "green", label: "Admin" },
+                    NONE: { color: "default", label: "Chưa xử lý" },
+                };
+                const item = handlerMap[record.handlerType] || handlerMap.NONE;
+                return <Tag color={item.color}>{item.label}</Tag>;
+            },
+        },
+        {
             title: "Trạng thái",
             key: "status",
             render: (_, record) => (

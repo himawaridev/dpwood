@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { App, Button, Flex, Input, Modal, Typography } from "antd";
+import { App } from "antd";
 import api from "@/utils/axios";
 import ProductModal from "./components/ProductModal";
 import ProductTable from "./components/ProductTable";
@@ -13,9 +13,6 @@ export default function AdminProductsPage() {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [draftProduct, setDraftProduct] = useState(null);
-    const [aiOpen, setAiOpen] = useState(false);
-    const [aiPrompt, setAiPrompt] = useState("");
-    const [aiLoading, setAiLoading] = useState(false);
 
     const fetchProducts = useCallback(async () => {
         try {
@@ -43,29 +40,6 @@ export default function AdminProductsPage() {
         setEditingProduct(record);
         setDraftProduct(null);
         setIsModalVisible(true);
-    };
-
-    const handleAiDraft = async () => {
-        const prompt = aiPrompt.trim();
-        if (prompt.length < 8) {
-            message.warning("Vui lòng nhập yêu cầu chi tiết hơn để AI tạo sản phẩm.");
-            return;
-        }
-
-        try {
-            setAiLoading(true);
-            const res = await api.post("/ai/product-draft", { prompt });
-            setEditingProduct(null);
-            setDraftProduct(res.data?.draft || null);
-            setAiOpen(false);
-            setAiPrompt("");
-            setIsModalVisible(true);
-            message.success("AI đã tạo nháp sản phẩm. Bạn kiểm tra rồi bấm lưu.");
-        } catch (error) {
-            message.error(error.response?.data?.message || "Không thể tạo nháp sản phẩm bằng AI");
-        } finally {
-            setAiLoading(false);
-        }
     };
 
     const handleSave = async (values) => {
@@ -124,11 +98,9 @@ export default function AdminProductsPage() {
                 products={products}
                 loading={loading}
                 onAdd={handleAdd}
-                onAiDraft={() => setAiOpen(true)}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onRefresh={fetchProducts}
-                aiLoading={aiLoading}
             />
 
             <ProductModal
@@ -141,32 +113,6 @@ export default function AdminProductsPage() {
                 editingProduct={editingProduct}
                 draftProduct={draftProduct}
             />
-
-            <Modal
-                title="AI tạo nháp sản phẩm"
-                open={aiOpen}
-                onCancel={() => setAiOpen(false)}
-                footer={[
-                    <Button key="cancel" onClick={() => setAiOpen(false)}>
-                        Hủy
-                    </Button>,
-                    <Button key="generate" type="primary" loading={aiLoading} onClick={handleAiDraft}>
-                        Tạo nháp
-                    </Button>,
-                ]}
-            >
-                <Flex vertical gap={12}>
-                    <Typography.Text type="secondary">
-                        Mô tả sản phẩm bạn muốn bán. AI sẽ điền form, bạn vẫn có thể sửa giá, tồn kho, ảnh và biến thể trước khi lưu.
-                    </Typography.Text>
-                    <Input.TextArea
-                        rows={5}
-                        value={aiPrompt}
-                        onChange={(event) => setAiPrompt(event.target.value)}
-                        placeholder="VD: Tạo sản phẩm bộ bát đĩa sứ trắng 12 món, có màu trắng/đen/hồng pastel, mỗi màu có bộ nhỏ, bộ 12 món và bộ lớn."
-                    />
-                </Flex>
-            </Modal>
         </>
     );
 }

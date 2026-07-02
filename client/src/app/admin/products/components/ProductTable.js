@@ -7,7 +7,6 @@ import {
     PlusOutlined,
     ReloadOutlined,
     SearchOutlined,
-    ThunderboltOutlined,
 } from "@ant-design/icons";
 import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
@@ -17,7 +16,7 @@ const { Title, Text } = Typography;
 const formatCurrency = (value) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 
-export default function ProductTable({ products, loading, onAdd, onAiDraft, onEdit, onDelete, onRefresh, aiLoading }) {
+export default function ProductTable({ products, loading, onAdd, onEdit, onDelete, onRefresh }) {
     const [searchText, setSearchText] = useState("");
 
     const filteredProducts = products.filter((product) =>
@@ -145,9 +144,6 @@ export default function ProductTable({ products, loading, onAdd, onAiDraft, onEd
                     />
                     <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading}>
                         Làm mới
-                    </Button>
-                    <Button icon={<ThunderboltOutlined />} onClick={onAiDraft} loading={aiLoading}>
-                        AI tạo nháp
                     </Button>
                     <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
                         Thêm mới

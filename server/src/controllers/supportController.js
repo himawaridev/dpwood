@@ -2,6 +2,31 @@ const SupportTicket = require("../models/supportTicket");
 const TicketMessage = require("../models/ticketMessage");
 const User = require("../models/user");
 
+const AI_SUPPORT_SIGNATURE = "Phan hoi tu AI Support DPWOOD";
+
+const getSupportHandlerInfo = async (ticketId) => {
+    const lastAdminMessage = await TicketMessage.findOne({
+        where: { ticketId, isAdmin: true },
+        order: [["createdAt", "DESC"]],
+    });
+
+    if (!lastAdminMessage) {
+        return {
+            handlerType: "NONE",
+            handlerLabel: "Chưa xử lý",
+            lastHandledAt: null,
+        };
+    }
+
+    const isAiHandled = String(lastAdminMessage.message || "").includes(AI_SUPPORT_SIGNATURE);
+
+    return {
+        handlerType: isAiHandled ? "AI" : "ADMIN",
+        handlerLabel: isAiHandled ? "AI xử lý" : "Admin xử lý",
+        lastHandledAt: lastAdminMessage.createdAt,
+    };
+};
+
 // ==========================================
 // [CLIENT] YÊU CẦU HỖ TRỢ
 // ==========================================
@@ -48,7 +73,13 @@ const getAllTickets = async (req, res) => {
             include: [{ model: User, attributes: ["name", "email"] }],
             order: [["createdAt", "DESC"]],
         });
-        res.status(200).json(tickets);
+        const enrichedTickets = await Promise.all(
+            tickets.map(async (ticket) => ({
+                ...ticket.toJSON(),
+                ...(await getSupportHandlerInfo(ticket.id)),
+            })),
+        );
+        res.status(200).json(enrichedTickets);
     } catch (error) {
         console.error("Lỗi getAllTickets:", error);
         res.status(500).json({ message: "Lỗi tải dữ liệu", error: error.message });

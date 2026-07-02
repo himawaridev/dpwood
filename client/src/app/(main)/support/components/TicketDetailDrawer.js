@@ -180,6 +180,7 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
 
                         {messages.map((item) => {
                             const isAdmin = item.isAdmin;
+                            const isAiMessage = isAdmin && String(item.message || "").includes("Phan hoi tu AI Support DPWOOD");
                             return (
                                 <Flex
                                     key={item.id}
@@ -209,6 +210,11 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket 
                                                 {item.message}
                                             </div>
                                             <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
+                                                {isAdmin && (
+                                                    <Tag color={isAiMessage ? "geekblue" : "green"} style={{ marginRight: 6 }}>
+                                                        {isAiMessage ? "AI" : "Admin"}
+                                                    </Tag>
+                                                )}
                                                 {dayjs(item.createdAt).format("HH:mm DD/MM")}
                                             </Text>
                                         </div>

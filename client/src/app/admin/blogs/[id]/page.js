@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { App, Form, Input, Button, Switch, Typography, Row, Col, Card, Flex, Spin } from "antd";
 import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import api from "@/utils/axios";
 import dynamic from "next/dynamic";
 
@@ -20,9 +20,11 @@ export default function BlogEditorPage() {
     const [initialData, setInitialData] = useState({});
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const quillRef = useRef(null);
 
     const isEditMode = params.id !== "create";
+    const returnPath = searchParams.get("from") === "ai" ? "/admin/ai" : "/admin/blogs";
 
     useEffect(() => {
         const fetchBlog = async () => {
@@ -51,13 +53,13 @@ export default function BlogEditorPage() {
                 });
             } catch {
                 message.error("Lỗi lấy dữ liệu bài viết!");
-                router.push("/admin/blogs");
+                router.push(returnPath);
             } finally {
                 setFetching(false);
             }
         };
         fetchBlog();
-    }, [params.id, isEditMode, message, router]);
+    }, [params.id, isEditMode, message, router, returnPath]);
 
     const imageHandler = useCallback(() => {
         const input = document.createElement("input");
@@ -112,7 +114,7 @@ export default function BlogEditorPage() {
             } else {
                 await api.post("/blogs", values);
                 message.success("Đã đăng bài viết mới!");
-                router.push("/admin/blogs");
+                router.push(returnPath);
             }
         } catch {
             message.error("Lỗi khi lưu bài viết");
@@ -134,7 +136,7 @@ export default function BlogEditorPage() {
                 <Flex align="center" gap="small">
                     <Button
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => router.push("/admin/blogs")}
+                        onClick={() => router.push(returnPath)}
                     >
                         Quay lại
                     </Button>

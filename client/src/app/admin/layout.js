@@ -17,6 +17,7 @@ import {
     CustomerServiceOutlined,
     EditOutlined,
     PercentageOutlined,
+    RobotOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -24,6 +25,16 @@ import api from "@/utils/axios";
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
+const ADMIN_ROUTE_KEYS = [
+    "/admin/dashboard",
+    "/admin/users",
+    "/admin/products",
+    "/admin/orders",
+    "/admin/notifications",
+    "/admin/support",
+    "/admin/blogs",
+    "/admin/coupons",
+];
 
 export default function AdminLayout({ children }) {
     const router = useRouter();
@@ -34,11 +45,25 @@ export default function AdminLayout({ children }) {
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [adminName, setAdminName] = useState("");
     const [avatarUrl, setAvatarUrl] = useState("");
+    const [selectedMenuKey, setSelectedMenuKey] = useState("/admin/dashboard");
+    const [openMenuKeys, setOpenMenuKeys] = useState([]);
 
     useEffect(() => {
         setAdminName(localStorage.getItem("userName") || "Admin");
         setAvatarUrl(localStorage.getItem("avatarUrl") || "");
     }, []);
+
+    useEffect(() => {
+        if (pathname.startsWith("/admin/ai")) {
+            setSelectedMenuKey(pathname === "/admin/ai" ? "/admin/ai/blog" : pathname);
+            setOpenMenuKeys(["/admin/ai"]);
+            return;
+        }
+
+        setSelectedMenuKey(
+            ADMIN_ROUTE_KEYS.find((key) => pathname.startsWith(key)) || "/admin/dashboard",
+        );
+    }, [pathname]);
 
     const handleLogout = async () => {
         try {
@@ -61,6 +86,17 @@ export default function AdminLayout({ children }) {
         { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Ho tro" },
         { key: "/admin/blogs", icon: <EditOutlined />, label: "Bai viet" },
         { key: "/admin/coupons", icon: <PercentageOutlined />, label: "Ma giam gia" },
+        {
+            key: "/admin/ai",
+            icon: <RobotOutlined />,
+            label: "AI Center",
+            children: [
+                { key: "/admin/ai/blog", label: "Blog AI" },
+                { key: "/admin/ai/products", label: "San pham AI" },
+                { key: "/admin/ai/support", label: "Ticket AI" },
+                { key: "/admin/ai/rules", label: "Quy tac AI" },
+            ],
+        },
         { type: "divider" },
         { key: "/", icon: <HomeOutlined />, label: "Ve cua hang" },
     ];
@@ -89,10 +125,14 @@ export default function AdminLayout({ children }) {
     ];
 
     const activeKey =
-        menuItems.find((item) => item.key && pathname.startsWith(item.key) && item.key !== "/")?.key ||
-        "/admin/dashboard";
+        pathname.startsWith("/admin/ai")
+            ? pathname === "/admin/ai"
+                ? "/admin/ai/blog"
+                : pathname
+            : ADMIN_ROUTE_KEYS.find((key) => pathname.startsWith(key)) || "/admin/dashboard";
 
     const handleMenuClick = (item) => {
+        setSelectedMenuKey(item.key);
         setMobileNavOpen(false);
         router.push(item.key);
     };
@@ -111,7 +151,9 @@ export default function AdminLayout({ children }) {
 
             <Menu
                 mode="inline"
-                selectedKeys={[activeKey]}
+                selectedKeys={[selectedMenuKey || activeKey]}
+                openKeys={openMenuKeys}
+                onOpenChange={setOpenMenuKeys}
                 items={menuItems}
                 onClick={handleMenuClick}
                 className="dp-admin-menu"
