@@ -30,12 +30,8 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
         }
     };
 
-    // Xác nhận trước khi đổi sang trạng thái nguy hiểm (hủy hoặc khôi phục từ hủy)
     const handleStatusSelect = (record, newStatus) => {
-        const isDangerous =
-            newStatus === "CANCELED" ||
-            record.status === "CANCELED" ||
-            record.status === "COMPLETED";
+        const isDangerous = newStatus === "CANCELED" || record.status === "CANCELED" || record.status === "COMPLETED";
 
         if (isDangerous) {
             const fromLabel = STATUS_LABELS[record.status] || record.status;
@@ -50,12 +46,12 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
                         <Text strong>{fromLabel}</Text> sang <Text strong>{toLabel}</Text>?
                         {newStatus === "CANCELED" && (
                             <div style={{ marginTop: 8, color: "#ff4d4f" }}>
-                                ⚠️ Hủy đơn sẽ không thể tự động hoàn tồn kho tại đây.
+                                Hủy đơn có thể ảnh hưởng tới tồn kho và lịch sử xử lý.
                             </div>
                         )}
                         {record.status === "CANCELED" && (
                             <div style={{ marginTop: 8, color: "#faad14" }}>
-                                ⚠️ Đơn hàng đang ở trạng thái đã hủy. Vui lòng kiểm tra kỹ trước khi khôi phục.
+                                Đơn đang ở trạng thái đã hủy. Vui lòng kiểm tra kỹ trước khi khôi phục.
                             </div>
                         )}
                     </div>
@@ -72,7 +68,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
 
     const columns = [
         {
-            title: "Mã Đơn",
+            title: "Mã đơn",
             dataIndex: "orderCode",
             key: "orderCode",
             render: (code, record) => <Text code>{code || record.id?.substring(0, 8)}</Text>,
@@ -80,7 +76,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
         {
             title: "Khách hàng",
             key: "user",
-            render: (_, record) => record.User?.name || "Khách vãng lai",
+            render: (_, record) => record.User?.name || record.user?.name || "Khách vãng lai",
         },
         {
             title: "Ngày đặt",
@@ -92,9 +88,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
             dataIndex: "totalAmount",
             render: (price) => (
                 <Text type="danger" strong>
-                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
-                        price || 0,
-                    )}
+                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price || 0)}
                 </Text>
             ),
         },
@@ -115,7 +109,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
                 <Select
                     value={record.status}
                     style={{ width: 140 }}
-                    onChange={(val) => handleStatusSelect(record, val)}
+                    onChange={(value) => handleStatusSelect(record, value)}
                     options={[
                         { value: "PENDING", label: "Chờ xử lý" },
                         { value: "PAID", label: "Đã thanh toán" },
@@ -129,26 +123,14 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
         {
             title: "Chi tiết",
             key: "details",
+            fixed: "right",
             render: (_, record) => (
-                <Button
-                    type="primary"
-                    icon={<EyeOutlined />}
-                    onClick={() => onViewDetails(record)}
-                    size="small"
-                >
+                <Button type="primary" icon={<EyeOutlined />} onClick={() => onViewDetails(record)} size="small">
                     Xem
                 </Button>
             ),
         },
     ];
 
-    return (
-        <Table
-            dataSource={orders}
-            columns={columns}
-            rowKey="id"
-            loading={loading}
-            scroll={{ x: "max-content" }}
-        />
-    );
+    return <Table dataSource={orders} columns={columns} rowKey="id" loading={loading} scroll={{ x: "max-content" }} />;
 }

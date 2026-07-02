@@ -13,13 +13,18 @@ export function useCart() {
      */
     const addToCart = (product, quantity = 1) => {
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const existingIndex = cart.findIndex((item) => item.productId === product.id);
+        const cartItemId = product.cartItemId || product.id;
+        const existingIndex = cart.findIndex((item) => (item.cartItemId || item.productId) === cartItemId);
 
         if (existingIndex > -1) {
             cart[existingIndex].quantity += quantity;
         } else {
             cart.push({
+                cartItemId,
                 productId: product.id,
+                variantId: product.variantId || "",
+                variantLabel: product.variantLabel || "",
+                variantSnapshot: product.variantSnapshot || null,
                 name: product.name,
                 price: product.price,
                 imageUrl: product.imageUrl || (product.images && product.images[0]),

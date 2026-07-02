@@ -143,6 +143,11 @@ export default function CartTable({
                         <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
                             SKU: {record.productId?.substring(0, 8).toUpperCase()}
                         </Text>
+                        {record.variantLabel && (
+                            <Tag color="pink" style={{ marginTop: 6 }}>
+                                {record.variantLabel}
+                            </Tag>
+                        )}
                     </div>
                 </Flex>
             ),
@@ -163,7 +168,7 @@ export default function CartTable({
                     min={1}
                     max={100}
                     value={record.quantity}
-                    onChange={(value) => handleQuantityChange(record.productId, value)}
+                    onChange={(value) => handleQuantityChange(record.cartItemId || record.productId, value)}
                 />
             ),
         },
@@ -182,7 +187,7 @@ export default function CartTable({
             render: (_, record) => (
                 <Popconfirm
                     title="Xóa sản phẩm này?"
-                    onConfirm={() => handleRemoveItem(record.productId)}
+                    onConfirm={() => handleRemoveItem(record.cartItemId || record.productId)}
                     okText="Xóa"
                     cancelText="Hủy"
                 >
@@ -209,7 +214,7 @@ export default function CartTable({
             <Table
                 dataSource={cartItems}
                 columns={columns}
-                rowKey="productId"
+                rowKey={(record) => record.cartItemId || record.productId}
                 pagination={false}
                 loading={loading}
                 scroll={{ x: 760 }}

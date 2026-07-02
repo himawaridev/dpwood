@@ -1,17 +1,15 @@
 "use client";
+
 import { useCallback, useEffect, useState } from "react";
 import { App } from "antd";
 import api from "@/utils/axios";
-
-// 🔴 Import các Component đã chia nhỏ
-import ProductTable from "./components/ProductTable";
 import ProductModal from "./components/ProductModal";
+import ProductTable from "./components/ProductTable";
 
 export default function AdminProductsPage() {
     const { message } = App.useApp();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
 
@@ -19,7 +17,7 @@ export default function AdminProductsPage() {
         try {
             setLoading(true);
             const res = await api.get("/products");
-            setProducts(res.data);
+            setProducts(res.data || []);
         } catch {
             message.error("Không thể lấy danh sách sản phẩm");
         } finally {
@@ -43,12 +41,25 @@ export default function AdminProductsPage() {
 
     const handleSave = async (values) => {
         try {
-            const validImages = values.images.filter((img) => img && img.trim() !== "");
-
+            const validImages = (values.images || []).filter((image) => image && image.trim() !== "");
+            const variants = (values.variants || [])
+                .filter((variant) => variant?.color || variant?.size)
+                .map((variant, index) => ({
+                    variantId: variant.variantId || `${Date.now()}-${index}`,
+                    color: variant.color || "",
+                    size: variant.size || "",
+                    price: Number(variant.price || values.price || 0),
+                    stock: Number(variant.stock || 0),
+                    imageUrl: variant.imageUrl || "",
+                }));
             const payload = {
                 ...values,
                 images: validImages,
                 imageUrl: validImages.length > 0 ? validImages[0] : null,
+                variants,
+                stock: variants.length
+                    ? variants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0)
+                    : Number(values.stock || 0),
             };
 
             if (editingProduct) {
@@ -58,13 +69,11 @@ export default function AdminProductsPage() {
                 await api.post("/products", payload);
                 message.success("Thêm sản phẩm thành công");
             }
+
             setIsModalVisible(false);
             fetchProducts();
         } catch (error) {
-            const errorMsg =
-                error.response?.data?.error ||
-                error.response?.data?.message ||
-                "Lỗi không xác định";
+            const errorMsg = error.response?.data?.error || error.response?.data?.message || "Lỗi không xác định";
             message.error(`Lỗi: ${errorMsg}`);
         }
     };
@@ -81,7 +90,6 @@ export default function AdminProductsPage() {
 
     return (
         <>
-            {/* Cột hiển thị bảng và thanh tìm kiếm */}
             <ProductTable
                 products={products}
                 loading={loading}
@@ -91,7 +99,6 @@ export default function AdminProductsPage() {
                 onRefresh={fetchProducts}
             />
 
-            {/* Modal chứa Form */}
             <ProductModal
                 isVisible={isModalVisible}
                 onClose={() => setIsModalVisible(false)}

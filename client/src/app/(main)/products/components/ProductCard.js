@@ -1,7 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import React from "react";
 import { Card, Flex, Tooltip, Typography } from "antd";
-import { FireOutlined, EyeOutlined, ShoppingCartOutlined, StopOutlined, StarFilled } from "@ant-design/icons";
+import { EyeOutlined, FireOutlined, ShoppingCartOutlined, StarFilled, StopOutlined } from "@ant-design/icons";
+import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
+import { getProductSalesStats } from "@/utils/productStats";
 
 const { Text } = Typography;
 
@@ -35,6 +37,8 @@ function DisplayRatingStars({ value }) {
 
 export default function ProductCard({ product, badge, onClickDetail }) {
     const inStock = Number(product.stock || 0) > 0;
+    const salesStats = getProductSalesStats(product);
+    const hotBadge = salesStats.isHot ? badge || "icon-only" : "";
     const rating = getRatingValue(product);
     const reviewCount = Number(product.reviewCount ?? product.reviewsCount ?? product.ratingCount ?? 0);
     const image = product.imageUrl || (Array.isArray(product.images) && product.images[0]);
@@ -49,23 +53,25 @@ export default function ProductCard({ product, badge, onClickDetail }) {
                     padding: "16px 0 0",
                     display: "flex",
                     flexDirection: "column",
-                    minHeight: 124,
+                    minHeight: 136,
                 },
             }}
             cover={
                 <button type="button" className="webcake-product-image" onClick={onClickDetail}>
                     {image ? (
-                        <img alt={product.name || "DPWOOD product"} src={image} />
+                        <img alt={product.name || "DPWOOD Kitchen product"} src={image} />
                     ) : (
                         <span className="webcake-product-image-placeholder">DPWOOD</span>
                     )}
-                    {(badge || !inStock) && (
+                    {(hotBadge || !inStock) && (
                         <span className="webcake-product-status-row">
-                            {badge && (
-                                <span className="webcake-product-hot-badge">
-                                    <FireOutlined />
-                                    {badge !== "icon-only" && badge}
-                                </span>
+                            {hotBadge && (
+                                <Tooltip title={`Đã bán ${salesStats.sold}/${salesStats.total} sản phẩm`}>
+                                    <span className="webcake-product-hot-badge">
+                                        <FireOutlined />
+                                        {hotBadge !== "icon-only" && hotBadge}
+                                    </span>
+                                </Tooltip>
                             )}
                             {!inStock && (
                                 <Tooltip title="Hết hàng">
@@ -91,7 +97,7 @@ export default function ProductCard({ product, badge, onClickDetail }) {
                 <button type="button" onClick={onClickDetail} className="webcake-product-name">
                     {product.name}
                 </button>
-
+                <Text className="webcake-product-category">{getKitchenCategoryLabel(product.category)}</Text>
                 <Text className="webcake-product-price">{formatCurrency(product.price)}</Text>
                 <div className="webcake-product-rating">
                     <DisplayRatingStars value={rating} />

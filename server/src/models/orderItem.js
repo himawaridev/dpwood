@@ -25,6 +25,18 @@ const OrderItem = sequelize.define(
             type: DataTypes.DECIMAL(15, 2),
             allowNull: false,
         },
+        variantId: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        variantLabel: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        variantSnapshot: {
+            type: DataTypes.JSON,
+            allowNull: true,
+        },
     },
     {
         timestamps: true,

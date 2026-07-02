@@ -5,9 +5,10 @@ import { App, Typography, Row, Col, Button, Spin, Divider, Breadcrumb } from "an
 import { ArrowLeftOutlined, HomeOutlined } from "@ant-design/icons";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/utils/axios";
+import ProductDescription from "./components/ProductDescription";
 import ProductGallery from "./components/ProductGallery";
 import ProductInfo from "./components/ProductInfo";
-import ProductDescription from "./components/ProductDescription";
+import ProductKitchenSpecs from "./components/ProductKitchenSpecs";
 import RelatedProducts from "./components/RelatedProducts";
 
 const { Title } = Typography;
@@ -22,9 +23,9 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState("");
     const [imageList, setImageList] = useState([]);
+    const [selectedVariant, setSelectedVariant] = useState(null);
     const [userRating, setUserRating] = useState(0);
     const [ratingSubmitting, setRatingSubmitting] = useState(false);
-    const bestSellerThreshold = 20;
 
     useEffect(() => {
         if (!id) return;
@@ -48,24 +49,32 @@ export default function ProductDetailPage() {
                     setUserRating(0);
                 }
 
+                const variantImages = (Array.isArray(data.variants) ? data.variants : [])
+                    .map((variant) => variant.imageUrl)
+                    .filter(Boolean);
                 const fetchedImages =
                     Array.isArray(data.images) && data.images.length > 0
-                        ? data.images
+                        ? [...new Set([...data.images, ...variantImages])]
                         : data.imageUrl
-                          ? [data.imageUrl]
+                          ? [...new Set([data.imageUrl, ...variantImages])]
                           : ["https://via.placeholder.com/700x700?text=DPWOOD"];
 
                 setImageList(fetchedImages);
                 setActiveImage(fetchedImages[0]);
 
-                const products = allProductsRes.data.filter((item) => item.id !== id);
+                const products = (allProductsRes.data || []).filter((item) => item.id !== id);
                 const sorted = products
-                    .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
+                    .sort((a, b) => {
+                        const sameCategoryA = a.category && a.category === data.category ? 1 : 0;
+                        const sameCategoryB = b.category && b.category === data.category ? 1 : 0;
+                        if (sameCategoryA !== sameCategoryB) return sameCategoryB - sameCategoryA;
+                        return Number(b.sold || 0) - Number(a.sold || 0);
+                    })
                     .slice(0, 4);
                 setRelatedProducts(sorted);
             } catch (error) {
-                const errorMsg = error.response?.data?.message || error.response?.data?.error || "Loi server";
-                message.error(`Khong the tai san pham: ${errorMsg}`);
+                const errorMsg = error.response?.data?.message || error.response?.data?.error || "Lỗi server";
+                message.error(`Không thể tải sản phẩm: ${errorMsg}`);
             } finally {
                 setLoading(false);
             }
@@ -74,19 +83,32 @@ export default function ProductDetailPage() {
         fetchProductDetailAndRelated();
     }, [id, message]);
 
-    const handleAddToCart = (isBuyNow = false) => {
+    const handleVariantChange = (variant) => {
+        setSelectedVariant(variant || null);
+        if (variant?.imageUrl) setActiveImage(variant.imageUrl);
+    };
+
+    const handleAddToCart = (isBuyNow = false, variant = selectedVariant) => {
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const existingItemIndex = cart.findIndex((item) => item.productId === product.id);
+        const variantId = variant?.variantId || "";
+        const cartItemId = variantId ? `${product.id}:${variantId}` : product.id;
+        const existingItemIndex = cart.findIndex((item) => item.cartItemId === cartItemId);
         const safeQuantity = Math.max(1, Number(quantity || 1));
+        const variantLabel = [variant?.color, variant?.size || variant?.capacity].filter(Boolean).join(" / ");
+        const itemPrice = Number(variant?.price || product.price || 0);
 
         if (existingItemIndex > -1) {
             cart[existingItemIndex].quantity += safeQuantity;
         } else {
             cart.push({
+                cartItemId,
                 productId: product.id,
+                variantId,
+                variantLabel,
+                variantSnapshot: variant || null,
                 name: product.name,
-                price: product.price,
-                imageUrl: product.imageUrl || (product.images ? product.images[0] : ""),
+                price: itemPrice,
+                imageUrl: variant?.imageUrl || product.imageUrl || (product.images ? product.images[0] : ""),
                 quantity: safeQuantity,
             });
         }
@@ -97,7 +119,7 @@ export default function ProductDetailPage() {
         if (isBuyNow) {
             router.push("/cart");
         } else {
-            message.success(`Da them ${safeQuantity} san pham vao gio hang`);
+            message.success(`Đã thêm ${safeQuantity} sản phẩm vào giỏ hàng`);
         }
     };
 
@@ -105,7 +127,7 @@ export default function ProductDetailPage() {
         if (!rating || ratingSubmitting) return;
 
         if (!localStorage.getItem("token")) {
-            message.warning("Vui long dang nhap de danh gia san pham.");
+            message.warning("Vui lòng đăng nhập để đánh giá sản phẩm.");
             router.push("/login");
             return;
         }
@@ -115,9 +137,9 @@ export default function ProductDetailPage() {
             const response = await api.post(`/products/${product.id}/rating`, { rating });
             setProduct(response.data.product);
             setUserRating(Number(response.data.userRating || rating));
-            message.success(userRating ? "Da cap nhat danh gia san pham." : "Cam on ban da danh gia san pham.");
+            message.success(userRating ? "Đã cập nhật đánh giá sản phẩm." : "Cảm ơn bạn đã đánh giá sản phẩm.");
         } catch (error) {
-            message.error(error.response?.data?.message || "Khong the gui danh gia luc nay.");
+            message.error(error.response?.data?.message || "Không thể gửi đánh giá lúc này.");
         } finally {
             setRatingSubmitting(false);
         }
@@ -135,9 +157,9 @@ export default function ProductDetailPage() {
         return (
             <div className="dp-page" style={{ display: "grid", placeItems: "center" }}>
                 <div className="dp-panel" style={{ padding: 40, textAlign: "center" }}>
-                    <Title level={3}>San pham khong ton tai hoac da bi xoa.</Title>
+                    <Title level={3}>Sản phẩm không tồn tại hoặc đã bị xóa.</Title>
                     <Button type="primary" onClick={() => router.push("/products")}>
-                        Quay lai cua hang
+                        Quay lại cửa hàng
                     </Button>
                 </div>
             </div>
@@ -151,7 +173,7 @@ export default function ProductDetailPage() {
                     style={{ marginBottom: 18 }}
                     items={[
                         { title: <HomeOutlined />, onClick: () => router.push("/") },
-                        { title: "San pham", onClick: () => router.push("/products") },
+                        { title: "Sản phẩm", onClick: () => router.push("/products") },
                         { title: product.name },
                     ]}
                 />
@@ -162,7 +184,7 @@ export default function ProductDetailPage() {
                     onClick={() => router.back()}
                     style={{ paddingLeft: 0, marginBottom: 16, fontWeight: 700 }}
                 >
-                    Quay lai
+                    Quay lại
                 </Button>
 
                 <section className="dp-panel" style={{ padding: "clamp(18px, 4vw, 34px)" }}>
@@ -174,6 +196,7 @@ export default function ProductDetailPage() {
                                 imageList={imageList}
                                 productName={product.name}
                             />
+                            <ProductKitchenSpecs product={product} selectedVariant={selectedVariant} />
                         </Col>
 
                         <Col xs={24} lg={11}>
@@ -182,7 +205,7 @@ export default function ProductDetailPage() {
                                 quantity={quantity}
                                 setQuantity={setQuantity}
                                 handleAddToCart={handleAddToCart}
-                                bestSellerThreshold={bestSellerThreshold}
+                                onVariantChange={handleVariantChange}
                                 onRateProduct={handleRateProduct}
                                 ratingSubmitting={ratingSubmitting}
                                 hasRatedProduct={Boolean(userRating)}
@@ -198,7 +221,6 @@ export default function ProductDetailPage() {
                 <section className="dp-section">
                     <RelatedProducts
                         relatedProducts={relatedProducts}
-                        bestSellerThreshold={bestSellerThreshold}
                         onProductClick={(productId) => router.push(`/products/${productId}`)}
                     />
                 </section>

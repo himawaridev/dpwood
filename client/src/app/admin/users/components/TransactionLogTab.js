@@ -10,7 +10,7 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
         ),
     );
 
-    const extractTransactionInfo = (details) => {
+    const extractTransactionInfo = (details = "") => {
         let orderCode = "-";
         let method = "-";
         let amount = "-";
@@ -19,13 +19,13 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
         const codeMatch = details.match(/#(\d+)/);
         if (codeMatch) orderCode = codeMatch[1];
 
-        const methodMatch = details.match(/Phương thức: ([A-Z]+)/);
+        const methodMatch = details.match(/Phương thức: ([A-Z]+)/) || details.match(/: ([A-Z]{2,})/);
         if (methodMatch) method = methodMatch[1];
 
-        const amountMatch = details.match(/(Tổng: |đã nhận )([\d.,]+đ)/);
-        if (amountMatch) amount = amountMatch[2];
+        const amountMatch = details.match(/(?:Tổng: |đã nhận )([\d.,]+(?:đ|VND)?)/) || details.match(/([\d.,]+(?:đ|VND))/);
+        if (amountMatch) amount = amountMatch[1];
 
-        const transMatch = details.match(/Mã GD: ([A-Za-z0-9]+)/);
+        const transMatch = details.match(/Mã GD: ([A-Za-z0-9]+)/) || details.match(/GD: ([A-Za-z0-9]+)/);
         if (transMatch) transId = transMatch[1];
 
         return { orderCode, method, amount, transId };
@@ -40,25 +40,25 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
             case "ADMIN_UPDATE_ORDER":
                 return "Quản trị viên cập nhật trạng thái đơn";
             case "ORDER_CANCELED":
-                return "Hủy đơn hàng & hoàn lại tồn kho";
+                return "Hủy đơn hàng và hoàn lại tồn kho";
             default:
                 return "Cập nhật hệ thống";
         }
     };
 
     const getActionTag = (action) => {
-        const a = action?.toUpperCase();
-        switch (a) {
+        const normalizedAction = action?.toUpperCase();
+        switch (normalizedAction) {
             case "ORDER_CREATED":
-                return <Tag color="blue">TẠO ĐƠN HÀNG</Tag>;
+                return <Tag color="blue">Tạo đơn hàng</Tag>;
             case "PAYMENT_RECEIVED":
-                return <Tag color="cyan">THANH TOÁN</Tag>;
+                return <Tag color="cyan">Thanh toán</Tag>;
             case "ORDER_CANCELED":
-                return <Tag color="magenta">HỦY ĐƠN</Tag>;
+                return <Tag color="magenta">Hủy đơn</Tag>;
             case "ADMIN_UPDATE_ORDER":
-                return <Tag color="purple">QTV CẬP NHẬT</Tag>;
+                return <Tag color="purple">QTV cập nhật</Tag>;
             default:
-                return <Tag color="default">{a}</Tag>;
+                return <Tag color="default">{normalizedAction}</Tag>;
         }
     };
 
@@ -130,7 +130,7 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
                 <Input.Search
                     placeholder="Nhập email cần tìm..."
                     allowClear

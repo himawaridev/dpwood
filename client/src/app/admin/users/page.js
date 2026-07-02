@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { App, Typography, Tabs } from "antd";
 import api from "@/utils/axios";
 
-// ðŸ”´ Import cÃ¡c Sub-Components Ä‘Ã£ chia nhá»
 import RoleManagementTab from "./components/RoleManagementTab";
 import StatusControlTab from "./components/StatusControlTab";
 import AuthLogTab from "./components/AuthLogTab";
@@ -24,7 +23,7 @@ export default function AdminUsersPage() {
             const res = await api.get("/users");
             setUsers(res.data);
         } catch {
-            message.error("KhÃ´ng thá»ƒ láº¥y danh sÃ¡ch ngÆ°á»i dÃ¹ng");
+            message.error("Không thể lấy danh sách người dùng");
         } finally {
             setLoading(false);
         }
@@ -36,7 +35,7 @@ export default function AdminUsersPage() {
             const res = await api.get(`/users/logs${searchValue ? `?search=${searchValue}` : ""}`);
             setLogs(res.data);
         } catch {
-            message.error("KhÃ´ng thá»ƒ láº¥y nháº­t kÃ½ há»‡ thá»‘ng");
+            message.error("Không thể lấy nhật ký hệ thống");
         } finally {
             setLoadingLogs(false);
         }
@@ -50,10 +49,10 @@ export default function AdminUsersPage() {
     const handleChangeRole = async (userId, newRole) => {
         try {
             await api.put(`/users/${userId}/role`, { role: newRole });
-            message.success("Cáº­p nháº­t quyá»n thÃ nh cÃ´ng");
+            message.success("Cập nhật quyền thành công");
             fetchUsers();
         } catch {
-            message.error("Lá»—i khi cáº­p nháº­t quyá»n");
+            message.error("Lỗi khi cập nhật quyền");
         }
     };
 
@@ -70,20 +69,20 @@ export default function AdminUsersPage() {
     const handleDelete = async (userId) => {
         try {
             await api.delete(`/users/${userId}`);
-            message.success("ÄÃ£ xÃ³a tÃ i khoáº£n");
+            message.success("Đã xóa tài khoản");
             fetchUsers();
         } catch (error) {
-            message.error(error.response?.data?.message || "Lá»—i khi xÃ³a tÃ i khoáº£n");
+            message.error(error.response?.data?.message || "Lỗi khi xóa tài khoản");
         }
     };
 
     const handleRestore = async (userId) => {
         try {
             await api.put(`/users/${userId}/restore`);
-            message.success("ÄÃ£ khÃ´i phá»¥c tÃ i khoáº£n");
+            message.success("Đã khôi phục tài khoản");
             fetchUsers();
         } catch (error) {
-            message.error(error.response?.data?.message || "Lá»—i khi khÃ´i phá»¥c");
+            message.error(error.response?.data?.message || "Lỗi khi khôi phục");
         }
     };
 
@@ -93,15 +92,14 @@ export default function AdminUsersPage() {
             message.success(res.data.message);
             fetchUsers();
         } catch (error) {
-            message.error(error.response?.data?.message || "Lá»—i thao tÃ¡c");
+            message.error(error.response?.data?.message || "Lỗi thao tác");
         }
     };
 
-    // ðŸ”´ DÃ¹ng thuá»™c tÃ­nh items chuáº©n xÃ¡c theo Ant Design V5
     const tabItems = [
         {
             key: "1",
-            label: "PhÃ¢n Quyá»n",
+            label: "Phân quyền",
             children: (
                 <RoleManagementTab
                     users={users}
@@ -114,7 +112,7 @@ export default function AdminUsersPage() {
         },
         {
             key: "2",
-            label: "Tráº¡ng ThÃ¡i",
+            label: "Trạng thái",
             children: (
                 <StatusControlTab
                     users={users}
@@ -128,12 +126,12 @@ export default function AdminUsersPage() {
         },
         {
             key: "3",
-            label: "Lá»‹ch Sá»­ ÄÄƒng Nháº­p",
+            label: "Lịch sử đăng nhập",
             children: <AuthLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />,
         },
         {
             key: "4",
-            label: "Lá»‹ch Sá»­ Giao Dá»‹ch",
+            label: "Lịch sử giao dịch",
             children: (
                 <TransactionLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />
             ),
@@ -143,7 +141,7 @@ export default function AdminUsersPage() {
     return (
         <>
             <Title level={3} style={{ marginTop: 0, marginBottom: 20 }}>
-                Quáº£n LÃ½ NgÆ°á»i DÃ¹ng & Hoáº¡t Äá»™ng
+                Quản lý người dùng & hoạt động
             </Title>
             <Tabs defaultActiveKey="1" items={tabItems} />
         </>

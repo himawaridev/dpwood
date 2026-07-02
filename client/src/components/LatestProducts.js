@@ -14,16 +14,18 @@ import {
     TruckOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import api from "@/utils/axios";
 import ProductCard from "@/app/(main)/products/components/ProductCard";
+import api from "@/utils/axios";
+import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
+import { getProductSalesStats } from "@/utils/productStats";
 
 const { Title, Text, Paragraph } = Typography;
 
 const serviceItems = [
-    { key: "delivery", icon: <TruckOutlined />, title: "Free Delivery", desc: "Free shipping on all order" },
-    { key: "return", icon: <SafetyCertificateOutlined />, title: "Money Return", desc: "Back guarantee in 7 days" },
-    { key: "discount", icon: <GiftOutlined />, title: "Member Discount", desc: "Onevery order over $130.00" },
-    { key: "support", icon: <CustomerServiceOutlined />, title: "Online Support", desc: "Support 24 hours a day" },
+    { key: "delivery", icon: <TruckOutlined />, title: "Giao hàng nhanh", desc: "Đóng gói an toàn cho đồ bếp" },
+    { key: "return", icon: <SafetyCertificateOutlined />, title: "Đổi trả 7 ngày", desc: "Hỗ trợ khi sản phẩm lỗi" },
+    { key: "discount", icon: <GiftOutlined />, title: "Ưu đãi thành viên", desc: "Lưu mã và dùng khi thanh toán" },
+    { key: "support", icon: <CustomerServiceOutlined />, title: "Tư vấn bếp", desc: "Hỗ trợ chọn sản phẩm phù hợp" },
 ];
 
 function ProductSkeletonGrid({ count = 8 }) {
@@ -44,12 +46,12 @@ function ProductSkeletonGrid({ count = 8 }) {
 function ProductEmptyState({ onRetry }) {
     return (
         <div className="webcake-empty-products">
-            <Title level={4}>Chua tai duoc san pham</Title>
+            <Title level={4}>Chưa tải được sản phẩm</Title>
             <Paragraph>
-                May chu co the dang khoi dong sau thoi gian khong su dung. Vui long thu tai lai du lieu.
+                Máy chủ có thể đang khởi động sau thời gian không sử dụng. Vui lòng thử tải lại dữ liệu.
             </Paragraph>
             <Button type="primary" onClick={onRetry}>
-                Tai lai san pham
+                Tải lại sản phẩm
             </Button>
         </div>
     );
@@ -68,7 +70,7 @@ const formatCompactCurrency = (value) => {
 const getCouponValue = (coupon) =>
     coupon.discountType === "percent"
         ? `${Number(coupon.discountValue)}%`
-        : `${formatCompactCurrency(coupon.discountValue)}d`;
+        : `${formatCompactCurrency(coupon.discountValue)}đ`;
 
 const getDaysLeft = (expiryDate) => {
     const diff = new Date(expiryDate).getTime() - Date.now();
@@ -154,23 +156,9 @@ export default function LatestProducts() {
                 api.get("/coupons/active", { timeout: 12000 }),
             ]);
 
-            if (productResponse.status === "fulfilled") {
-                setProducts(productResponse.value);
-            } else {
-                setProducts([]);
-            }
-
-            if (blogResponse.status === "fulfilled") {
-                setBlogs((blogResponse.value.data || []).slice(0, 3));
-            } else {
-                setBlogs([]);
-            }
-
-            if (couponResponse.status === "fulfilled") {
-                setCoupons(couponResponse.value.data || []);
-            } else {
-                setCoupons([]);
-            }
+            setProducts(productResponse.status === "fulfilled" ? productResponse.value : []);
+            setBlogs(blogResponse.status === "fulfilled" ? (blogResponse.value.data || []).slice(0, 3) : []);
+            setCoupons(couponResponse.status === "fulfilled" ? couponResponse.value.data || [] : []);
 
             if (token) {
                 const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
@@ -198,12 +186,15 @@ export default function LatestProducts() {
     }, [coupons.length]);
 
     const bestSellerProducts = useMemo(
-        () => [...products].sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0)).slice(0, 8),
+        () =>
+            [...products]
+                .filter((product) => getProductSalesStats(product).isHot)
+                .sort((a, b) => getProductSalesStats(b).soldRatio - getProductSalesStats(a).soldRatio)
+                .slice(0, 8),
         [products],
     );
 
     const catalogProducts = useMemo(() => products.slice(0, 12), [products]);
-
     const couponSource = coupons;
     const blogSource = blogs.filter((blog) => blog?.title);
     const heroProducts = useMemo(
@@ -215,10 +206,10 @@ export default function LatestProducts() {
                 .map((product, index) => ({
                     key: product.id || `${product.name}-${index}`,
                     product,
-                    title: product.name || "DPWOOD Collection",
+                    title: product.name || "DPWOOD Kitchen",
                     copy:
                         product.description ||
-                        "Selected wooden furniture with clean lines, warm materials and everyday comfort.",
+                        `${getKitchenCategoryLabel(product.category)} được chọn lọc cho căn bếp gọn gàng, tiện dụng và bền đẹp.`,
                     image: getProductImage(product),
                     price: Number(product.price || 0),
                 })),
@@ -235,7 +226,7 @@ export default function LatestProducts() {
         const isCouponClaimed = couponClaimKeys.some((key) => claimedCouponIds.has(key));
 
         if (isCouponClaimed) {
-            message.info(`Ban da lay ma ${coupon.code} roi.`);
+            message.info(`Bạn đã lấy mã ${coupon.code} rồi.`);
             return;
         }
 
@@ -247,8 +238,8 @@ export default function LatestProducts() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-            message.success(`Da sao chep ma ${coupon.code}`);
-            message.warning("Vui long dang nhap de luu ma vao tai khoan.");
+            message.success(`Đã sao chép mã ${coupon.code}`);
+            message.warning("Vui lòng đăng nhập để lưu mã vào tài khoản.");
             return;
         }
 
@@ -260,9 +251,9 @@ export default function LatestProducts() {
                 writeStoredClaimedCoupons(next);
                 return next;
             });
-            message.success(`Da lay ma ${coupon.code}`);
+            message.success(`Đã lấy mã ${coupon.code}`);
         } catch (error) {
-            message.warning(error.response?.data?.message || `Da sao chep ma ${coupon.code}`);
+            message.warning(error.response?.data?.message || `Đã sao chép mã ${coupon.code}`);
             const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
             const nextClaimedCoupons = new Set([
                 ...readStoredClaimedCoupons(),
@@ -286,14 +277,14 @@ export default function LatestProducts() {
                                 style={{ "--webcake-hero-image": `url(${slide.image})` }}
                             >
                                 <div className="webcake-hero-copy">
-                                    <span className="webcake-hero-eyebrow">Featured Product</span>
+                                    <span className="webcake-hero-eyebrow">Kitchen Highlight</span>
                                     <Title level={1}>{slide.title}</Title>
                                     <Paragraph className="dp-line-clamp-2">{slide.copy}</Paragraph>
                                     <Text className="webcake-hero-price">
-                                        {slide.price.toLocaleString("vi-VN")}d
+                                        {slide.price.toLocaleString("vi-VN")}đ
                                     </Text>
                                     <Button type="primary" onClick={() => goToProduct(slide.product)}>
-                                        SHOP NOW
+                                        XEM SẢN PHẨM
                                     </Button>
                                 </div>
                             </div>
@@ -312,11 +303,11 @@ export default function LatestProducts() {
                         <div>
                             <div className="webcake-hero-slide webcake-hero-empty">
                                 <div className="webcake-hero-copy">
-                                    <span className="webcake-hero-eyebrow">DPWOOD Collection</span>
-                                    <Title level={1}>Wooden furniture for everyday living</Title>
-                                    <Paragraph>Browse curated wooden furniture from DPWOOD.</Paragraph>
+                                    <span className="webcake-hero-eyebrow">DPWOOD Kitchen</span>
+                                    <Title level={1}>Đồ gia dụng nhà bếp cho từng bữa ăn</Title>
+                                    <Paragraph>Khám phá nồi chảo, dụng cụ bếp và sản phẩm tiện ích được chọn lọc.</Paragraph>
                                     <Button type="primary" onClick={() => router.push("/products")}>
-                                        SHOP NOW
+                                        XEM CỬA HÀNG
                                     </Button>
                                 </div>
                             </div>
@@ -347,7 +338,7 @@ export default function LatestProducts() {
                 <div className="webcake-container">
                     <div className="webcake-section-head">
                         <Title level={2} className="webcake-section-title">
-                            Best Sellers
+                            Bán chạy
                         </Title>
                     </div>
 
@@ -372,7 +363,7 @@ export default function LatestProducts() {
 
                     <div className="webcake-view-all">
                         <Button icon={<AppstoreOutlined />} onClick={() => router.push("/products")}>
-                            VIEW ALL PRODUCTS
+                            XEM TẤT CẢ SẢN PHẨM
                         </Button>
                     </div>
                 </div>
@@ -382,7 +373,7 @@ export default function LatestProducts() {
                 <section className="webcake-coupon-section" id="special-offers">
                     <div className="webcake-container">
                         <Title level={2} className="webcake-section-title">
-                            Special Offers
+                            Mã giảm giá
                         </Title>
                         <Carousel
                             ref={couponCarouselRef}
@@ -431,18 +422,18 @@ export default function LatestProducts() {
                                                 <Text className="webcake-coupon-code">{coupon.code}</Text>
                                                 <Paragraph>
                                                     {coupon.description ||
-                                                        `Orders from ${new Intl.NumberFormat("vi-VN").format(
+                                                        `Đơn hàng từ ${new Intl.NumberFormat("vi-VN").format(
                                                             coupon.minOrderAmount || 0,
-                                                        )}d`}
+                                                        )}đ`}
                                                 </Paragraph>
                                                 <div className="webcake-coupon-meta">
                                                     <span>
-                                                        <ClockCircleOutlined /> {getDaysLeft(coupon.expiryDate)} days
+                                                        <ClockCircleOutlined /> Còn {getDaysLeft(coupon.expiryDate)} ngày
                                                     </span>
                                                     {coupon.maxDiscountAmount && (
                                                         <span>
-                                                            <CheckCircleOutlined /> Max{" "}
-                                                            {formatCompactCurrency(coupon.maxDiscountAmount)}d
+                                                            <CheckCircleOutlined /> Tối đa{" "}
+                                                            {formatCompactCurrency(coupon.maxDiscountAmount)}đ
                                                         </span>
                                                     )}
                                                 </div>
@@ -453,7 +444,7 @@ export default function LatestProducts() {
                                                     loading={claimingCouponId === coupon.id}
                                                     onClick={() => handleCouponAction(coupon)}
                                                 >
-                                                    {isCouponClaimed ? "DA LAY MA" : "SAVE CODE"}
+                                                    {isCouponClaimed ? "ĐÃ LẤY MÃ" : "LƯU MÃ"}
                                                 </Button>
                                             </div>
                                         </article>
@@ -485,7 +476,7 @@ export default function LatestProducts() {
             <section className="webcake-section webcake-catalog-section">
                 <div className="webcake-container">
                     <Title level={2} className="webcake-section-title">
-                        Products
+                        Sản phẩm đồ bếp
                     </Title>
                     {loading ? (
                         <ProductSkeletonGrid count={12} />
@@ -515,7 +506,7 @@ export default function LatestProducts() {
                 <section className="webcake-section webcake-blog-section">
                     <div className="webcake-container">
                         <Title level={2} className="webcake-section-title">
-                            Recent Blogs
+                            Bài viết mới
                         </Title>
                         <Row gutter={[30, 30]}>
                             {blogSource.map((blog) => (
@@ -537,7 +528,7 @@ export default function LatestProducts() {
                                             type="link"
                                             onClick={() => router.push(blog.slug ? `/blogs/${blog.slug}` : "/blogs")}
                                         >
-                                            Read <ArrowRightOutlined />
+                                            Đọc thêm <ArrowRightOutlined />
                                         </Button>
                                     </article>
                                 </Col>

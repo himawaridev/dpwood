@@ -72,9 +72,17 @@ export default function ConfirmOrderModal({
                     pagination={false}
                     size="small"
                     scroll={{ y: 240 }}
-                    rowKey="productId"
+                    rowKey={(record) => record.cartItemId || record.productId}
                     columns={[
-                        { title: "Tên sản phẩm", dataIndex: "name" },
+                        {
+                            title: "Tên sản phẩm",
+                            render: (_, record) => (
+                                <Flex vertical gap={4}>
+                                    <Text strong>{record.name}</Text>
+                                    {record.variantLabel && <Tag color="pink">{record.variantLabel}</Tag>}
+                                </Flex>
+                            ),
+                        },
                         { title: "SL", dataIndex: "quantity", width: 60, align: "center" },
                         {
                             title: "Thành tiền",
@@ -103,7 +111,7 @@ export default function ConfirmOrderModal({
                     type="info"
                     showIcon
                     title="Thông báo đơn hàng"
-                    description="Trạng thái đơn hàng và hóa đơn điện tử sẽ được gửi về email tài khoản của bạn. Vui lòng kiểm tra số lượng và địa chỉ trước khi chốt đơn."
+                    description="Trạng thái đơn hàng và hóa đơn điện tử sẽ được gửi về email tài khoản của bạn. Vui lòng kiểm tra biến thể, số lượng và địa chỉ trước khi chốt đơn."
                 />
             </div>
         </Modal>

@@ -3,6 +3,9 @@ import { Modal, Descriptions, Typography, Tag, Image, Button } from "antd";
 
 const { Title, Text } = Typography;
 
+const formatCurrency = (value) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
+
 export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) {
     const renderStatusTag = (status) => {
         switch (status) {
@@ -25,20 +28,20 @@ export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) 
         {
             key: "1",
             label: "Người nhận",
-            children: <Text strong>{selectedOrder?.shippingName}</Text>,
+            children: <Text strong>{selectedOrder?.shippingName || "-"}</Text>,
         },
         {
             key: "2",
             label: "Số điện thoại",
-            children: <Text copyable>{selectedOrder?.shippingPhone}</Text>,
+            children: selectedOrder?.shippingPhone ? <Text copyable>{selectedOrder.shippingPhone}</Text> : "-",
         },
-        { key: "3", label: "Địa chỉ", children: selectedOrder?.shippingAddress },
-        { key: "4", label: "Tài khoản", children: selectedOrder?.User?.email },
+        { key: "3", label: "Địa chỉ", children: selectedOrder?.shippingAddress || "-" },
+        { key: "4", label: "Tài khoản", children: selectedOrder?.User?.email || selectedOrder?.user?.email || "-" },
     ];
 
     return (
         <Modal
-            title="Chi Tiết Đơn Hàng"
+            title="Chi tiết đơn hàng"
             open={isVisible}
             onCancel={onClose}
             footer={[
@@ -46,25 +49,16 @@ export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) 
                     Đóng
                 </Button>,
             ]}
-            width={700}
+            width={760}
             destroyOnHidden
             mask={{ closable: false }}
         >
             {selectedOrder && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            background: "#fafafa",
-                            padding: "12px 16px",
-                            borderRadius: "8px",
-                        }}
-                    >
+                <div className="dp-admin-order-detail">
+                    <div className="dp-admin-order-summary">
                         <div>
                             <Text type="secondary">Mã đơn: </Text>
-                            <Text strong style={{ fontSize: "16px" }}>
+                            <Text strong style={{ fontSize: 16 }}>
                                 #{selectedOrder.orderCode}
                             </Text>
                         </div>
@@ -83,26 +77,11 @@ export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) 
                         <Title level={5} style={{ marginBottom: 16 }}>
                             Sản phẩm đã mua
                         </Title>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        <div className="dp-admin-order-items">
                             {selectedOrder.OrderItems && selectedOrder.OrderItems.length > 0 ? (
                                 selectedOrder.OrderItems.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            paddingBottom: "12px",
-                                            borderBottom: "1px solid #f0f0f0",
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                gap: "16px",
-                                                alignItems: "center",
-                                            }}
-                                        >
+                                    <div key={item.id} className="dp-admin-order-item">
+                                        <div className="dp-admin-order-product">
                                             <Image
                                                 src={
                                                     item.Product?.imageUrl ||
@@ -112,40 +91,25 @@ export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) 
                                                 alt={item.Product?.name || "Sản phẩm"}
                                                 width={64}
                                                 height={64}
-                                                style={{
-                                                    objectFit: "cover",
-                                                    borderRadius: 8,
-                                                    border: "1px solid #e8e8e8",
-                                                }}
+                                                style={{ objectFit: "cover", border: "1px solid #e8e8e8" }}
                                                 preview={{
-                                                    src:
-                                                        item.Product?.imageUrl ||
-                                                        item.Product?.image,
+                                                    src: item.Product?.imageUrl || item.Product?.image,
                                                 }}
                                             />
-                                            <div
-                                                style={{ display: "flex", flexDirection: "column" }}
-                                            >
-                                                <Text strong style={{ fontSize: "15px" }}>
+                                            <div>
+                                                <Text strong style={{ fontSize: 15 }}>
                                                     {item.Product?.name || "Sản phẩm đã bị xóa"}
                                                 </Text>
-                                                <Text type="secondary" style={{ fontSize: "13px" }}>
-                                                    Đơn giá:{" "}
-                                                    {new Intl.NumberFormat("vi-VN", {
-                                                        style: "currency",
-                                                        currency: "VND",
-                                                    }).format(item.priceAtPurchase || 0)}
+                                                <Text type="secondary" style={{ fontSize: 13, display: "block" }}>
+                                                    Đơn giá: {formatCurrency(item.priceAtPurchase)}
                                                 </Text>
-                                                <Text type="secondary" style={{ fontSize: "13px" }}>
+                                                <Text type="secondary" style={{ fontSize: 13, display: "block" }}>
                                                     Số lượng: <Text strong>{item.quantity}</Text>
                                                 </Text>
                                             </div>
                                         </div>
-                                        <Text strong style={{ fontSize: "16px", color: "#cf1322" }}>
-                                            {new Intl.NumberFormat("vi-VN", {
-                                                style: "currency",
-                                                currency: "VND",
-                                            }).format((item.priceAtPurchase || 0) * item.quantity)}
+                                        <Text strong style={{ fontSize: 16, color: "#cf1322" }}>
+                                            {formatCurrency((item.priceAtPurchase || 0) * item.quantity)}
                                         </Text>
                                     </div>
                                 ))
@@ -155,23 +119,9 @@ export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) 
                                 </Text>
                             )}
                         </div>
-                        <div
-                            style={{
-                                textAlign: "right",
-                                marginTop: 24,
-                                padding: "16px",
-                                background: "#fff2e8",
-                                borderRadius: "8px",
-                            }}
-                        >
+                        <div className="dp-admin-order-total">
                             <Title level={4} style={{ margin: 0 }}>
-                                Tổng cộng:{" "}
-                                <Text style={{ color: "#cf1322" }}>
-                                    {new Intl.NumberFormat("vi-VN", {
-                                        style: "currency",
-                                        currency: "VND",
-                                    }).format(selectedOrder.totalAmount || 0)}
-                                </Text>
+                                Tổng cộng: <Text style={{ color: "#cf1322" }}>{formatCurrency(selectedOrder.totalAmount)}</Text>
                             </Title>
                         </div>
                     </div>

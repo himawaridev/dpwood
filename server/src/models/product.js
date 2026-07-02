@@ -35,6 +35,50 @@ const Product = sequelize.define(
             allowNull: true,
             defaultValue: [],
         },
+        variants: {
+            type: DataTypes.JSON,
+            allowNull: true,
+            defaultValue: [],
+        },
+        category: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: "cookware",
+        },
+        material: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        color: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        brand: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        capacity: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        warranty: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        origin: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        dishwasherSafe: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        microwaveSafe: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
         sold: {
             type: DataTypes.INTEGER,
             defaultValue: 0,

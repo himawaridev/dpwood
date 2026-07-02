@@ -7,22 +7,22 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
     );
 
     const getActionTag = (action) => {
-        const a = action?.toUpperCase();
-        switch (a) {
+        const normalizedAction = action?.toUpperCase();
+        switch (normalizedAction) {
             case "LOGIN":
-                return <Tag color="green">ĐĂNG NHẬP</Tag>;
+                return <Tag color="green">Đăng nhập</Tag>;
             case "LOGOUT":
-                return <Tag color="volcano">ĐĂNG XUẤT</Tag>;
+                return <Tag color="volcano">Đăng xuất</Tag>;
             case "REGISTER":
-                return <Tag color="gold">ĐĂNG KÝ</Tag>;
+                return <Tag color="gold">Đăng ký</Tag>;
             case "BAN":
-                return <Tag color="red">KHÓA TÀI KHOẢN</Tag>;
+                return <Tag color="red">Khóa tài khoản</Tag>;
             case "UNBAN":
-                return <Tag color="success">MỞ KHÓA</Tag>;
+                return <Tag color="success">Mở khóa</Tag>;
             case "ROLE_CHANGE":
-                return <Tag color="purple">PHÂN QUYỀN</Tag>;
+                return <Tag color="purple">Phân quyền</Tag>;
             default:
-                return <Tag color="default">{a}</Tag>;
+                return <Tag color="default">{normalizedAction}</Tag>;
         }
     };
 
@@ -49,7 +49,7 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
                 <Input.Search
                     placeholder="Nhập email cần tìm..."
                     allowClear

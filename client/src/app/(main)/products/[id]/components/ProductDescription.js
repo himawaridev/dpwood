@@ -18,7 +18,8 @@ export default function ProductDescription({ description }) {
                     marginBottom: 0,
                 }}
             >
-                {description || "Thông tin chi tiết cho sản phẩm này đang được cập nhật."}
+                {description ||
+                    "Thông tin chi tiết cho sản phẩm đồ bếp này đang được cập nhật. Bạn có thể liên hệ cửa hàng để được tư vấn thêm về chất liệu, cách dùng và bảo quản."}
             </Paragraph>
         </div>
     );

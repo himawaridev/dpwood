@@ -98,7 +98,24 @@ const rateProduct = async (req, res) => {
 
 const createProduct = async (req, res) => {
     try {
-        const { name, description, price, stock, imageUrl, images } = req.body;
+        const {
+            name,
+            description,
+            price,
+            stock,
+            imageUrl,
+            images,
+            variants,
+            category,
+            material,
+            color,
+            brand,
+            capacity,
+            warranty,
+            origin,
+            dishwasherSafe,
+            microwaveSafe,
+        } = req.body;
         if (!name || !price) {
             return res.status(400).json({ message: "Ten va gia san pham la bat buoc" });
         }
@@ -110,6 +127,16 @@ const createProduct = async (req, res) => {
             stock,
             imageUrl,
             images,
+            variants,
+            category,
+            material,
+            color,
+            brand,
+            capacity,
+            warranty,
+            origin,
+            dishwasherSafe,
+            microwaveSafe,
         });
         res.status(201).json({ message: "Them san pham thanh cong", product: newProduct });
     } catch (error) {

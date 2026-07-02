@@ -19,7 +19,7 @@ export default function VoucherSection() {
 
     const copyCode = (code) => {
         navigator.clipboard.writeText(code);
-        message.success(`ÄÃ£ sao chÃ©p mÃ£: ${code}`);
+        message.success(`Đã sao chép mã: ${code}`);
     };
 
     if (vouchers.length === 0) return null;
@@ -28,9 +28,9 @@ export default function VoucherSection() {
         <section style={{ background: "var(--dp-surface)", borderTop: "1px solid var(--dp-soft-border)" }}>
             <div className="dp-container" style={{ padding: "34px 20px" }}>
                 <div style={{ marginBottom: 18 }}>
-                    <span className="dp-eyebrow">Æ¯u Ä‘Ã£i</span>
+                    <span className="dp-eyebrow">Ưu đãi</span>
                     <Title level={2} className="dp-section-title">
-                        MÃ£ giáº£m giÃ¡ Ä‘ang hoáº¡t Ä‘á»™ng
+                        Mã giảm giá đang hoạt động
                     </Title>
                 </div>
                 <Row gutter={[16, 16]}>
@@ -67,7 +67,7 @@ export default function VoucherSection() {
                                     {voucher.code}
                                 </Title>
                                 <Text className="dp-muted">
-                                    {voucher.description || "Ãp dá»¥ng cho Ä‘Æ¡n hÃ ng phÃ¹ há»£p"}
+                                    {voucher.description || "Áp dụng cho đơn hàng phù hợp"}
                                 </Text>
                                 <div
                                     style={{
@@ -78,7 +78,7 @@ export default function VoucherSection() {
                                     }}
                                 >
                                     <Text type="secondary" style={{ fontSize: 12 }}>
-                                        Háº¿t háº¡n: {new Date(voucher.expiryDate).toLocaleDateString("vi-VN")}
+                                        Hết hạn: {new Date(voucher.expiryDate).toLocaleDateString("vi-VN")}
                                     </Text>
                                     <Button
                                         size="small"
@@ -88,7 +88,7 @@ export default function VoucherSection() {
                                             copyCode(voucher.code);
                                         }}
                                     >
-                                        ChÃ©p
+                                        Chép
                                     </Button>
                                 </div>
                             </div>

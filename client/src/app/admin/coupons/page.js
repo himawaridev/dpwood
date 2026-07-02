@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import {
     Table,
@@ -19,17 +20,13 @@ import {
     Tooltip,
     Flex,
 } from "antd";
-import {
-    PlusOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    GiftOutlined,
-    ReloadOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, GiftOutlined, ReloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "@/utils/axios";
 
 const { Title, Text } = Typography;
+
+const formatVnd = (value) => `${new Intl.NumberFormat("vi-VN").format(Number(value || 0))} đ`;
 
 export default function AdminCouponsPage() {
     const [coupons, setCoupons] = useState([]);
@@ -85,16 +82,17 @@ export default function AdminCouponsPage() {
         try {
             const payload = {
                 ...values,
+                code: values.code.trim().toUpperCase(),
                 startDate: values.startDate.toISOString(),
                 expiryDate: values.expiryDate.toISOString(),
             };
 
             if (editingCoupon) {
                 await api.put(`/coupons/admin/${editingCoupon.id}`, payload);
-                message.success("Cập nhật mã giảm giá thành công!");
+                message.success("Cập nhật mã giảm giá thành công");
             } else {
                 await api.post("/coupons/admin", payload);
-                message.success("Tạo mã giảm giá thành công!");
+                message.success("Tạo mã giảm giá thành công");
             }
 
             setIsModalVisible(false);
@@ -123,8 +121,7 @@ export default function AdminCouponsPage() {
         if (!coupon.isActive) return <Tag color="default">Vô hiệu hóa</Tag>;
         if (expiry <= now) return <Tag color="red">Hết hạn</Tag>;
         if (start > now) return <Tag color="blue">Chưa bắt đầu</Tag>;
-        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit)
-            return <Tag color="orange">Hết lượt</Tag>;
+        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return <Tag color="orange">Hết lượt</Tag>;
         return <Tag color="green">Đang hoạt động</Tag>;
     };
 
@@ -134,25 +131,18 @@ export default function AdminCouponsPage() {
             dataIndex: "code",
             key: "code",
             render: (code) => (
-                <Text strong copyable style={{ color: "#1677ff", fontFamily: "monospace" }}>
+                <Text strong copyable style={{ color: "#f09b90", fontFamily: "monospace" }}>
                     {code}
                 </Text>
             ),
         },
-        {
-            title: "Mô tả",
-            dataIndex: "description",
-            key: "description",
-            ellipsis: true,
-        },
+        { title: "Mô tả", dataIndex: "description", key: "description", ellipsis: true },
         {
             title: "Giảm giá",
             key: "discount",
             render: (_, record) => (
                 <Text strong style={{ color: "#cf1322" }}>
-                    {record.discountType === "percent"
-                        ? `${Number(record.discountValue)}%`
-                        : `${new Intl.NumberFormat("vi-VN").format(record.discountValue)}₫`}
+                    {record.discountType === "percent" ? `${Number(record.discountValue)}%` : formatVnd(record.discountValue)}
                 </Text>
             ),
         },
@@ -160,11 +150,7 @@ export default function AdminCouponsPage() {
             title: "Đơn tối thiểu",
             key: "minOrder",
             render: (_, record) => (
-                <Text type="secondary">
-                    {Number(record.minOrderAmount) > 0
-                        ? `${new Intl.NumberFormat("vi-VN").format(record.minOrderAmount)}₫`
-                        : "Không"}
-                </Text>
+                <Text type="secondary">{Number(record.minOrderAmount) > 0 ? formatVnd(record.minOrderAmount) : "Không"}</Text>
             ),
         },
         {
@@ -176,30 +162,21 @@ export default function AdminCouponsPage() {
                 </Text>
             ),
         },
-        {
-            title: "Trạng thái",
-            key: "status",
-            render: (_, record) => getStatusTag(record),
-        },
+        { title: "Trạng thái", key: "status", render: (_, record) => getStatusTag(record) },
         {
             title: "Hết hạn",
             dataIndex: "expiryDate",
             key: "expiryDate",
-            render: (date) => (
-                <Text type="secondary">{dayjs(date).format("DD/MM/YYYY HH:mm")}</Text>
-            ),
+            render: (date) => <Text type="secondary">{dayjs(date).format("DD/MM/YYYY HH:mm")}</Text>,
         },
         {
             title: "Hành động",
             key: "actions",
+            fixed: "right",
             render: (_, record) => (
                 <Space>
                     <Tooltip title="Chỉnh sửa">
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={() => handleOpenEdit(record)}
-                        />
+                        <Button type="text" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)} />
                     </Tooltip>
                     <Popconfirm
                         title="Xóa mã giảm giá này?"
@@ -219,12 +196,15 @@ export default function AdminCouponsPage() {
 
     return (
         <div>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
-                <Title level={3} style={{ margin: 0 }}>
-                    <GiftOutlined style={{ color: "#1677ff", marginRight: 8 }} />
-                    Quản lý Mã Giảm Giá
-                </Title>
-                <Space>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 24 }} wrap="wrap" gap={16}>
+                <div>
+                    <Title level={3} style={{ margin: 0 }}>
+                        <GiftOutlined style={{ color: "#f09b90", marginRight: 8 }} />
+                        Quản lý mã giảm giá
+                    </Title>
+                    <Text type="secondary">Các mã đang hoạt động sẽ hiển thị ở trang chủ và kho mã thanh toán.</Text>
+                </div>
+                <Space wrap>
                     <Button icon={<ReloadOutlined />} onClick={fetchCoupons} loading={loading}>
                         Làm mới
                     </Button>
@@ -234,10 +214,7 @@ export default function AdminCouponsPage() {
                 </Space>
             </Flex>
 
-            <Card
-                variant="borderless"
-                style={{ borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
-            >
+            <Card variant="borderless">
                 <Table
                     dataSource={coupons}
                     columns={columns}
@@ -251,7 +228,7 @@ export default function AdminCouponsPage() {
             <Modal
                 title={
                     <span style={{ fontSize: 18 }}>
-                        <GiftOutlined style={{ color: "#1677ff", marginRight: 8 }} />
+                        <GiftOutlined style={{ color: "#f09b90", marginRight: 8 }} />
                         {editingCoupon ? "Chỉnh sửa mã giảm giá" : "Tạo mã giảm giá mới"}
                     </span>
                 }
@@ -261,41 +238,24 @@ export default function AdminCouponsPage() {
                     form.resetFields();
                 }}
                 footer={null}
-                width={600}
+                width={620}
                 centered
             >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleSubmit}
-                    style={{ marginTop: 16 }}
-                >
-                    <Form.Item
-                        name="code"
-                        label="Mã giảm giá"
-                        rules={[{ required: true, message: "Nhập mã giảm giá" }]}
-                    >
-                        <Input
-                            placeholder="VD: SALE5, NEWUSER..."
-                            style={{ textTransform: "uppercase" }}
-                        />
+                <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: 16 }}>
+                    <Form.Item name="code" label="Mã giảm giá" rules={[{ required: true, message: "Nhập mã giảm giá" }]}>
+                        <Input placeholder="VD: SALE5, NEWUSER..." style={{ textTransform: "uppercase" }} />
                     </Form.Item>
 
                     <Form.Item name="description" label="Mô tả">
                         <Input placeholder="Mô tả ngắn về mã giảm giá" />
                     </Form.Item>
 
-                    <Flex gap="middle">
-                        <Form.Item
-                            name="discountType"
-                            label="Loại giảm"
-                            rules={[{ required: true }]}
-                            style={{ flex: 1 }}
-                        >
+                    <Flex gap="middle" wrap="wrap">
+                        <Form.Item name="discountType" label="Loại giảm" rules={[{ required: true }]} style={{ flex: "1 1 220px" }}>
                             <Select
                                 options={[
                                     { label: "Phần trăm (%)", value: "percent" },
-                                    { label: "Số tiền cố định (₫)", value: "fixed" },
+                                    { label: "Số tiền cố định (đ)", value: "fixed" },
                                 ]}
                             />
                         </Form.Item>
@@ -304,103 +264,58 @@ export default function AdminCouponsPage() {
                             name="discountValue"
                             label="Giá trị giảm"
                             rules={[{ required: true, message: "Nhập giá trị" }]}
-                            style={{ flex: 1 }}
+                            style={{ flex: "1 1 220px" }}
                         >
                             <InputNumber
                                 min={0}
                                 style={{ width: "100%" }}
                                 placeholder="VD: 5 hoặc 10000"
-                                formatter={(value) =>
-                                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                                }
+                                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                                 parser={(value) => value.replace(/,/g, "")}
                             />
                         </Form.Item>
                     </Flex>
 
-                    <Flex gap="middle">
-                        <Form.Item
-                            name="minOrderAmount"
-                            label="Đơn tối thiểu (₫)"
-                            style={{ flex: 1 }}
-                        >
-                            <InputNumber
-                                min={0}
-                                style={{ width: "100%" }}
-                                placeholder="0 = không giới hạn"
-                                formatter={(value) =>
-                                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                                }
-                                parser={(value) => value.replace(/,/g, "")}
-                            />
+                    <Flex gap="middle" wrap="wrap">
+                        <Form.Item name="minOrderAmount" label="Đơn tối thiểu (đ)" style={{ flex: "1 1 220px" }}>
+                            <InputNumber min={0} style={{ width: "100%" }} placeholder="0 = không giới hạn" />
                         </Form.Item>
 
-                        <Form.Item
-                            name="maxDiscountAmount"
-                            label="Giảm tối đa (₫)"
-                            style={{ flex: 1 }}
-                        >
-                            <InputNumber
-                                min={0}
-                                style={{ width: "100%" }}
-                                placeholder="Chỉ áp dụng cho %"
-                                formatter={(value) =>
-                                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                                }
-                                parser={(value) => value.replace(/,/g, "")}
-                            />
+                        <Form.Item name="maxDiscountAmount" label="Giảm tối đa (đ)" style={{ flex: "1 1 220px" }}>
+                            <InputNumber min={0} style={{ width: "100%" }} placeholder="Bỏ trống nếu không giới hạn" />
                         </Form.Item>
                     </Flex>
 
-                    <Form.Item name="usageLimit" label="Giới hạn lượt dùng">
-                        <InputNumber
-                            min={1}
-                            style={{ width: "100%" }}
-                            placeholder="Để trống = không giới hạn"
-                        />
-                    </Form.Item>
+                    <Flex gap="middle" wrap="wrap">
+                        <Form.Item name="usageLimit" label="Giới hạn lượt dùng" style={{ flex: "1 1 220px" }}>
+                            <InputNumber min={1} style={{ width: "100%" }} placeholder="Bỏ trống nếu không giới hạn" />
+                        </Form.Item>
+                        <Form.Item name="isActive" label="Kích hoạt" valuePropName="checked" style={{ flex: "1 1 220px" }}>
+                            <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                        </Form.Item>
+                    </Flex>
 
-                    <Flex gap="middle">
+                    <Flex gap="middle" wrap="wrap">
                         <Form.Item
                             name="startDate"
                             label="Ngày bắt đầu"
-                            rules={[{ required: true, message: "Chọn ngày" }]}
-                            style={{ flex: 1 }}
+                            rules={[{ required: true, message: "Chọn ngày bắt đầu" }]}
+                            style={{ flex: "1 1 220px" }}
                         >
-                            <DatePicker
-                                showTime
-                                format="DD/MM/YYYY HH:mm"
-                                style={{ width: "100%" }}
-                                placeholder="Chọn ngày bắt đầu"
-                            />
+                            <DatePicker showTime style={{ width: "100%" }} format="DD/MM/YYYY HH:mm" />
                         </Form.Item>
 
                         <Form.Item
                             name="expiryDate"
                             label="Ngày hết hạn"
-                            rules={[{ required: true, message: "Chọn ngày" }]}
-                            style={{ flex: 1 }}
+                            rules={[{ required: true, message: "Chọn ngày hết hạn" }]}
+                            style={{ flex: "1 1 220px" }}
                         >
-                            <DatePicker
-                                showTime
-                                format="DD/MM/YYYY HH:mm"
-                                style={{ width: "100%" }}
-                                placeholder="Chọn ngày hết hạn"
-                            />
+                            <DatePicker showTime style={{ width: "100%" }} format="DD/MM/YYYY HH:mm" />
                         </Form.Item>
                     </Flex>
 
-                    {editingCoupon && (
-                        <Form.Item
-                            name="isActive"
-                            label="Trạng thái"
-                            valuePropName="checked"
-                        >
-                            <Switch checkedChildren="Hoạt động" unCheckedChildren="Vô hiệu" />
-                        </Form.Item>
-                    )}
-
-                    <Flex justify="flex-end" gap="small" style={{ marginTop: 16 }}>
+                    <Flex justify="end" gap="small" style={{ marginTop: 16 }} wrap="wrap">
                         <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
                         <Button type="primary" htmlType="submit">
                             {editingCoupon ? "Cập nhật" : "Tạo mã"}

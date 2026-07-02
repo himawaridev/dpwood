@@ -69,7 +69,10 @@ export default function CartPage() {
     }, []);
 
     useEffect(() => {
-        const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
+        const storedCart = (JSON.parse(localStorage.getItem("cart")) || []).map((item) => ({
+            ...item,
+            cartItemId: item.cartItemId || item.productId,
+        }));
         setCartItems(storedCart);
 
         const token = localStorage.getItem("token");
@@ -123,17 +126,17 @@ export default function CartPage() {
         window.dispatchEvent(new Event("cart-updated"));
     };
 
-    const handleQuantityChange = (productId, value) => {
+    const handleQuantityChange = (cartItemId, value) => {
         const safeValue = Math.max(1, Number(value || 1));
         saveCart(
             cartItems.map((item) =>
-                item.productId === productId ? { ...item, quantity: safeValue } : item,
+                (item.cartItemId || item.productId) === cartItemId ? { ...item, quantity: safeValue } : item,
             ),
         );
     };
 
-    const handleRemoveItem = (productId) => {
-        saveCart(cartItems.filter((item) => item.productId !== productId));
+    const handleRemoveItem = (cartItemId) => {
+        saveCart(cartItems.filter((item) => (item.cartItemId || item.productId) !== cartItemId));
         message.success("\u0110\u00e3 x\u00f3a s\u1ea3n ph\u1ea9m kh\u1ecfi gi\u1ecf.");
     };
 
@@ -164,6 +167,8 @@ export default function CartPage() {
             const payload = {
                 items: cartItems.map((item) => ({
                     productId: item.productId,
+                    variantId: item.variantId || null,
+                    variantLabel: item.variantLabel || null,
                     quantity: item.quantity,
                 })),
                 paymentMethod,

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Layout, Menu, Button, Dropdown, Avatar, Typography } from "antd";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Layout, Menu, Button, Dropdown, Avatar, Typography, Drawer, Grid } from "antd";
 import {
     MenuUnfoldOutlined,
     MenuFoldOutlined,
@@ -22,11 +23,15 @@ import api from "@/utils/axios";
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function AdminLayout({ children }) {
     const router = useRouter();
     const pathname = usePathname();
+    const screens = useBreakpoint();
+    const isMobile = !screens.lg;
     const [collapsed, setCollapsed] = useState(false);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [adminName, setAdminName] = useState("");
     const [avatarUrl, setAvatarUrl] = useState("");
 
@@ -40,7 +45,7 @@ export default function AdminLayout({ children }) {
             const refreshToken = localStorage.getItem("refreshToken");
             if (refreshToken) await api.post("/auth/logout", { refreshToken });
         } catch (error) {
-            console.log("Lỗi đăng xuất", error);
+            console.log("Loi dang xuat", error);
         } finally {
             localStorage.clear();
             router.push("/login");
@@ -48,29 +53,29 @@ export default function AdminLayout({ children }) {
     };
 
     const menuItems = [
-        { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Tổng quan" },
-        { key: "/admin/users", icon: <TeamOutlined />, label: "Người dùng" },
-        { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "Sản phẩm" },
-        { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
-        { key: "/admin/notifications", icon: <BellOutlined />, label: "Thông báo" },
-        { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ" },
-        { key: "/admin/blogs", icon: <EditOutlined />, label: "Bài viết" },
-        { key: "/admin/discounts", icon: <PercentageOutlined />, label: "Mã giảm giá" },
+        { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Tong quan" },
+        { key: "/admin/users", icon: <TeamOutlined />, label: "Nguoi dung" },
+        { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "San pham" },
+        { key: "/admin/orders", icon: <FileTextOutlined />, label: "Don hang" },
+        { key: "/admin/notifications", icon: <BellOutlined />, label: "Thong bao" },
+        { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Ho tro" },
+        { key: "/admin/blogs", icon: <EditOutlined />, label: "Bai viet" },
+        { key: "/admin/coupons", icon: <PercentageOutlined />, label: "Ma giam gia" },
         { type: "divider" },
-        { key: "/", icon: <HomeOutlined />, label: "Về cửa hàng" },
+        { key: "/", icon: <HomeOutlined />, label: "Ve cua hang" },
     ];
 
     const userMenuItems = [
         {
             key: "profile",
             icon: <UserOutlined />,
-            label: "Trang cá nhân",
+            label: "Trang ca nhan",
             onClick: () => router.push("/profile"),
         },
         {
             key: "home",
             icon: <HomeOutlined />,
-            label: "Về cửa hàng",
+            label: "Ve cua hang",
             onClick: () => router.push("/"),
         },
         { type: "divider" },
@@ -78,7 +83,7 @@ export default function AdminLayout({ children }) {
             key: "logout",
             danger: true,
             icon: <LogoutOutlined />,
-            label: "Đăng xuất",
+            label: "Dang xuat",
             onClick: handleLogout,
         },
     ];
@@ -87,120 +92,90 @@ export default function AdminLayout({ children }) {
         menuItems.find((item) => item.key && pathname.startsWith(item.key) && item.key !== "/")?.key ||
         "/admin/dashboard";
 
-    return (
-        <Layout style={{ minHeight: "100vh", background: "var(--dp-bg)" }}>
-            <Sider
-                trigger={null}
-                collapsible
-                collapsed={collapsed}
-                width={248}
-                style={{
-                    background: "#10231e",
-                    borderRight: "1px solid rgba(255,255,255,0.08)",
-                }}
+    const handleMenuClick = (item) => {
+        setMobileNavOpen(false);
+        router.push(item.key);
+    };
+
+    const sidebarContent = (
+        <>
+            <button
+                type="button"
+                onClick={() => router.push("/admin/dashboard")}
+                className="dp-admin-brand"
+                aria-label="DPWOOD Admin"
             >
-                <button
-                    type="button"
-                    onClick={() => router.push("/admin/dashboard")}
-                    style={{
-                        height: 72,
-                        width: "100%",
-                        border: 0,
-                        background: "transparent",
-                        color: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: collapsed ? "center" : "flex-start",
-                        gap: 10,
-                        padding: collapsed ? 0 : "0 20px",
-                        cursor: "pointer",
-                    }}
-                >
-                    <span
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 8,
-                            background: "var(--dp-primary)",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: 900,
-                        }}
-                    >
-                        DP
-                    </span>
-                    {!collapsed && <strong style={{ fontSize: 17 }}>DPWOOD Admin</strong>}
-                </button>
+                <Image src="/logo.png" alt="DPWOOD" width={38} height={38} className="dp-admin-brand-logo" />
+                {(!collapsed || isMobile) && <strong>DPWOOD Admin</strong>}
+            </button>
 
-                <Menu
-                    theme="dark"
-                    mode="inline"
-                    selectedKeys={[activeKey]}
-                    items={menuItems}
-                    onClick={(item) => router.push(item.key)}
-                    style={{
-                        background: "transparent",
-                        padding: "0 10px",
-                        fontWeight: 600,
-                    }}
-                />
-            </Sider>
+            <Menu
+                mode="inline"
+                selectedKeys={[activeKey]}
+                items={menuItems}
+                onClick={handleMenuClick}
+                className="dp-admin-menu"
+            />
+        </>
+    );
 
-            <Layout style={{ background: "var(--dp-bg)" }}>
-                <Header
-                    style={{
-                        height: 72,
-                        background: "#fff",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "0 22px 0 0",
-                        borderBottom: "1px solid var(--dp-soft-border)",
-                    }}
+    return (
+        <Layout className="dp-admin-shell">
+            {!isMobile && (
+                <Sider
+                    trigger={null}
+                    collapsible
+                    collapsed={collapsed}
+                    width={260}
+                    className="dp-admin-sider"
                 >
+                    {sidebarContent}
+                </Sider>
+            )}
+
+            <Drawer
+                open={mobileNavOpen}
+                onClose={() => setMobileNavOpen(false)}
+                placement="left"
+                width={300}
+                className="dp-admin-drawer"
+                styles={{ body: { padding: 0 } }}
+            >
+                {sidebarContent}
+            </Drawer>
+
+            <Layout className="dp-admin-main">
+                <Header className="dp-admin-header">
                     <Button
                         type="text"
-                        icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                        onClick={() => setCollapsed(!collapsed)}
-                        style={{ fontSize: 16, width: 64, height: 64 }}
+                        icon={isMobile || collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                        onClick={() => (isMobile ? setMobileNavOpen(true) : setCollapsed(!collapsed))}
+                        className="dp-admin-menu-button"
+                        aria-label="Toggle admin navigation"
                     />
 
-                    <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-                        <button
-                            type="button"
-                            style={{
-                                border: 0,
-                                background: "transparent",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 10,
-                            }}
-                        >
+                    <Dropdown
+                        menu={{ items: userMenuItems }}
+                        placement="bottomRight"
+                        arrow
+                        getPopupContainer={() => document.body}
+                        overlayClassName="dp-admin-user-dropdown"
+                    >
+                        <button type="button" className="dp-admin-account">
                             <Avatar
-                                style={{ backgroundColor: "var(--dp-primary)", flexShrink: 0 }}
+                                className="dp-admin-avatar"
                                 icon={!avatarUrl ? <UserOutlined /> : null}
                                 {...(avatarUrl ? { src: avatarUrl } : {})}
                             />
-                            <Text strong>{adminName}</Text>
+                            <Text strong className="dp-admin-account-name">
+                                {adminName}
+                            </Text>
                         </button>
                     </Dropdown>
                 </Header>
 
-                <Content style={{ padding: 24 }}>
-                    <div
-                        style={{
-                            minHeight: 280,
-                            background: "#fff",
-                            borderRadius: 8,
-                            border: "1px solid var(--dp-soft-border)",
-                            padding: 24,
-                            boxShadow: "var(--dp-shadow)",
-                        }}
-                    >
-                        {children}
-                    </div>
+                <Content className="dp-admin-content">
+                    <div className="dp-admin-page">{children}</div>
                 </Content>
             </Layout>
         </Layout>

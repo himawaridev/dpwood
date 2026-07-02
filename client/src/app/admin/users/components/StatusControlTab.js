@@ -12,12 +12,12 @@ export default function StatusControlTab({
 }) {
     const [searchText, setSearchText] = useState("");
 
-    const filteredUsers = users.filter((u) => {
+    const filteredUsers = users.filter((user) => {
         const keyword = searchText.toLowerCase();
         return (
-            (u.name || "").toLowerCase().includes(keyword) ||
-            (u.email || "").toLowerCase().includes(keyword) ||
-            (u.username || "").toLowerCase().includes(keyword)
+            (user.name || "").toLowerCase().includes(keyword) ||
+            (user.email || "").toLowerCase().includes(keyword) ||
+            (user.username || "").toLowerCase().includes(keyword)
         );
     });
 
@@ -30,7 +30,7 @@ export default function StatusControlTab({
             render: (date) => new Date(date).toLocaleString("vi-VN"),
         },
         {
-            title: "Xác minh Email",
+            title: "Xác minh email",
             dataIndex: "isVerified",
             key: "isVerified",
             render: (isVerified) =>
@@ -81,7 +81,7 @@ export default function StatusControlTab({
                                     type="primary"
                                     style={{ background: "#52c41a" }}
                                     icon={<ReloadOutlined />}
-                                ></Button>
+                                />
                             </Popconfirm>
                         ) : (
                             <Popconfirm
@@ -105,14 +105,14 @@ export default function StatusControlTab({
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
                 <Input.Search
                     placeholder="Tìm theo tên, email, username..."
                     allowClear
                     enterButton="Tìm kiếm"
                     size="large"
                     onSearch={(value) => setSearchText(value)}
-                    onChange={(e) => setSearchText(e.target.value)}
+                    onChange={(event) => setSearchText(event.target.value)}
                     style={{ maxWidth: 400 }}
                 />
                 <Button size="large" onClick={onRefresh} loading={loading}>

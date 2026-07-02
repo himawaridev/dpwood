@@ -216,6 +216,54 @@ const startServer = async () => {
 
         try {
             const tableDesc = await queryInterface.describeTable("Products");
+            if (!tableDesc.category) {
+                await queryInterface.addColumn("Products", "category", {
+                    type: DataTypes.STRING,
+                    allowNull: true,
+                    defaultValue: "cookware",
+                });
+                console.log("Added category column to Products via QueryInterface");
+            }
+            if (!tableDesc.material) {
+                await queryInterface.addColumn("Products", "material", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added material column to Products via QueryInterface");
+            }
+            if (!tableDesc.color) {
+                await queryInterface.addColumn("Products", "color", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added color column to Products via QueryInterface");
+            }
+            if (!tableDesc.brand) {
+                await queryInterface.addColumn("Products", "brand", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added brand column to Products via QueryInterface");
+            }
+            if (!tableDesc.capacity) {
+                await queryInterface.addColumn("Products", "capacity", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added capacity column to Products via QueryInterface");
+            }
+            if (!tableDesc.warranty) {
+                await queryInterface.addColumn("Products", "warranty", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added warranty column to Products via QueryInterface");
+            }
+            if (!tableDesc.origin) {
+                await queryInterface.addColumn("Products", "origin", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added origin column to Products via QueryInterface");
+            }
+            if (!tableDesc.dishwasherSafe) {
+                await queryInterface.addColumn("Products", "dishwasherSafe", {
+                    type: DataTypes.BOOLEAN,
+                    allowNull: false,
+                    defaultValue: false,
+                });
+                console.log("Added dishwasherSafe column to Products via QueryInterface");
+            }
+            if (!tableDesc.microwaveSafe) {
+                await queryInterface.addColumn("Products", "microwaveSafe", {
+                    type: DataTypes.BOOLEAN,
+                    allowNull: false,
+                    defaultValue: false,
+                });
+                console.log("Added microwaveSafe column to Products via QueryInterface");
+            }
             if (!tableDesc.rating) {
                 await queryInterface.addColumn("Products", "rating", {
                     type: DataTypes.DECIMAL(3, 2),
@@ -232,8 +280,37 @@ const startServer = async () => {
                 });
                 console.log("Added ratingCount column to Products via QueryInterface");
             }
+            if (!tableDesc.variants) {
+                await queryInterface.addColumn("Products", "variants", {
+                    type: DataTypes.JSON,
+                    allowNull: true,
+                    defaultValue: [],
+                });
+                console.log("Added variants column to Products via QueryInterface");
+            }
         } catch (e) {
             console.log("QueryInterface Products check skipped:", e.message);
+        }
+
+        try {
+            const tableDesc = await queryInterface.describeTable("OrderItems");
+            if (!tableDesc.variantId) {
+                await queryInterface.addColumn("OrderItems", "variantId", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added variantId column to OrderItems via QueryInterface");
+            }
+            if (!tableDesc.variantLabel) {
+                await queryInterface.addColumn("OrderItems", "variantLabel", { type: DataTypes.STRING, allowNull: true });
+                console.log("Added variantLabel column to OrderItems via QueryInterface");
+            }
+            if (!tableDesc.variantSnapshot) {
+                await queryInterface.addColumn("OrderItems", "variantSnapshot", {
+                    type: DataTypes.JSON,
+                    allowNull: true,
+                });
+                console.log("Added variantSnapshot column to OrderItems via QueryInterface");
+            }
+        } catch (e) {
+            console.log("QueryInterface OrderItems check skipped:", e.message);
         }
 
         try {

@@ -1,20 +1,19 @@
 "use client";
+
 import { useCallback, useEffect, useState } from "react";
-import { App, Typography, Tabs, Input, Space, Button, Badge } from "antd";
+import { App, Typography, Tabs, Input, Space, Button, Badge, Flex } from "antd";
 import { ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
-
 import OrderTable from "./components/OrderTable";
 import OrderDetailModal from "./components/OrderDetailModal";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function AdminOrdersPage() {
     const { message } = App.useApp();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState("");
-
     const [isDetailVisible, setIsDetailVisible] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -36,7 +35,7 @@ export default function AdminOrdersPage() {
 
     const handleStatusChange = async (orderId, newStatus) => {
         setOrders((prevOrders) =>
-            prevOrders.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+            prevOrders.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)),
         );
         if (selectedOrder && selectedOrder.id === orderId) {
             setSelectedOrder({ ...selectedOrder, status: newStatus });
@@ -63,20 +62,19 @@ export default function AdminOrdersPage() {
         if (statusFilter !== "ALL") {
             filtered =
                 statusFilter === "HISTORY"
-                    ? filtered.filter((o) => ["COMPLETED", "CANCELED"].includes(o.status))
-                    : filtered.filter((o) => o.status === statusFilter);
+                    ? filtered.filter((order) => ["COMPLETED", "CANCELED"].includes(order.status))
+                    : filtered.filter((order) => order.status === statusFilter);
         }
 
         if (searchText) {
             const lowerSearch = searchText.toLowerCase().trim();
-            filtered = filtered.filter((o) => {
-                // Gom các trường cần tìm kiếm vào một mảng để check cho gọn
+            filtered = filtered.filter((order) => {
                 const searchableFields = [
-                    o.orderCode,
-                    o.shippingPhone,
-                    o.User?.name,
-                    o.User?.email,
-                    o.shippingName,
+                    order.orderCode,
+                    order.shippingPhone,
+                    order.User?.name,
+                    order.User?.email,
+                    order.shippingName,
                 ].map((field) => String(field || "").toLowerCase());
 
                 return searchableFields.some((field) => field.includes(lowerSearch));
@@ -86,7 +84,7 @@ export default function AdminOrdersPage() {
         return filtered;
     };
 
-    const pendingCount = orders.filter((o) => o.status === "PENDING").length;
+    const pendingCount = orders.filter((order) => order.status === "PENDING").length;
 
     const tabConfigs = [
         { key: "ALL", label: "Tất cả" },
@@ -95,7 +93,7 @@ export default function AdminOrdersPage() {
             label: (
                 <Space size="small">
                     Chờ xử lý
-                    <Badge count={pendingCount} style={{ backgroundColor: "#ff4d4f" }} />
+                    <Badge count={pendingCount} style={{ backgroundColor: "#f09b90" }} />
                 </Space>
             ),
         },
@@ -119,35 +117,29 @@ export default function AdminOrdersPage() {
 
     return (
         <>
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 20,
-                    flexWrap: "wrap",
-                    gap: "16px",
-                }}
-            >
-                <Title level={3} style={{ margin: 0 }}>
-                    Quản Lý Đơn Hàng
-                </Title>
-                <Space>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 20 }} wrap="wrap" gap={16}>
+                <div>
+                    <Title level={3} style={{ margin: 0 }}>
+                        Quản lý đơn hàng
+                    </Title>
+                    <Text type="secondary">Theo dõi thanh toán, giao hàng và lịch sử xử lý đơn.</Text>
+                </div>
+                <Space wrap>
                     <Input.Search
                         placeholder="Tìm mã đơn, SĐT, tên..."
                         allowClear
                         onSearch={setSearchText}
-                        onChange={(e) => {
-                            if (!e.target.value) setSearchText("");
+                        onChange={(event) => {
+                            if (!event.target.value) setSearchText("");
                         }}
-                        style={{ width: 250 }}
+                        style={{ width: 260 }}
                         enterButton={<SearchOutlined />}
                     />
                     <Button icon={<ReloadOutlined />} onClick={fetchOrders} loading={loading}>
                         Làm mới
                     </Button>
                 </Space>
-            </div>
+            </Flex>
 
             <Tabs defaultActiveKey="ALL" items={tabItems} destroyInactiveTabPane />
 

@@ -15,6 +15,17 @@ const paymentService = require("../services/paymentService");
 const getFrontendUrl = () =>
     (process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
 
+const normalizeProductVariants = (variants) => (Array.isArray(variants) ? variants : []);
+
+const getVariantLabel = (variant = {}) =>
+    [variant.color, variant.size || variant.capacity].filter(Boolean).join(" / ");
+
+const getVariantStockTotal = (variants) =>
+    normalizeProductVariants(variants).reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
+
+const findProductVariant = (product, variantId) =>
+    normalizeProductVariants(product.variants).find((variant) => String(variant.variantId) === String(variantId));
+
 const normalizePayosStatus = (paymentInfo) =>
     String(paymentInfo?.status || paymentInfo?.data?.status || "").toUpperCase();
 
@@ -43,7 +54,9 @@ const markOrderAsPaid = async (order, paymentInfo = {}) => {
 
     if (order.User && order.User.email) {
         const emailItemsInfo = items.map((item) => ({
-            name: item.Product?.name || "San pham",
+            name: item.variantLabel
+                ? `${item.Product?.name || "San pham"} (${item.variantLabel})`
+                : item.Product?.name || "San pham",
             quantity: item.quantity,
             price: item.priceAtPurchase,
         }));
@@ -66,14 +79,14 @@ const markOrderAsPaid = async (order, paymentInfo = {}) => {
 };
 
 const checkout = async (req, res) => {
-    // 1. Khá»Ÿi táº¡o Transaction Ä‘á»ƒ Ä‘áº£m báº£o tÃ­nh toÃ n váº¹n dá»¯ liá»‡u (Náº¿u lá»—i á»Ÿ báº¥t ká»³ bÆ°á»›c nÃ o, Database sáº½ quay xe - Rollback)
+    // 1. Khởi tạo Transaction để đảm bảo tính toàn vẹn dữ liệu (Nếu lỗi ở bất kỳ bước nào, Database sẽ quay xe - Rollback)
     const t = await sequelize.transaction();
     try {
         const { items, paymentMethod, shippingInfo, discountCode } = req.body;
         const userId = req.user.id;
 
         if (!items || items.length === 0) {
-            return res.status(400).json({ message: "Giá» hÃ ng khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng" });
+            return res.status(400).json({ message: "Giỏ hàng không được để trống" });
         }
 
         const accountUser = await User.findByPk(userId, { transaction: t });
@@ -86,38 +99,58 @@ const checkout = async (req, res) => {
         let subTotal = 0;
         const orderItemsData = [];
 
-        // 2. DUYá»†T GIá»Ž HÃ€NG VÃ€ TÃNH TOÃN GIÃ TRá»Š THá»°C Táº¾ Tá»ª DATABASE
+        // 2. DUYỆT GIỎ HÀNG VÀ TÍNH TOÁN GIÁ TRỊ THỰC TẾ TỪ DATABASE
         for (const item of items) {
             const product = await Product.findByPk(item.productId, { transaction: t });
 
             if (!product) {
-                throw new Error(`Sáº£n pháº©m vá»›i ID ${item.productId} khÃ´ng tá»“n táº¡i`);
+                throw new Error(`Sản phẩm với ID ${item.productId} không tồn tại`);
             }
-            if (product.stock < item.quantity) {
+
+            const variants = normalizeProductVariants(product.variants);
+            const selectedVariant = item.variantId ? findProductVariant(product, item.variantId) : null;
+            const variantLabel = selectedVariant ? getVariantLabel(selectedVariant) : item.variantLabel || null;
+            const availableStock = selectedVariant ? Number(selectedVariant.stock || 0) : Number(product.stock || 0);
+            const itemPrice = selectedVariant?.price ? parseFloat(selectedVariant.price) : parseFloat(product.price);
+            const orderItemName = variantLabel ? `${product.name} (${variantLabel})` : product.name;
+
+            if (item.variantId && variants.length > 0 && !selectedVariant) {
+                throw new Error(`Biến thể đã chọn của ${product.name} không còn tồn tại`);
+            }
+
+            if (availableStock < item.quantity) {
                 throw new Error(
-                    `Sáº£n pháº©m ${product.name} chá»‰ cÃ²n ${product.stock} sáº£n pháº©m trong kho`,
+                    `Sản phẩm ${orderItemName} chỉ còn ${availableStock} sản phẩm trong kho`,
                 );
             }
 
-            // TÃ­nh tiá»n hÃ ng dá»±a trÃªn giÃ¡ thá»±c táº¿ trong Database (Chá»‘ng hack F12)
-            const itemPrice = parseFloat(product.price);
+            // Tính tiền hàng dựa trên giá thực tế trong Database (Chống hack F12)
             subTotal += itemPrice * item.quantity;
 
-            // Chuáº©n bá»‹ dá»¯ liá»‡u Ä‘á»ƒ lÆ°u vÃ o báº£ng OrderItem sau nÃ y
+            // Chuẩn bị dữ liệu để lưu vào bảng OrderItem sau này
             orderItemsData.push({
                 productId: product.id,
                 quantity: item.quantity,
-                priceAtPurchase: itemPrice, // LÆ°u giÃ¡ lÃºc mua Ä‘á»ƒ sau nÃ y Admin Ä‘á»•i giÃ¡ khÃ´ng lÃ m sai lá»‹ch sá»­
-                name: product.name, // DÃ¹ng Ä‘á»ƒ gá»­i mail hoáº·c táº¡o Ä‘Æ¡n PayOS
+                priceAtPurchase: itemPrice, // Lưu giá lúc mua để sau này Admin đổi giá không làm sai lịch sử
+                variantId: selectedVariant?.variantId || null,
+                variantLabel,
+                variantSnapshot: selectedVariant || null,
+                name: orderItemName, // Dùng để gửi mail hoặc tạo đơn PayOS
             });
 
-            // Cáº­p nháº­t tá»“n kho vÃ  sá»‘ lÆ°á»£ng Ä‘Ã£ bÃ¡n
-            product.stock -= item.quantity;
+            // Cập nhật tồn kho và số lượng đã bán
+            if (selectedVariant) {
+                selectedVariant.stock = Math.max(0, Number(selectedVariant.stock || 0) - Number(item.quantity || 0));
+                product.variants = variants;
+                product.stock = getVariantStockTotal(variants);
+            } else {
+                product.stock -= item.quantity;
+            }
             product.sold += item.quantity;
             await product.save({ transaction: t });
         }
 
-        // 3. Xá»¬ LÃ MÃƒ GIáº¢M GIÃ (Báº¢O Máº¬T TRÃŠN SERVER)
+        // 3. XỬ LÝ MÃ GIẢM GIÁ (BẢO MẬT TRÊN SERVER)
         let discountAmount = 0;
         let finalAppliedCode = null;
 
@@ -135,13 +168,13 @@ const checkout = async (req, res) => {
             });
 
             if (!coupon) {
-                const error = new Error("MÃ£ giáº£m giÃ¡ khÃ´ng tá»“n táº¡i hoáº·c Ä‘Ã£ háº¿t háº¡n.");
+                const error = new Error("Mã giảm giá không tồn tại hoặc đã hết hạn.");
                 error.status = 400;
                 throw error;
             }
 
             if (coupon.usageLimit && Number(coupon.usedCount || 0) >= Number(coupon.usageLimit)) {
-                const error = new Error("MÃ£ giáº£m giÃ¡ Ä‘Ã£ háº¿t lÆ°á»£t sá»­ dá»¥ng.");
+                const error = new Error("Mã giảm giá đã hết lượt sử dụng.");
                 error.status = 400;
                 throw error;
             }
@@ -153,22 +186,22 @@ const checkout = async (req, res) => {
             });
 
             if (!userCoupon) {
-                const error = new Error("Báº¡n chÆ°a lÆ°u mÃ£ giáº£m giÃ¡ nÃ y.");
+                const error = new Error("Bạn chưa lưu mã giảm giá này.");
                 error.status = 400;
                 throw error;
             }
 
             if (userCoupon.isUsed) {
-                const error = new Error("Báº¡n Ä‘Ã£ sá»­ dá»¥ng mÃ£ nÃ y rá»“i.");
+                const error = new Error("Bạn đã sử dụng mã này rồi.");
                 error.status = 400;
                 throw error;
             }
 
             if (subTotal < Number(coupon.minOrderAmount || 0)) {
                 const error = new Error(
-                    `ÄÆ¡n hÃ ng tá»‘i thiá»ƒu ${new Intl.NumberFormat("vi-VN").format(
+                    `Đơn hàng tối thiểu ${new Intl.NumberFormat("vi-VN").format(
                         coupon.minOrderAmount,
-                    )}Ä‘ Ä‘á»ƒ Ã¡p dá»¥ng mÃ£ nÃ y.`,
+                    )}đ để áp dụng mã này.`,
                 );
                 error.status = 400;
                 throw error;
@@ -199,12 +232,12 @@ const checkout = async (req, res) => {
 
         const finalTotalAmount = subTotal - discountAmount;
 
-        // Kiá»ƒm tra Ä‘iá»u kiá»‡n PayOS (Tá»‘i thiá»ƒu 2,000Ä‘)
+        // Kiểm tra điều kiện PayOS (Tối thiểu 2,000đ)
         if (paymentMethod === "QR" && finalTotalAmount < 2000) {
-            throw new Error("PayOS yÃªu cáº§u Ä‘Æ¡n hÃ ng thanh toÃ¡n qua QR pháº£i tá»« 2,000 VNÄ trá»Ÿ lÃªn.");
+            throw new Error("PayOS yêu cầu đơn hàng thanh toán qua QR phải từ 2,000 VNĐ trở lên.");
         }
 
-        // 4. Táº O MÃƒ ÄÆ N HÃ€NG VÃ€ LÆ¯U VÃ€O DATABASE
+        // 4. TẠO MÃ ĐƠN HÀNG VÀ LƯU VÀO DATABASE
         const orderCodeNum = Math.floor(100000 + Math.random() * 900000);
         const order = await Order.create(
             {
@@ -223,13 +256,13 @@ const checkout = async (req, res) => {
             { transaction: t },
         );
 
-        // LÆ°u danh sÃ¡ch sáº£n pháº©m cá»§a Ä‘Æ¡n hÃ ng
+        // Lưu danh sách sản phẩm của đơn hàng
         await OrderItem.bulkCreate(
             orderItemsData.map((item) => ({ ...item, orderId: order.id })),
             { transaction: t },
         );
 
-        // 5. Xá»¬ LÃ THANH TOÃN QR (PAYOS)
+        // 5. XỬ LÝ THANH TOÁN QR (PAYOS)
         let payosData = null;
         if (paymentMethod === "QR") {
             const paymentBody = {
@@ -248,10 +281,10 @@ const checkout = async (req, res) => {
             payosData = await paymentService.createPaymentLink(paymentBody);
         }
 
-        // 6. HOÃ€N Táº¤T VÃ€ PHáº¢N Há»’I
-        await t.commit(); // LÆ°u vÄ©nh viá»…n má»i thay Ä‘á»•i vÃ o Database
+        // 6. HOÀN TẤT VÀ PHẢN HỒI
+        await t.commit(); // Lưu vĩnh viễn mọi thay đổi vào Database
 
-        // Gá»­i email thÃ´ng bÃ¡o (Cháº¡y ngáº§m khÃ´ng cáº§n await Ä‘á»ƒ nhanh hÆ¡n náº¿u muá»‘n)
+        // Gửi email thông báo (Chạy ngầm không cần await để nhanh hơn nếu muốn)
         const user = await User.findByPk(userId);
         const orderInfo = {
             orderCode: order.orderCode,
@@ -265,15 +298,15 @@ const checkout = async (req, res) => {
         sendEmail(user.email, `[DPWOOD] Xac nhan don hang #${orderCodeNum}`, emailHtml);
 
         res.status(201).json({
-            message: "Äáº·t hÃ ng thÃ nh cÃ´ng",
+            message: "Đặt hàng thành công",
             orderCode: orderCodeNum,
-            payosData: payosData, // Tráº£ vá» link QR náº¿u thanh toÃ¡n online
+            payosData: payosData, // Trả về link QR nếu thanh toán online
         });
     } catch (error) {
-        // Náº¿u cÃ³ báº¥t ká»³ lá»—i nÃ o, há»§y bá» toÃ n bá»™ quÃ¡ trÃ¬nh (Tráº£ láº¡i tá»“n kho...)
+        // Nếu có bất kỳ lỗi nào, hủy bỏ toàn bộ quá trình (Trả lại tồn kho...)
         await t.rollback();
-        console.error("ðŸ”¥ Lá»–I THANH TOÃN:", error);
-        res.status(error.status || 500).json({ message: error.message || "Lá»—i xá»­ lÃ½ Ä‘áº·t hÃ ng" });
+        console.error("🔥 LỖI THANH TOÁN:", error);
+        res.status(error.status || 500).json({ message: error.message || "Lỗi xử lý đặt hàng" });
     }
 };
 
@@ -346,7 +379,7 @@ const cancelOrder = async (req, res) => {
             where: { orderCode, status: "PENDING" },
             transaction: t,
         });
-        if (!order) throw new Error("KhÃ´ng thá»ƒ há»§y");
+        if (!order) throw new Error("Không thể hủy");
 
         const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
         for (const item of items) {
@@ -355,7 +388,16 @@ const cancelOrder = async (req, res) => {
                 lock: t.LOCK.UPDATE,
             });
             if (product) {
-                product.stock += item.quantity;
+                const variants = normalizeProductVariants(product.variants);
+                const selectedVariant = item.variantId ? findProductVariant(product, item.variantId) : null;
+                if (selectedVariant) {
+                    selectedVariant.stock = Number(selectedVariant.stock || 0) + Number(item.quantity || 0);
+                    product.variants = variants;
+                    product.stock = getVariantStockTotal(variants);
+                } else {
+                    product.stock += item.quantity;
+                }
+                product.sold = Math.max(0, Number(product.sold || 0) - Number(item.quantity || 0));
                 await product.save({ transaction: t });
             }
         }
@@ -366,27 +408,27 @@ const cancelOrder = async (req, res) => {
             {
                 userId: req.user.id,
                 action: "ORDER_CANCELED",
-                details: `Há»§y Ä‘Æ¡n #${orderCode}, Ä‘Ã£ hoÃ n tá»“n kho.`,
+                details: `Hủy đơn #${orderCode}, đã hoàn tồn kho.`,
             },
             { transaction: t },
         );
 
         await t.commit();
-        res.json({ message: "ÄÃ£ há»§y" });
+        res.json({ message: "Đã hủy" });
     } catch (error) {
         await t.rollback();
         res.status(400).json({ message: error.message });
     }
 };
 
-// ðŸ”´ ÄÃƒ Bá»” SUNG: Include OrderItem vÃ  Product vÃ o dá»¯ liá»‡u láº¥y ra
+// 🔴 ĐÃ BỔ SUNG: Include OrderItem và Product vào dữ liệu lấy ra
 const getAllOrdersAdmin = async (req, res) => {
     try {
         const orders = await Order.findAll({
             order: [["createdAt", "DESC"]],
             include: [
                 { model: User, attributes: ["name", "email"] },
-                { model: OrderItem, include: [{ model: Product }] }, // Láº¥y chi tiáº¿t sáº£n pháº©m vÃ  HÃ¬nh áº£nh
+                { model: OrderItem, include: [{ model: Product }] }, // Lấy chi tiết sản phẩm và Hình ảnh
             ],
         });
         res.status(200).json(orders);
@@ -398,16 +440,16 @@ const getAllOrdersAdmin = async (req, res) => {
 const updateOrderStatusAdmin = async (req, res) => {
     try {
         const order = await Order.findByPk(req.params.id);
-        if (!order) return res.status(404).json({ message: "KhÃ´ng tÃ¬m tháº¥y" });
+        if (!order) return res.status(404).json({ message: "Không tìm thấy" });
         order.status = req.body.status;
         await order.save();
-        res.status(200).json({ message: "Cáº­p nháº­t thÃ nh cÃ´ng", order });
+        res.status(200).json({ message: "Cập nhật thành công", order });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// ðŸ”´ ÄÃƒ Bá»” SUNG: Cho trang Profile User cÅ©ng xem Ä‘Æ°á»£c chi tiáº¿t vÃ  HÃ¬nh áº£nh náº¿u cáº§n
+// 🔴 ĐÃ BỔ SUNG: Cho trang Profile User cũng xem được chi tiết và Hình ảnh nếu cần
 const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.findAll({
@@ -417,7 +459,7 @@ const getMyOrders = async (req, res) => {
         });
         res.status(200).json(orders);
     } catch (error) {
-        console.error("ðŸ”¥ Lá»–I Cáº¬P NHáº¬T TRáº NG THÃI ÄÆ N HÃ€NG:", error);
+        console.error("🔥 LỖI CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG:", error);
         res.status(500).json({ message: error.message });
     }
 };

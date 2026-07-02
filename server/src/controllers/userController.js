@@ -10,7 +10,7 @@ const normalizeAccountPhone = (value = "") => {
 
 const isValidAccountPhone = (phone) => /^0\d{9,10}$/.test(phone);
 
-// Láº¥y danh sÃ¡ch táº¥t cáº£ ngÆ°á»i dÃ¹ng
+// Lấy danh sách tất cả người dùng
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.findAll({
@@ -23,19 +23,19 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// Cáº­p nháº­t Role cho ngÆ°á»i dÃ¹ng
+// Cập nhật Role cho người dùng
 const updateRole = async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
 
         const user = await User.findByPk(id);
-        if (!user) return res.status(404).json({ message: "KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng" });
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
         user.role = role;
         await user.save();
 
-        res.json({ message: "Cáº­p nháº­t quyá»n thÃ nh cÃ´ng", user: { id: user.id, role: user.role } });
+        res.json({ message: "Cập nhật quyền thành công", user: { id: user.id, role: user.role } });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -46,12 +46,12 @@ const deleteUser = async (req, res) => {
         const { id } = req.params;
         const user = await User.findByPk(id);
 
-        if (!user) return res.status(404).json({ message: "KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng" });
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
         if (user.role === "root")
-            return res.status(403).json({ message: "KhÃ´ng thá»ƒ xÃ³a tÃ i khoáº£n Root!" });
+            return res.status(403).json({ message: "Không thể xóa tài khoản Root!" });
 
         await user.destroy();
-        res.json({ message: "ÄÃ£ xÃ³a tÃ i khoáº£n thÃ nh cÃ´ng" });
+        res.json({ message: "Đã xóa tài khoản thành công" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -60,15 +60,15 @@ const deleteUser = async (req, res) => {
 const restoreUser = async (req, res) => {
     try {
         const { id } = req.params;
-        // Báº¯t buá»™c pháº£i cÃ³ paranoid: false Ä‘á»ƒ tÃ¬m Ä‘Æ°á»£c cáº£ nhá»¯ng user Ä‘Ã£ bá»‹ xÃ³a má»m
+        // Bắt buộc phải có paranoid: false để tìm được cả những user đã bị xóa mềm
         const user = await User.findByPk(id, { paranoid: false });
 
-        if (!user) return res.status(404).json({ message: "KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng" });
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
-        // Lá»‡nh tháº§n thÃ¡nh cá»§a Sequelize: Phá»¥c há»“i tÃ i khoáº£n
+        // Lệnh thần thánh của Sequelize: Phục hồi tài khoản
         await user.restore();
 
-        res.json({ message: "ÄÃ£ khÃ´i phá»¥c tÃ i khoáº£n thÃ nh cÃ´ng" });
+        res.json({ message: "Đã khôi phục tài khoản thành công" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -80,9 +80,9 @@ const toggleBanUser = async (req, res) => {
         const user = await User.findByPk(id);
         const AuditLog = require("../models/auditLog");
 
-        if (!user) return res.status(404).json({ message: "KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng" });
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
         if (user.role === "root")
-            return res.status(403).json({ message: "KhÃ´ng thá»ƒ khÃ³a tÃ i khoáº£n Root!" });
+            return res.status(403).json({ message: "Không thể khóa tài khoản Root!" });
 
         if (user.lockUntil && user.lockUntil > Date.now()) {
             user.lockUntil = null;
@@ -92,33 +92,33 @@ const toggleBanUser = async (req, res) => {
             await AuditLog.create({
                 userId: user.id,
                 action: "SYSTEM",
-                details: "TÃ i khoáº£n Ä‘Æ°á»£c má»Ÿ khÃ³a",
+                details: "Tài khoản được mở khóa",
             });
-            return res.json({ message: "ÄÃ£ má»Ÿ khÃ³a tÃ i khoáº£n" });
+            return res.json({ message: "Đã mở khóa tài khoản" });
         } else {
             const banTime = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
             user.lockUntil = banTime;
-            // XÃ³a luÃ´n refresh token trong DB Ä‘á»ƒ há» khÃ´ng thá»ƒ silent refresh Ä‘Æ°á»£c ná»¯a
+            // Xóa luôn refresh token trong DB để họ không thể silent refresh được nữa
             user.refreshToken = null;
             await user.save();
 
-            // ðŸ”´ GHI LOG THEO YÃŠU Cáº¦U Cá»¦A Báº N
+            // 🔴 GHI LOG THEO YÊU CẦU CỦA BẠN
             await AuditLog.create({
                 userId: user.id,
                 action: "LOGOUT",
-                details: "TÃ i khoáº£n bá»‹ cáº¥m (Há»‡ thá»‘ng cÆ°á»¡ng cháº¿ Ä‘Äƒng xuáº¥t)",
+                details: "Tài khoản bị cấm (Hệ thống cưỡng chế đăng xuất)",
             });
 
             const io = req.app.get("io");
             const userSockets = req.app.get("userSockets");
-            const targetSocketId = userSockets.get(user.id); // TÃ¬m xem há» cÃ³ online khÃ´ng
+            const targetSocketId = userSockets.get(user.id); // Tìm xem họ có online không
 
             if (targetSocketId) {
-                // Náº¿u online, báº¯n tÃ­n hiá»‡u Ä‘uá»•i ra ngoÃ i
+                // Nếu online, bắn tín hiệu đuổi ra ngoài
                 io.to(targetSocketId).emit("force_logout");
             }
 
-            return res.json({ message: "ÄÃ£ cáº¥m tÃ i khoáº£n thÃ nh cÃ´ng" });
+            return res.json({ message: "Đã cấm tài khoản thành công" });
         }
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -129,15 +129,15 @@ const getSystemLogs = async (req, res) => {
     try {
         const { search, me } = req.query;
 
-        // Khá»Ÿi táº¡o cáº¥u hÃ¬nh truy váº¥n cÆ¡ báº£n
+        // Khởi tạo cấu hình truy vấn cơ bản
         const queryOptions = {
             where: {},
             include: [
                 {
                     model: User,
                     attributes: ["name", "email"],
-                    // Quan trá»ng: Pháº£i Ä‘áº·t "required: false" náº¿u muá»‘n dÃ¹ng LEFT JOIN
-                    // nhÆ°ng khi cÃ³ 'where' bÃªn trong include, Sequelize máº·c Ä‘á»‹nh chuyá»ƒn sang INNER JOIN
+                    // Quan trọng: Phải đặt "required: false" nếu muốn dùng LEFT JOIN
+                    // nhưng khi có 'where' bên trong include, Sequelize mặc định chuyển sang INNER JOIN
                     required: search ? true : false,
                 },
             ],
@@ -148,13 +148,13 @@ const getSystemLogs = async (req, res) => {
         if (me === "true") {
             queryOptions.where.userId = req.user.id;
         } else {
-            // Náº¿u khÃ´ng pháº£i xem cÃ¡ nhÃ¢n, báº¯t buá»™c pháº£i lÃ  Admin
+            // Nếu không phải xem cá nhân, bắt buộc phải là Admin
             if (req.user.role !== "admin" && req.user.role !== "root") {
-                return res.status(403).json({ message: "Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p nháº­t kÃ½ nÃ y" });
+                return res.status(403).json({ message: "Bạn không có quyền truy cập nhật ký này" });
             }
         }
 
-        // Náº¿u cÃ³ tá»« khÃ³a tÃ¬m kiáº¿m, ta má»›i gÃ¡n 'where' vÃ o trong include
+        // Nếu có từ khóa tìm kiếm, ta mới gán 'where' vào trong include
         if (search) {
             queryOptions.include[0].where = {
                 [Op.or]: [
@@ -167,9 +167,9 @@ const getSystemLogs = async (req, res) => {
         const logs = await AuditLog.findAll(queryOptions);
         res.json(logs);
     } catch (error) {
-        // Log lá»—i chi tiáº¿t ra Terminal cá»§a VS Code Ä‘á»ƒ báº¡n dá»… theo dÃµi
-        console.error("âŒ Lá»—i táº¡i getSystemLogs:", error);
-        res.status(500).json({ message: "Lá»—i mÃ¡y chá»§ khi láº¥y nháº­t kÃ½" });
+        // Log lỗi chi tiết ra Terminal của VS Code để bạn dễ theo dõi
+        console.error("❌ Lỗi tại getSystemLogs:", error);
+        res.status(500).json({ message: "Lỗi máy chủ khi lấy nhật ký" });
     }
 };
 
@@ -179,15 +179,15 @@ const getMe = async (req, res) => {
             attributes: { exclude: ["password"] },
         });
 
-        if (!user) return res.status(404).json({ message: "KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng" });
+        if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
         res.status(200).json(user);
     } catch (error) {
-        console.error("Lá»—i getMe:", error);
-        res.status(500).json({ message: "Lá»—i mÃ¡y chá»§" });
+        console.error("Lỗi getMe:", error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
     }
 };
 
-// [PUT] Cáº­p nháº­t thÃ´ng tin cÃ¡ nhÃ¢n (Äá»•i thÃ nh const)
+// [PUT] Cập nhật thông tin cá nhân (Đổi thành const)
 const updateMe = async (req, res) => {
     try {
         const { name, avatarUrl, phone } = req.body;

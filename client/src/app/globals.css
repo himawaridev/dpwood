@@ -467,6 +467,542 @@ a {
   margin-bottom: 24px;
 }
 
+.dp-admin-shell.ant-layout {
+  min-height: 100vh;
+  background: #f6f6f6;
+}
+
+.dp-admin-sider.ant-layout-sider,
+.dp-admin-drawer .ant-drawer-body {
+  background: #111;
+}
+
+.dp-admin-sider {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 12px 0 30px rgba(18, 18, 18, 0.08);
+}
+
+.dp-admin-brand {
+  width: 100%;
+  min-height: 76px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 18px;
+  text-align: left;
+}
+
+.ant-layout-sider-collapsed .dp-admin-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.dp-admin-brand-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  background: #fff;
+  border: 1px solid rgba(240, 155, 144, 0.32);
+  padding: 4px;
+}
+
+.dp-admin-brand strong {
+  font-size: 16px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dp-admin-menu.ant-menu {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: 0;
+  padding: 12px 10px;
+  font-weight: 700;
+}
+
+.dp-admin-menu.ant-menu .ant-menu-item,
+.dp-admin-menu.ant-menu .ant-menu-submenu-title {
+  height: 42px;
+  line-height: 42px;
+  margin: 4px 0;
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dp-admin-menu.ant-menu .ant-menu-item .anticon {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dp-admin-menu.ant-menu .ant-menu-item-selected,
+.dp-admin-menu.ant-menu .ant-menu-item:hover {
+  background: #f09b90 !important;
+  color: #111 !important;
+}
+
+.dp-admin-menu.ant-menu .ant-menu-item-selected .anticon,
+.dp-admin-menu.ant-menu .ant-menu-item:hover .anticon {
+  color: #111 !important;
+}
+
+.dp-admin-menu.ant-menu .ant-menu-item-divider {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.dp-admin-main.ant-layout {
+  min-width: 0;
+  background: #f6f6f6;
+}
+
+.dp-admin-header.ant-layout-header {
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  height: 72px;
+  padding: 0 22px 0 10px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dp-admin-menu-button.ant-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 0;
+  color: #111;
+}
+
+.dp-admin-menu-button.ant-btn:hover {
+  color: #f09b90 !important;
+  background: #fff5f3 !important;
+}
+
+.dp-admin-account {
+  border: 1px solid #e8e8e8;
+  background: #fff;
+  height: 42px;
+  max-width: min(240px, 46vw);
+  padding: 0 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.dp-admin-account:hover,
+.dp-admin-account:focus-visible {
+  border-color: rgba(240, 155, 144, 0.5);
+  background: #fff5f3;
+  outline: none;
+}
+
+.dp-admin-avatar {
+  flex: 0 0 auto;
+  background: #fff5f3;
+  color: #f09b90;
+  border: 1px solid rgba(240, 155, 144, 0.28);
+}
+
+.dp-admin-account-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.dp-admin-user-dropdown.ant-dropdown {
+  z-index: 5000;
+}
+
+.dp-admin-content.ant-layout-content {
+  padding: 24px;
+}
+
+.dp-admin-page {
+  min-height: calc(100vh - 120px);
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 10px 30px rgba(18, 18, 18, 0.05);
+  padding: clamp(16px, 2.4vw, 28px);
+  overflow: hidden;
+}
+
+.dp-admin-page .ant-typography {
+  color: #111;
+}
+
+.dp-admin-page h1.ant-typography,
+.dp-admin-page h2.ant-typography,
+.dp-admin-page h3.ant-typography {
+  margin-top: 0;
+  letter-spacing: 0;
+}
+
+.dp-admin-page .ant-card {
+  border-radius: 0;
+  border-color: #e8e8e8;
+  box-shadow: none !important;
+}
+
+.dp-admin-page .ant-card-head {
+  min-height: 50px;
+  border-bottom-color: #ededed;
+}
+
+.dp-admin-page .ant-statistic-title {
+  color: #777;
+  font-weight: 700;
+}
+
+.dp-admin-page .ant-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.dp-admin-page .ant-table {
+  min-width: 720px;
+}
+
+.dp-admin-page .ant-table-thead > tr > th {
+  background: #fafafa !important;
+  color: #333;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.dp-admin-page .ant-table-tbody > tr > td {
+  vertical-align: middle;
+}
+
+.dp-admin-page .ant-btn,
+.dp-admin-page .ant-input,
+.dp-admin-page .ant-select-selector,
+.dp-admin-page .ant-picker,
+.dp-admin-page .ant-input-number,
+.dp-admin-page .ant-upload,
+.dp-admin-page .ant-tag {
+  border-radius: 0 !important;
+}
+
+.dp-admin-page .ant-btn-primary {
+  background: #f09b90;
+  border-color: #f09b90;
+  box-shadow: none;
+}
+
+.dp-admin-page .ant-btn-primary:hover {
+  background: #e98b80 !important;
+  border-color: #e98b80 !important;
+}
+
+.dp-admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dp-admin-dashboard-head {
+  padding-bottom: 4px;
+}
+
+.dp-admin-dashboard-head h2.ant-typography {
+  margin: 4px 0 8px;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 900;
+}
+
+.dp-admin-eyebrow {
+  display: inline-flex;
+  color: #f09b90 !important;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.dp-admin-dashboard-alert.ant-alert {
+  border-radius: 0;
+  border-color: rgba(240, 155, 144, 0.38);
+  background: #fff8f6;
+}
+
+.dp-admin-dashboard-row {
+  margin-top: 0;
+}
+
+.dp-admin-kpi-card.ant-card {
+  height: 100%;
+  background: #fff;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.dp-admin-kpi-card.ant-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(240, 155, 144, 0.45);
+}
+
+.dp-admin-kpi-card .ant-card-body {
+  min-height: 138px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dp-admin-kpi-card .ant-statistic-content {
+  color: #111;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 900;
+}
+
+.dp-admin-kpi-card .ant-statistic-content-prefix {
+  color: #f09b90;
+  margin-inline-end: 8px;
+}
+
+.dp-admin-chart-card.ant-card,
+.dp-admin-quick-card.ant-card {
+  height: 100%;
+}
+
+.dp-admin-chart-card .ant-card-body,
+.dp-admin-quick-card .ant-card-body {
+  min-height: 100%;
+}
+
+.dp-admin-processing-rate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.dp-admin-processing-rate .ant-typography {
+  margin-bottom: 4px;
+}
+
+.dp-admin-status-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dp-admin-status-list > div {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.dp-admin-status-list > div > span:first-child {
+  width: 10px;
+  height: 10px;
+}
+
+.dp-admin-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.dp-admin-quick-actions .ant-btn {
+  justify-content: flex-start;
+  height: 44px;
+  font-weight: 800;
+}
+
+.dp-admin-insight-list {
+  display: grid;
+  gap: 14px;
+}
+
+.dp-admin-insight-list > div {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ededed;
+}
+
+.dp-admin-insight-list > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.dp-admin-insight-list .anticon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f09b90;
+  background: #fff5f3;
+}
+
+.dp-admin-insight-list span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.dp-admin-loading {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+}
+
+.dp-admin-form-block {
+  background: #fafafa;
+  padding: 16px;
+  border: 1px solid #ededed;
+  margin-bottom: 24px;
+}
+
+.dp-admin-order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dp-admin-order-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  padding: 12px 16px;
+  border: 1px solid #ededed;
+}
+
+.dp-admin-order-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dp-admin-order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ededed;
+}
+
+.dp-admin-order-product {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+}
+
+.dp-admin-order-total {
+  text-align: right;
+  margin-top: 24px;
+  padding: 16px;
+  background: #fff5f3;
+  border: 1px solid rgba(240, 155, 144, 0.28);
+}
+
+@media (max-width: 991px) {
+  .dp-admin-header.ant-layout-header {
+    height: 64px;
+    padding: 0 12px 0 8px;
+  }
+
+  .dp-admin-content.ant-layout-content {
+    padding: 12px;
+  }
+
+  .dp-admin-page {
+    min-height: calc(100vh - 88px);
+    padding: 14px;
+  }
+
+  .dp-admin-account {
+    max-width: 52vw;
+    height: 40px;
+    padding-inline: 8px;
+  }
+
+  .dp-admin-account-name {
+    max-width: 120px;
+  }
+
+  .dp-admin-brand {
+    min-height: 70px;
+    padding-inline: 18px;
+  }
+
+  .dp-admin-menu.ant-menu {
+    padding: 8px 10px 18px;
+  }
+
+  .dp-admin-page h1.ant-typography,
+  .dp-admin-page h2.ant-typography {
+    font-size: clamp(22px, 7vw, 30px) !important;
+    line-height: 1.18;
+  }
+
+  .dp-admin-page .ant-flex {
+    min-width: 0;
+  }
+
+  .dp-admin-page .ant-card-body {
+    padding: 16px;
+  }
+
+  .dp-admin-page .ant-table-wrapper {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .dp-admin-page .ant-table {
+    min-width: 760px;
+  }
+}
+
+@media (max-width: 575px) {
+  .dp-admin-content.ant-layout-content {
+    padding: 8px;
+  }
+
+  .dp-admin-page {
+    padding: 12px;
+    border-inline: 0;
+  }
+
+  .dp-admin-account-name {
+    display: none;
+  }
+
+  .dp-admin-account {
+    width: 42px;
+    justify-content: center;
+  }
+
+  .dp-admin-page .ant-table-wrapper {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+
+  .dp-admin-page .ant-pagination {
+    justify-content: center;
+  }
+}
+
 .dp-auth-layout {
   grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
 }
@@ -1770,12 +2306,20 @@ a {
 }
 
 .webcake-product-name:hover {
-  color: var(--dp-coral);
-}
+    color: var(--dp-coral);
+  }
 
-.webcake-product-price {
-  color: #222;
-  font-size: 15px;
+.webcake-product-category {
+    color: var(--dp-coral);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .webcake-product-price {
+    color: #222;
+    font-size: 15px;
   font-weight: 600;
 }
 
@@ -2005,7 +2549,170 @@ a {
 }
 
 .webcake-empty-products .ant-typography {
-  margin-bottom: 8px;
+    margin-bottom: 8px;
+}
+
+.dp-kitchen-specs {
+    border: 1px solid var(--dp-soft-border);
+    background: #fff;
+    padding: 18px;
+}
+
+.dp-kitchen-specs-under-gallery {
+    margin-top: 18px;
+}
+
+.dp-kitchen-specs-title {
+    display: block;
+    margin-bottom: 14px;
+    color: #222;
+}
+
+.dp-kitchen-spec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.dp-kitchen-spec-item {
+    min-width: 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+.dp-kitchen-spec-item span,
+.dp-kitchen-spec-item strong {
+    display: block;
+}
+
+.dp-kitchen-spec-item span {
+    color: #888;
+    font-size: 12px;
+}
+
+.dp-kitchen-spec-item strong {
+    margin-top: 4px;
+    color: #222;
+    overflow-wrap: anywhere;
+}
+
+.dp-kitchen-promise-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.dp-kitchen-promise-item {
+    border: 1px solid var(--dp-soft-border);
+    padding: 14px;
+    background: var(--dp-surface-muted);
+}
+
+.dp-product-variant-panel {
+    border: 1px solid var(--dp-soft-border);
+    background: #fff;
+    padding: 18px;
+}
+
+.dp-product-variant-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.dp-product-choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dp-product-choice-button {
+    border: 1px solid #e8e8e8;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+    min-height: 42px;
+    min-width: 86px;
+    padding: 9px 14px;
+    text-align: center;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.dp-product-choice-button:hover,
+.dp-product-choice-button.is-selected {
+    border-color: var(--dp-coral);
+    background: #fff5f3;
+    color: var(--dp-coral);
+}
+
+.dp-product-choice-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.dp-product-size-button {
+    align-items: flex-start;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 128px;
+    text-align: left;
+}
+
+.dp-product-size-button span {
+    color: var(--dp-coral);
+    font-weight: 700;
+}
+
+.dp-product-size-button small {
+    color: #888;
+}
+
+.dp-product-variant-option {
+    border: 1px solid #e8e8e8;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 88px;
+    padding: 12px;
+    text-align: left;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.dp-product-variant-option strong,
+.dp-product-variant-option span,
+.dp-product-variant-option small {
+    overflow-wrap: anywhere;
+}
+
+.dp-product-variant-option span {
+    color: var(--dp-coral);
+    font-weight: 700;
+}
+
+.dp-product-variant-option small {
+    color: #888;
+}
+
+.dp-product-variant-option:hover,
+.dp-product-variant-option.is-selected {
+    border-color: var(--dp-coral);
+    background: #fff5f3;
+}
+
+.dp-product-variant-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.dp-admin-variant-row {
+    border: 1px solid #eeeeee;
+    background: #fff;
+    margin-bottom: 12px;
+    padding: 12px;
 }
 
 .dp-blog-card-skeleton {
@@ -2487,6 +3194,12 @@ a {
   .webcake-product-actions span {
     width: 36px;
     height: 36px;
+  }
+
+  .dp-kitchen-spec-grid,
+  .dp-kitchen-promise-grid,
+  .dp-product-variant-grid {
+    grid-template-columns: 1fr;
   }
 
   .dp-profile-avatar {
