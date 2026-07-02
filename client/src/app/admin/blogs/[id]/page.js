@@ -28,7 +28,16 @@ export default function BlogEditorPage() {
         const fetchBlog = async () => {
             if (!isEditMode) {
                 // 🔴 2. Thay form.setFieldsValue bằng setInitialData
-                setInitialData({ isPublished: true, author: "Admin" });
+                let aiDraft = {};
+                if (typeof window !== "undefined") {
+                    try {
+                        aiDraft = JSON.parse(sessionStorage.getItem("dpwood_ai_blog_draft") || "{}");
+                        sessionStorage.removeItem("dpwood_ai_blog_draft");
+                    } catch {
+                        aiDraft = {};
+                    }
+                }
+                setInitialData({ isPublished: true, author: "Admin", ...aiDraft });
                 setFetching(false);
                 return;
             }

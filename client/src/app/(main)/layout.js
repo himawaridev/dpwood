@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import AppFooter from "./components/AppFooter";
 import WelcomeModal from "@/components/WelcomeModal";
+import AiSupportChat from "@/components/AiSupportChat";
 import api from "@/utils/axios";
 
 const { Content } = Layout;
@@ -73,6 +74,7 @@ export default function MainLayout({ children }) {
                 notifications={notifications}
             />
             <AppFooter />
+            <AiSupportChat />
             <FloatButton.BackTop
                 duration={400}
                 visibilityHeight={160}

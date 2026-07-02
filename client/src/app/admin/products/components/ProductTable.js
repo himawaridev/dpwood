@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { Table, Button, Typography, Image, Flex, Popconfirm, Input, Space, Tag } from "antd";
-import { DeleteOutlined, EditOutlined, FireOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+    DeleteOutlined,
+    EditOutlined,
+    FireOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+    SearchOutlined,
+    ThunderboltOutlined,
+} from "@ant-design/icons";
 import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
 
@@ -9,7 +17,7 @@ const { Title, Text } = Typography;
 const formatCurrency = (value) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 
-export default function ProductTable({ products, loading, onAdd, onEdit, onDelete, onRefresh }) {
+export default function ProductTable({ products, loading, onAdd, onAiDraft, onEdit, onDelete, onRefresh, aiLoading }) {
     const [searchText, setSearchText] = useState("");
 
     const filteredProducts = products.filter((product) =>
@@ -137,6 +145,9 @@ export default function ProductTable({ products, loading, onAdd, onEdit, onDelet
                     />
                     <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading}>
                         Làm mới
+                    </Button>
+                    <Button icon={<ThunderboltOutlined />} onClick={onAiDraft} loading={aiLoading}>
+                        AI tạo nháp
                     </Button>
                     <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
                         Thêm mới

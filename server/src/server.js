@@ -33,6 +33,7 @@ const blogRoutes = require("./routers/blogRoutes");
 const uploadRoutes = require("./routers/uploadRoutes");
 const couponRoutes = require("./routers/couponRoutes");
 const discountRoutes = require("./routers/discountRoutes");
+const aiRoutes = require("./routers/aiRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -152,6 +153,7 @@ const routes = {
     "/api/upload": uploadRoutes,
     "/api/coupons": couponRoutes,
     "/api/discounts": discountRoutes,
+    "/api/ai": aiRoutes,
 };
 
 Object.entries(routes).forEach(([path, route]) => {

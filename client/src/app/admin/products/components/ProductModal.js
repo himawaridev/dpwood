@@ -9,7 +9,7 @@ import {
 
 const createVariantId = () => `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-export default function ProductModal({ isVisible, onClose, onSave, editingProduct }) {
+export default function ProductModal({ isVisible, onClose, onSave, editingProduct, draftProduct }) {
     const [form] = Form.useForm();
     const [isMounted, setIsMounted] = useState(false);
 
@@ -36,16 +36,18 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                 });
             } else {
                 form.resetFields();
+                const draftImages = draftProduct?.images?.length > 0 ? draftProduct.images : [""];
                 form.setFieldsValue({
                     category: "cookware",
                     dishwasherSafe: false,
                     microwaveSafe: false,
-                    images: [""],
-                    variants: [],
+                    ...(draftProduct || {}),
+                    images: draftImages,
+                    variants: Array.isArray(draftProduct?.variants) ? draftProduct.variants : [],
                 });
             }
         }
-    }, [isVisible, editingProduct, form, isMounted]);
+    }, [isVisible, editingProduct, draftProduct, form, isMounted]);
 
     if (!isMounted) return null;
 
