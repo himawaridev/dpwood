@@ -913,6 +913,7 @@ a {
   z-index: 2000;
   border-bottom: 0;
   box-shadow: none;
+  overflow: visible;
 }
 
 .webcake-nav-container {
@@ -921,6 +922,7 @@ a {
   align-items: center;
   justify-content: flex-start;
   gap: 24px;
+  overflow: visible;
 }
 
 .webcake-brand {
@@ -984,6 +986,8 @@ a {
   align-items: center;
   justify-content: flex-end;
   min-width: 0;
+  position: relative;
+  z-index: 5;
 }
 
 .webcake-nav-actions {
@@ -993,6 +997,7 @@ a {
   gap: 14px;
   flex-wrap: nowrap;
   min-width: 0;
+  overflow: visible;
 }
 
 .webcake-utility-group {
@@ -1003,6 +1008,7 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  flex: 0 0 auto;
 }
 
 .webcake-icon-button.ant-btn {
@@ -1033,6 +1039,10 @@ a {
   align-items: center;
   justify-content: flex-end;
   min-width: 0;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 6;
+  overflow: visible;
 }
 
 .webcake-account-button {
@@ -1047,10 +1057,21 @@ a {
   padding: 0 8px 0 14px;
   color: #222;
   font-weight: 600;
-  max-width: 210px;
-  min-width: 0;
+  width: auto;
+  max-width: 220px;
+  min-width: 44px;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 7;
+}
+
+.webcake-account-button:hover,
+.webcake-account-button:focus-visible {
+  color: var(--dp-coral);
+  background: #fff5f3;
+  border-color: rgba(240, 155, 144, 0.44);
+  outline: none;
 }
 
 .webcake-avatar {
@@ -1063,13 +1084,33 @@ a {
 .webcake-account-name {
   display: inline-flex;
   align-items: center;
-  max-width: 145px;
+  max-width: 150px;
   height: 34px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1;
+  pointer-events: none;
+}
+
+.webcake-account-dropdown.ant-dropdown {
+  z-index: 5000 !important;
+  position: fixed !important;
+}
+
+.webcake-account-dropdown .ant-dropdown-menu {
+  position: relative;
+  z-index: 5001;
+  min-width: 168px;
+  margin-top: 8px;
+  border: 1px solid var(--dp-soft-border);
+  border-radius: 0;
+  box-shadow: 0 14px 34px rgba(18, 18, 18, 0.14);
+}
+
+.webcake-account-dropdown .ant-dropdown-menu-item {
+  min-height: 38px;
 }
 
 .webcake-login-button.ant-btn {
@@ -2197,9 +2238,12 @@ a {
 
   .webcake-account-button {
     width: 40px;
+    min-width: 40px;
+    max-width: 40px;
     height: 40px;
     padding: 0;
     justify-content: center;
+    overflow: visible;
   }
 
   .webcake-login-button.ant-btn {

@@ -126,7 +126,14 @@ export default function Navbar() {
     );
 
     const accountButton = authState.isAuth ? (
-        <Dropdown menu={{ items: userMenu }} placement="bottomRight" arrow>
+        <Dropdown
+            menu={{ items: userMenu }}
+            placement="bottomRight"
+            arrow
+            getPopupContainer={() => document.body}
+            overlayClassName="webcake-account-dropdown"
+            overlayStyle={{ zIndex: 5000 }}
+        >
             <button type="button" className="webcake-account-button" aria-label="Account">
                 <Avatar
                     className="webcake-avatar"
