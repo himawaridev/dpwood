@@ -2538,7 +2538,13 @@ a {
   font-weight: 500;
   line-height: 1.45;
   min-height: 44px;
+  max-width: 100%;
   text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .webcake-product-name:hover {
