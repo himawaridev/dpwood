@@ -197,10 +197,19 @@ export function AdminAiCenterSection({ section = "blog" }) {
         }
     };
 
-    const getProductPlaceholder = (product) =>
-        `${api.defaults.baseURL}/ai/product-image-placeholder?name=${encodeURIComponent(
-            product?.name || "DPWOOD",
-        )}&category=${encodeURIComponent(product?.category || "kitchenware")}`;
+    const isGeneratedPlaceholderUrl = (url) => {
+        const value = String(url || "").toLowerCase();
+        return (
+            !value ||
+            value.includes("/ai/product-image-placeholder") ||
+            value.includes("product-image-placeholder?") ||
+            value.includes("placehold.co/") ||
+            value.includes("loremflickr.com/") ||
+            value.includes("picsum.photos/")
+        );
+    };
+
+    const isRealProductImage = (url) => /^https?:\/\//i.test(String(url || "")) && !isGeneratedPlaceholderUrl(url);
 
     const handleAutoResolveSupport = async (values) => {
         try {
@@ -281,9 +290,11 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     />
                     <div className="dp-admin-ai-result-list">
                         {pendingProducts.map((product, index) => {
-                            const previewImage = product.imageUrl || product.images?.[0];
+                            const previewImage = [product.imageUrl, ...(Array.isArray(product.images) ? product.images : [])].find(
+                                isRealProductImage,
+                            );
                             const imageKey = `${product.name}-${index}`;
-                            const imageSrc = brokenProductImages[imageKey] ? getProductPlaceholder(product) : previewImage;
+                            const imageSrc = brokenProductImages[imageKey] ? "" : previewImage;
                             return (
                                 <div className="dp-admin-ai-result-item" key={imageKey}>
                                     <Space align="start" size={12}>

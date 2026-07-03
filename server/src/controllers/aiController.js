@@ -19,31 +19,31 @@ const FALLBACK_PRODUCT_TEMPLATES = [
     { name: "Kệ chén inox", category: "storage", price: 360000, stock: 100, material: "Inox" },
 ];
 const CATEGORY_IMAGE_KEYWORDS = {
-    cookware: "kitchen cookware pot pan",
-    tableware: "ceramic dinnerware bowl plate tableware",
-    utensils: "kitchen utensils knife cutting board spoon",
-    storage: "glass food storage container kitchen organizer",
-    appliances: "small kitchen appliance electric kettle blender",
-    cleaning: "kitchen cleaning brush sponge dishwashing",
+    cookware: "cookware pot pan",
+    tableware: "dinnerware bowl plate",
+    utensils: "kitchen utensil cutting board",
+    storage: "food storage container",
+    appliances: "kitchen appliance",
+    cleaning: "dishwashing brush",
 };
 
 const PRODUCT_IMAGE_KEYWORDS = [
-    { pattern: /noi chien|air fryer/i, keyword: "air fryer kitchen appliance" },
-    { pattern: /may xay sinh to|may xay|blender/i, keyword: "kitchen blender smoothie maker appliance" },
-    { pattern: /noi com|rice cooker/i, keyword: "rice cooker kitchen appliance" },
-    { pattern: /noi|pot|cooker|ap suat/i, keyword: "stainless steel cooking pot kitchen" },
-    { pattern: /chao|pan|non stick|chong dinh/i, keyword: "non stick frying pan kitchen" },
-    { pattern: /bat|dia|chen|bowl|plate/i, keyword: "ceramic bowls plates dinnerware" },
-    { pattern: /thia|dia inox|dua|muong|fork|spoon|cutlery|flatware/i, keyword: "stainless steel cutlery set kitchen" },
-    { pattern: /dao|knife/i, keyword: "kitchen chef knife" },
-    { pattern: /thot|cutting board/i, keyword: "wooden cutting board kitchen" },
-    { pattern: /khay|tray/i, keyword: "serving tray kitchen" },
+    { pattern: /noi chien|air fryer/i, keyword: "air fryer kitchen" },
+    { pattern: /may xay sinh to|may xay|blender/i, keyword: "blender kitchen" },
+    { pattern: /noi com|rice cooker/i, keyword: "rice cooker kitchen" },
+    { pattern: /noi|pot|cooker|ap suat/i, keyword: "stainless steel cooking pot" },
+    { pattern: /chao|pan|non stick|chong dinh/i, keyword: "non stick frying pan" },
+    { pattern: /bat|dia|chen|bowl|plate/i, keyword: "ceramic dinnerware bowl plate" },
+    { pattern: /thia|dia inox|dua|muong|fork|spoon|cutlery|flatware/i, keyword: "stainless steel cutlery" },
+    { pattern: /dao|knife/i, keyword: "chef knife kitchen" },
+    { pattern: /thot|cutting board/i, keyword: "wooden cutting board" },
+    { pattern: /khay|tray/i, keyword: "serving tray" },
     { pattern: /hop|container|bao quan/i, keyword: "glass food storage container" },
-    { pattern: /binh dun|kettle/i, keyword: "electric kettle kitchen appliance" },
-    { pattern: /ke chen|dish rack/i, keyword: "stainless steel dish rack kitchen" },
-    { pattern: /co rua|brush|sponge/i, keyword: "dishwashing brush kitchen cleaning" },
-    { pattern: /ly|cup|glass/i, keyword: "drinking glass cups kitchen" },
-    { pattern: /lo gia vi|spice/i, keyword: "glass spice jar kitchen" },
+    { pattern: /binh dun|kettle/i, keyword: "electric kettle kitchen" },
+    { pattern: /ke chen|dish rack/i, keyword: "stainless steel dish rack" },
+    { pattern: /co rua|brush|sponge/i, keyword: "dishwashing brush" },
+    { pattern: /ly|cup|glass/i, keyword: "drinking glass cup" },
+    { pattern: /lo gia vi|spice/i, keyword: "glass spice jar" },
 ];
 const BLOG_IMAGE_KEYWORDS = [
     { pattern: /may hut mui|hut mui|hood/i, keyword: "modern kitchen range hood" },
@@ -69,6 +69,18 @@ const clampNumber = (value, min, max, fallback) => {
 const cleanText = (value, fallback = "") => String(value || fallback).trim();
 
 const cleanBoolean = (value) => value === true || value === "true";
+
+const isGeneratedPlaceholderUrl = (url) => {
+    const cleaned = cleanText(url).toLowerCase();
+    return (
+        !cleaned ||
+        cleaned.includes("/api/ai/product-image-placeholder") ||
+        cleaned.includes("product-image-placeholder?") ||
+        cleaned.includes("placehold.co/") ||
+        cleaned.includes("loremflickr.com/") ||
+        cleaned.includes("picsum.photos/")
+    );
+};
 
 const generateSlug = (title) =>
     cleanText(title, "dpwood-ai-blog")
@@ -106,7 +118,7 @@ const getProductImages = (product) => {
     const images = Array.isArray(product.images) ? product.images : [];
     return [product.imageUrl, ...images]
         .map((item) => cleanText(item))
-        .filter((item) => /^https?:\/\//i.test(item));
+        .filter((item) => /^https?:\/\//i.test(item) && !isGeneratedPlaceholderUrl(unwrapImageProxyUrl(item)));
 };
 
 const getImageCandidatesFromCatalog = async (searchText, limit = 4) => {
@@ -293,6 +305,59 @@ const searchGoogleImages = async (searchText, limit = 8) => {
         .slice(0, limit);
 };
 
+const searchWikimediaImages = async (searchText, limit = 8) => {
+    const query = buildImageSearchQuery(searchText) || "kitchenware product";
+    const params = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: query,
+        gsrnamespace: "6",
+        gsrlimit: String(Math.min(Math.max(limit * 3, 5), 30)),
+        prop: "imageinfo",
+        iiprop: "url|mime",
+        iiurlwidth: "900",
+        format: "json",
+        origin: "*",
+    });
+
+    const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`, {
+        headers: {
+            "User-Agent": "DPWOOD/1.0 (https://dpwood.store)",
+            Accept: "application/json",
+        },
+    });
+
+    if (!response.ok) throw new Error(`Wikimedia image search failed: ${response.status}`);
+
+    const data = await response.json();
+    const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
+
+    return pages
+        .map((page) => {
+            const imageInfo = Array.isArray(page.imageinfo) ? page.imageinfo[0] : null;
+            return {
+                url: cleanText(imageInfo?.thumburl || imageInfo?.url),
+                title: cleanText(page.title, "Wikimedia image").replace(/^File:/i, "").slice(0, 160),
+                source: "Wikimedia Commons",
+                license: "Check source rights",
+                creator: "Wikimedia Commons",
+                landingUrl: imageInfo?.descriptionurl || "",
+                mime: cleanText(imageInfo?.mime),
+            };
+        })
+        .filter(
+            (item) =>
+                isPublicImageUrl(item.url) &&
+                item.url.length < 1500 &&
+                item.mime.startsWith("image/") &&
+                !/svg/i.test(item.mime) &&
+                !/\.pdf/i.test(item.url) &&
+                !/\.pdf/i.test(item.title) &&
+                !/\/page\d+-/i.test(item.url),
+        )
+        .slice(0, limit);
+};
+
 const searchDuckDuckGoImages = async (searchText, limit = 8) => {
     const query = buildImageSearchQuery(searchText) || "kitchenware product photo";
     const homeUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`;
@@ -405,14 +470,16 @@ const getFreeResourceContext = async (searchText, imageLimit = 6) => {
         searchDuckDuckGoImages(searchText, imageLimit),
         searchGoogleImages(searchText, imageLimit),
         searchPexelsImages(searchText, imageLimit),
+        searchWikimediaImages(searchText, imageLimit),
     ]);
     const duckDuckGoImages = webImageResults[0]?.status === "fulfilled" ? webImageResults[0].value : [];
     const googleImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
     const pexelsImages = webImageResults[2]?.status === "fulfilled" ? webImageResults[2].value : [];
+    const wikimediaImages = webImageResults[3]?.status === "fulfilled" ? webImageResults[3].value : [];
     const openverseImages = imagesResult.status === "fulfilled" ? imagesResult.value : [];
 
     return {
-        images: [...duckDuckGoImages, ...googleImages, ...pexelsImages, ...openverseImages],
+        images: [...duckDuckGoImages, ...googleImages, ...pexelsImages, ...wikimediaImages, ...openverseImages],
         references: referencesResult.status === "fulfilled" ? referencesResult.value : [],
     };
 };
@@ -424,28 +491,37 @@ const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = tr
         ? await getFreeResourceContext(searchText, limit)
         : { images: [], references: [] };
     const catalogImages = await getImageCandidatesFromCatalog(searchText, limit);
-    const fallbackImages = buildFallbackImageUrls(searchText, limit, offset);
     const urls = [];
+    const pushCandidate = (url) => {
+        const cleaned = unwrapImageProxyUrl(url);
+        if (
+            !/^https?:\/\//i.test(cleaned) ||
+            cleaned.length >= 1500 ||
+            isGeneratedPlaceholderUrl(cleaned) ||
+            urls.includes(cleaned) ||
+            usedUrls.has(cleaned)
+        ) {
+            return;
+        }
+        urls.push(cleaned);
+    };
 
     for (const image of freeResources.images) {
-        if (!urls.includes(image.url) && !usedUrls.has(image.url)) urls.push(image.url);
+        pushCandidate(image.url);
         if (urls.length >= limit) break;
     }
 
     for (const url of catalogImages) {
-        if (!urls.includes(url) && !usedUrls.has(url)) urls.push(url);
-        if (urls.length >= limit) break;
-    }
-
-    for (const url of fallbackImages) {
-        if (!urls.includes(url) && !usedUrls.has(url)) urls.push(url);
+        pushCandidate(url);
         if (urls.length >= limit) break;
     }
 
     let reachableUrls = await filterReachableImageUrls(urls, limit);
 
     if (!reachableUrls.length) {
-        const fallbackUrls = buildFallbackImageUrls(searchText, limit, offset + 100);
+        const fallbackUrls = buildFallbackImageUrls(searchText, limit, offset + 100).filter(
+            (url) => !isGeneratedPlaceholderUrl(url),
+        );
         reachableUrls = await filterReachableImageUrls(fallbackUrls, limit);
     }
 
@@ -461,6 +537,7 @@ const getRequestBaseUrl = (req) => {
 const buildImageProxyUrl = (req, url) => {
     const cleaned = cleanText(url);
     if (!/^https?:\/\//i.test(cleaned)) return "";
+    if (isGeneratedPlaceholderUrl(unwrapImageProxyUrl(cleaned))) return "";
     if (cleaned.includes("/api/ai/image-proxy?url=")) return cleaned;
     return `${getRequestBaseUrl(req)}/api/ai/image-proxy?url=${encodeURIComponent(cleaned)}`;
 };
@@ -480,39 +557,53 @@ const unwrapImageProxyUrl = (url) => {
 
 const normalizeProductImagesForStorage = (product) => {
     const images = Array.isArray(product.images)
-        ? product.images.map((url) => unwrapImageProxyUrl(url)).filter((url) => /^https?:\/\//i.test(url))
+        ? product.images
+              .map((url) => unwrapImageProxyUrl(url))
+              .filter((url) => /^https?:\/\//i.test(url) && !isGeneratedPlaceholderUrl(url))
         : [];
     const imageUrl = unwrapImageProxyUrl(product.imageUrl || images[0] || "");
     const variants = Array.isArray(product.variants)
         ? product.variants.map((variant) => ({
               ...variant,
-              imageUrl: unwrapImageProxyUrl(variant.imageUrl),
+              imageUrl: isGeneratedPlaceholderUrl(unwrapImageProxyUrl(variant.imageUrl))
+                  ? ""
+                  : unwrapImageProxyUrl(variant.imageUrl),
           }))
         : [];
 
     return {
         ...product,
-        imageUrl,
+        imageUrl: isGeneratedPlaceholderUrl(imageUrl) ? images[0] || "" : imageUrl,
         images,
         variants,
     };
 };
 
-const proxifyProductImages = (req, product) => {
+const proxifyProductImages = (req, product, options = {}) => {
+    const allowPlaceholder = options.allowPlaceholder === true;
     const images = Array.isArray(product.images) ? product.images : [];
-    const proxiedImages = images.map((url) => buildImageProxyUrl(req, url)).filter(Boolean);
+    const proxiedImages = images
+        .filter((url) => !isGeneratedPlaceholderUrl(unwrapImageProxyUrl(url)))
+        .map((url) => buildImageProxyUrl(req, url))
+        .filter(Boolean);
     const placeholderUrl = buildProductPlaceholderUrl(req, product.name, product.category);
     const variants = Array.isArray(product.variants)
         ? product.variants.map((variant) => ({
               ...variant,
-              imageUrl: buildImageProxyUrl(req, variant.imageUrl) || variant.imageUrl || placeholderUrl,
+              imageUrl:
+                  buildImageProxyUrl(req, variant.imageUrl) ||
+                  (!isGeneratedPlaceholderUrl(variant.imageUrl) ? variant.imageUrl : "") ||
+                  (allowPlaceholder ? placeholderUrl : ""),
           }))
         : [];
 
     return {
         ...product,
-        imageUrl: buildImageProxyUrl(req, product.imageUrl) || proxiedImages[0] || placeholderUrl,
-        images: proxiedImages.length ? proxiedImages : [placeholderUrl],
+        imageUrl:
+            buildImageProxyUrl(req, product.imageUrl) ||
+            proxiedImages[0] ||
+            (allowPlaceholder ? placeholderUrl : ""),
+        images: proxiedImages.length ? proxiedImages : allowPlaceholder ? [placeholderUrl] : [],
         variants,
     };
 };
@@ -788,16 +879,13 @@ const buildProductImageSearchText = (product, basePrompt = "") => {
     );
     const categoryKeyword = CATEGORY_IMAGE_KEYWORDS[product.category] || "kitchenware product";
     const materialKeyword = translateImageAttribute(product.material);
-    const colorKeyword = translateImageAttribute(product.color);
     const capacityKeyword = normalizeSearchText(product.capacity).replace(/\b(tieu chuan|co lon|bo|mon|dung tich)\b/g, "").trim();
 
     return [
         matched?.keyword,
-        categoryKeyword,
+        matched?.keyword ? "" : categoryKeyword,
         materialKeyword,
-        colorKeyword,
         capacityKeyword,
-        "product photo",
     ]
         .filter(Boolean)
         .join(" ");
