@@ -517,21 +517,21 @@ const getFreeResourceContext = async (searchText, imageLimit = 6) => {
         searchWikipediaReferences(searchText, 3),
     ]);
     const webImageResults = await Promise.allSettled([
-        searchDuckDuckGoImages(searchText, imageLimit),
         searchBingImages(searchText, imageLimit),
+        searchDuckDuckGoImages(searchText, imageLimit),
         searchGoogleImages(searchText, imageLimit),
         searchPexelsImages(searchText, imageLimit),
         searchWikimediaImages(searchText, imageLimit),
     ]);
-    const duckDuckGoImages = webImageResults[0]?.status === "fulfilled" ? webImageResults[0].value : [];
-    const bingImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
+    const bingImages = webImageResults[0]?.status === "fulfilled" ? webImageResults[0].value : [];
+    const duckDuckGoImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
     const googleImages = webImageResults[2]?.status === "fulfilled" ? webImageResults[2].value : [];
     const pexelsImages = webImageResults[3]?.status === "fulfilled" ? webImageResults[3].value : [];
     const wikimediaImages = webImageResults[4]?.status === "fulfilled" ? webImageResults[4].value : [];
     const openverseImages = imagesResult.status === "fulfilled" ? imagesResult.value : [];
 
     return {
-        images: [...duckDuckGoImages, ...bingImages, ...googleImages, ...pexelsImages, ...wikimediaImages, ...openverseImages],
+        images: [...bingImages, ...duckDuckGoImages, ...googleImages, ...pexelsImages, ...wikimediaImages, ...openverseImages],
         references: referencesResult.status === "fulfilled" ? referencesResult.value : [],
     };
 };
@@ -657,6 +657,7 @@ const unwrapImageProxyUrl = (url) => {
 };
 
 const normalizeProductImagesForStorage = (product) => {
+    const { imageSearchQueries, ...productData } = product;
     const images = Array.isArray(product.images)
         ? product.images
               .map((url) => unwrapImageProxyUrl(url))
@@ -673,7 +674,7 @@ const normalizeProductImagesForStorage = (product) => {
         : [];
 
     return {
-        ...product,
+        ...productData,
         imageUrl: isGeneratedPlaceholderUrl(imageUrl) ? images[0] || "" : imageUrl,
         images,
         variants,
@@ -844,6 +845,11 @@ const sanitizeProductDraft = (draft, imageCandidates = []) => {
         ? draft.images.map((item) => cleanText(item)).filter((item) => /^https?:\/\//i.test(item)).slice(0, 6)
         : [];
     const images = imageCandidates.length ? imageCandidates.slice(0, 4) : aiImages;
+    const imageSearchQueries = []
+        .concat(draft.imageSearchQueries || draft.image_search_queries || draft.searchQueries || draft.imageQueries || [])
+        .map((item) => buildImageSearchQuery(item))
+        .filter(Boolean)
+        .slice(0, 8);
 
     return {
         name: cleanText(draft.name, "San pham nha bep moi").slice(0, 180),
@@ -854,6 +860,7 @@ const sanitizeProductDraft = (draft, imageCandidates = []) => {
             : clampNumber(draft.stock, 0, 99999, 0),
         imageUrl: images[0] || "",
         images,
+        imageSearchQueries,
         variants,
         category,
         material: cleanText(draft.material),
@@ -888,6 +895,10 @@ const buildFallbackProductDrafts = (prompt, count = 10) => {
             price,
             stock,
             images: [],
+            imageSearchQueries: [
+                `${CATEGORY_IMAGE_KEYWORDS[template.category] || "kitchenware product"} product photo white background`,
+                ...((CATEGORY_IMAGE_FALLBACKS[template.category] || []).map((item) => `${item} catalog product photo`)),
+            ].slice(0, 5),
             category: template.category,
             material: template.material,
             color,
@@ -1007,8 +1018,12 @@ const buildProductImageSearchTexts = (product, basePrompt = "") => {
     const categoryFallbacks = CATEGORY_IMAGE_FALLBACKS[product.category] || ["kitchenware product photo"];
     const materialKeyword = translateImageAttribute(product.material);
     const exactProductQuery = buildProductExactImageQuery(product);
+    const aiSearchQueries = Array.isArray(product.imageSearchQueries)
+        ? product.imageSearchQueries.map((item) => buildImageSearchQuery(item)).filter(Boolean)
+        : [];
 
     return [
+        ...aiSearchQueries,
         matched?.keyword,
         matched?.keyword ? `${matched.keyword} product photo` : "",
         [categoryKeyword, materialKeyword].filter(Boolean).join(" "),
@@ -1187,6 +1202,7 @@ Yeu cau cua admin: ${prompt}
 
 Category chi duoc chon 1 trong: ${CATEGORY_VALUES.join(", ")}.
 Neu san pham co mau/kich co, tao variants doc lap de moi mau co the di voi nhieu kich co khi hop ly.
+Tao imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai cu the dung san pham, uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query.
 Tra ve JSON voi dung cac truong:
 {
   "name": "string",
@@ -1194,6 +1210,7 @@ Tra ve JSON voi dung cac truong:
   "price": 0,
   "stock": 0,
   "images": [],
+  "imageSearchQueries": ["specific English product image search query"],
   "category": "cookware|tableware|utensils|storage|appliances|cleaning",
   "material": "string",
   "color": "string",
@@ -1250,6 +1267,7 @@ Moi san pham phai khac nhau ve ten, gia, cong dung hoac phan loai.
 Category chi duoc chon 1 trong: ${CATEGORY_VALUES.join(", ")}.
 Neu san pham co mau/kich co, tao variants doc lap de moi mau co the di voi nhieu kich co khi hop ly.
 Khong tu bia ra URL anh. Truong images co the de [] neu khong chac URL ton tai.
+Moi san pham phai co imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai cu the dung san pham, uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query.
 
 Tra ve JSON dung dang:
 {
@@ -1260,6 +1278,7 @@ Tra ve JSON dung dang:
       "price": 0,
       "stock": 0,
       "images": [],
+      "imageSearchQueries": ["specific English product image search query"],
       "category": "cookware|tableware|utensils|storage|appliances|cleaning",
       "material": "string",
       "color": "string",
