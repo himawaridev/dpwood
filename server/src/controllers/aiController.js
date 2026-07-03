@@ -560,9 +560,49 @@ const scoreImageCandidate = (image, searchText) => {
     return tokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
 };
 
+const getProductAnchorTokens = (searchText) => {
+    const normalized = normalizeSearchText(searchText);
+    const anchors = [
+        ["cutting", "board"],
+        ["cast", "iron"],
+        ["frying", "pan"],
+        ["cooking", "pot"],
+        ["ceramic", "pot"],
+        ["dinnerware"],
+        ["bowl"],
+        ["plate"],
+        ["knife"],
+        ["chopsticks"],
+        ["spoon"],
+        ["utensil"],
+        ["container"],
+        ["storage"],
+        ["jar"],
+        ["kettle"],
+        ["blender"],
+        ["mixer"],
+        ["dish", "rack"],
+        ["dishwashing"],
+        ["soap"],
+        ["coaster"],
+        ["tray"],
+        ["lunch", "box"],
+    ];
+    return anchors.filter((group) => group.every((token) => normalized.includes(token)));
+};
+
+const matchesProductAnchor = (image, searchText) => {
+    const anchors = getProductAnchorTokens(searchText);
+    if (!anchors.length) return true;
+    const haystack = normalizeSearchText([image.title, image.url, image.landingUrl].join(" "));
+    return anchors.some((group) => group.every((token) => haystack.includes(token)));
+};
+
 const sortImagesByQueryRelevance = (images, searchText) =>
     images
+        .filter((image) => matchesProductAnchor(image, searchText))
         .map((image, index) => ({ image, index, score: scoreImageCandidate(image, searchText) }))
+        .filter((item) => item.score > 0)
         .sort((a, b) => b.score - a.score || a.index - b.index)
         .map((item) => item.image);
 
@@ -1023,13 +1063,14 @@ const buildProductImageSearchTexts = (product, basePrompt = "") => {
         : [];
 
     return [
-        ...aiSearchQueries,
         matched?.keyword,
         matched?.keyword ? `${matched.keyword} product photo` : "",
+        matched?.keyword ? `${matched.keyword} catalog white background` : "",
+        exactProductQuery,
+        ...aiSearchQueries,
         [categoryKeyword, materialKeyword].filter(Boolean).join(" "),
         categoryKeyword,
         ...categoryFallbacks,
-        exactProductQuery,
         "kitchenware product photo",
     ].filter(Boolean);
 };
