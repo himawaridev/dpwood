@@ -2258,43 +2258,45 @@ a {
   opacity: 1 !important;
 }
 
-.webcake-coupon-custom-dots {
+.webcake-coupon-all-action {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-top: 22px;
-  min-height: 14px;
+  margin-top: 26px;
 }
 
-.webcake-coupon-custom-dots button {
-  width: 16px;
-  height: 4px;
-  padding: 0;
-  border: 0;
+.webcake-coupon-all-action .ant-btn {
+  height: 42px;
+  min-width: 168px;
   border-radius: 0;
-  background: #111;
-  box-shadow: none;
-  color: transparent;
-  cursor: pointer;
-  font-size: 0;
-  line-height: 0;
-  outline: none;
-  transition:
-    background 0.2s ease,
-    width 0.2s ease;
+  border-color: #222;
+  color: #222;
+  font-weight: 800;
 }
 
-.webcake-coupon-custom-dots button:hover,
-.webcake-coupon-custom-dots button:focus-visible,
-.webcake-coupon-custom-dots button.is-active {
-  width: 24px;
-  background: #f09b90;
+.webcake-coupon-all-action .ant-btn:hover,
+.webcake-coupon-all-action .ant-btn:focus {
+  border-color: #f09b90 !important;
+  color: #f09b90 !important;
 }
 
 .webcake-coupon-slide {
   height: 100%;
   padding: 0 12px;
+}
+
+.webcake-coupon-mobile-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.webcake-coupon-mobile-item {
+  min-width: 0;
+}
+
+.webcake-coupon-view-all {
+  display: none;
 }
 
 .webcake-coupon-card {
@@ -2657,6 +2659,56 @@ a {
   font-size: 12px;
   font-weight: 800;
   opacity: 1;
+}
+
+.dp-cart-discount-box {
+  max-width: 420px;
+}
+
+.dp-cart-discount-row {
+  margin-top: 8px;
+}
+
+.dp-cart-voucher-list {
+  width: 100%;
+}
+
+.dp-cart-voucher-card .ant-card-body {
+  padding: 14px !important;
+}
+
+.dp-cart-voucher-card-content {
+  min-width: 0;
+}
+
+.dp-cart-voucher-code {
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.dp-gift-code-page {
+  background: #fff;
+}
+
+.dp-gift-code-hero {
+  padding: 96px 0 52px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #ededed;
+}
+
+.dp-gift-code-hero h1.ant-typography {
+  margin: 8px 0 10px;
+  color: #111;
+  font-size: 52px;
+  line-height: 1.05;
+}
+
+.dp-gift-code-hero .ant-typography {
+  max-width: 620px;
+}
+
+.dp-gift-code-page .webcake-coupon-card {
+  min-height: 236px;
 }
 
 .webcake-product-actions {
@@ -3502,6 +3554,39 @@ a {
     padding: 58px 0 64px;
   }
 
+  .webcake-coupon-mobile-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .webcake-coupon-mobile-item {
+    width: 100%;
+  }
+
+  .webcake-coupon-view-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 42px;
+    border-radius: 0;
+    border-color: #222;
+    background: #fff;
+    color: #222;
+    font-weight: 800;
+  }
+
+  .webcake-coupon-view-all:hover,
+  .webcake-coupon-view-all:focus {
+    border-color: #f09b90 !important;
+    color: #f09b90 !important;
+  }
+
+  .webcake-coupon-all-action {
+    display: none;
+  }
+
   .webcake-coupon-card {
     grid-template-columns: 96px minmax(0, 1fr);
     min-height: 190px;
@@ -3513,6 +3598,97 @@ a {
 
   .webcake-coupon-content {
     padding: 18px 16px;
+  }
+
+  .webcake-coupon-carousel {
+    margin: 0 -8px;
+  }
+
+  .webcake-coupon-slide {
+    padding: 0 8px;
+  }
+
+  .webcake-coupon-card {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .webcake-coupon-value {
+    min-height: 92px;
+    padding: 18px 14px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .webcake-coupon-value::before,
+  .webcake-coupon-value::after {
+    display: none;
+  }
+
+  .webcake-coupon-value strong {
+    font-size: 26px;
+  }
+
+  .webcake-coupon-content {
+    padding: 16px;
+  }
+
+  .webcake-coupon-code {
+    max-width: 100%;
+    width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .webcake-coupon-content p.ant-typography {
+    min-height: 0;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .webcake-coupon-content .ant-btn,
+  .webcake-coupon-content .ant-btn-primary,
+  .webcake-coupon-content .ant-btn-default:disabled {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  .dp-cart-discount-box {
+    max-width: none;
+    width: 100%;
+  }
+
+  .dp-cart-discount-row .ant-input-search {
+    flex-basis: 100% !important;
+  }
+
+  .dp-cart-discount-row > .ant-btn {
+    width: 100%;
+  }
+
+  .dp-cart-voucher-card-content {
+    min-width: 0 !important;
+    flex-basis: 100% !important;
+  }
+
+  .dp-cart-voucher-card .ant-tag {
+    white-space: normal;
+  }
+
+  .dp-cart-voucher-card .ant-btn {
+    width: 100%;
+  }
+
+  .dp-gift-code-hero {
+    padding: 72px 0 38px;
+  }
+
+  .dp-gift-code-hero h1.ant-typography {
+    font-size: 38px;
   }
 
   .webcake-newsletter {

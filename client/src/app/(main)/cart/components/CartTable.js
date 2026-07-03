@@ -248,11 +248,11 @@ export default function CartTable({
                             </Radio.Group>
                         </div>
 
-                        <div style={{ maxWidth: 420 }}>
+                        <div className="dp-cart-discount-box">
                             <Text strong>
                                 <TagOutlined /> Ưu đãi & mã giảm giá
                             </Text>
-                            <Flex gap={8} wrap style={{ marginTop: 8 }}>
+                            <Flex gap={8} wrap className="dp-cart-discount-row">
                                 <Search
                                     placeholder="Nhập mã voucher"
                                     allowClear
@@ -334,22 +334,22 @@ export default function CartTable({
                         description="Bạn chưa lưu mã ưu đãi nào. Hãy lấy mã ở trang chủ trước khi thanh toán."
                     />
                 ) : (
-                    <Flex vertical gap={12}>
+                    <Flex vertical gap={12} className="dp-cart-voucher-list">
                         {savedCoupons.map((voucher) => (
                             <Card
+                                className="dp-cart-voucher-card"
                                 key={voucher.userCouponId || voucher.id}
                                 size="small"
                                 variant="outlined"
-                                styles={{ body: { padding: 14 } }}
                             >
                                 <Flex justify="space-between" align="flex-start" gap={14} wrap="wrap">
-                                    <Flex gap={12} align="flex-start" style={{ flex: 1, minWidth: 260 }}>
+                                    <Flex gap={12} align="flex-start" className="dp-cart-voucher-card-content" style={{ flex: 1, minWidth: 260 }}>
                                         <Tag color="warning" style={{ marginTop: 2 }}>
                                             {formatCouponValue(voucher)}
                                         </Tag>
                                         <Flex vertical gap={4}>
                                             <Flex align="center" gap={8} wrap="wrap">
-                                                <Text strong copyable>
+                                                <Text strong copyable className="dp-cart-voucher-code">
                                                     {voucher.code}
                                                 </Text>
                                                 {discountCode === voucher.code && (

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { App, Button, Carousel, Col, Row, Skeleton, Typography } from "antd";
 import {
     AppstoreOutlined,
@@ -42,7 +42,6 @@ function ProductSkeletonGrid({ count = 8 }) {
         </Row>
     );
 }
-
 function ProductEmptyState({ onRetry }) {
     return (
         <div className="webcake-empty-products">
@@ -155,13 +154,11 @@ const fetchProductsWithWakeRetry = async () => {
 export default function LatestProducts() {
     const { message } = App.useApp();
     const router = useRouter();
-    const couponCarouselRef = useRef(null);
     const [products, setProducts] = useState([]);
     const [blogs, setBlogs] = useState([]);
     const [coupons, setCoupons] = useState([]);
     const [claimedCouponIds, setClaimedCouponIds] = useState(new Set());
     const [claimingCouponId, setClaimingCouponId] = useState("");
-    const [couponSlideIndex, setCouponSlideIndex] = useState(0);
     const [loading, setLoading] = useState(true);
 
     const fetchHomepageData = useCallback(async () => {
@@ -201,11 +198,6 @@ export default function LatestProducts() {
         fetchHomepageData();
     }, [fetchHomepageData]);
 
-    useEffect(() => {
-        setCouponSlideIndex(0);
-        couponCarouselRef.current?.goTo?.(0, true);
-    }, [coupons.length]);
-
     const bestSellerProducts = useMemo(
         () =>
             [...products]
@@ -216,7 +208,14 @@ export default function LatestProducts() {
     );
 
     const catalogProducts = useMemo(() => products.slice(0, 12), [products]);
-    const couponSource = coupons;
+    const couponSource = useMemo(
+        () =>
+            [...coupons]
+                .sort((a, b) => new Date(b.createdAt || b.startDate || 0) - new Date(a.createdAt || a.startDate || 0))
+                .slice(0, 3),
+        [coupons],
+    );
+    const homepageCouponItems = couponSource;
     const blogSource = blogs.filter((blog) => blog?.title);
     const homepageBlogs = useMemo(() => blogSource.slice(0, 3), [blogSource]);
     const heroProducts = useMemo(
@@ -334,6 +333,45 @@ export default function LatestProducts() {
         }
     };
 
+    const renderGiftCodeCard = (coupon) => {
+        const isCouponClaimed = getCouponClaimKeys(coupon).some((key) => claimedCouponIds.has(key));
+
+        return (
+            <article className={`webcake-coupon-card ${isCouponClaimed ? "webcake-coupon-card-claimed" : ""}`}>
+                <div className="webcake-coupon-value">
+                    <GiftOutlined />
+                    <strong>{getCouponValue(coupon)}</strong>
+                    <span>OFF</span>
+                </div>
+                <div className="webcake-coupon-content">
+                    <Text className="webcake-coupon-code">{coupon.code}</Text>
+                    <Paragraph>
+                        {coupon.description ||
+                            `Đơn hàng từ ${new Intl.NumberFormat("vi-VN").format(coupon.minOrderAmount || 0)}đ`}
+                    </Paragraph>
+                    <div className="webcake-coupon-meta">
+                        <span>
+                            <ClockCircleOutlined /> Còn {getDaysLeft(coupon.expiryDate)} ngày
+                        </span>
+                        {coupon.maxDiscountAmount && (
+                            <span>
+                                <CheckCircleOutlined /> Tối đa {formatCompactCurrency(coupon.maxDiscountAmount)}đ
+                            </span>
+                        )}
+                    </div>
+                    <Button
+                        type={isCouponClaimed ? "default" : "primary"}
+                        icon={isCouponClaimed ? <CheckCircleOutlined /> : null}
+                        disabled={isCouponClaimed}
+                        loading={claimingCouponId === coupon.id}
+                        onClick={() => handleCouponAction(coupon)}
+                    >
+                        {isCouponClaimed ? "Đã lấy mã" : "Lưu mã"}
+                    </Button>
+                </div>
+            </article>
+        );
+    };
     return (
         <main className="webcake-home">
             <section className="webcake-hero">
@@ -492,100 +530,24 @@ export default function LatestProducts() {
                         <Title level={2} className="webcake-section-title">
                             Mã giảm giá
                         </Title>
-                        <Carousel
-                            ref={couponCarouselRef}
-                            className="webcake-coupon-carousel"
-                            dots={false}
-                            draggable
-                            infinite={couponSource.length > 3}
-                            slidesToShow={Math.min(3, couponSource.length)}
-                            slidesToScroll={1}
-                            afterChange={(current) =>
-                                setCouponSlideIndex(couponSource.length ? current % couponSource.length : 0)
-                            }
-                            responsive={[
-                                {
-                                    breakpoint: 992,
-                                    settings: {
-                                        slidesToShow: Math.min(2, couponSource.length),
-                                    },
-                                },
-                                {
-                                    breakpoint: 576,
-                                    settings: {
-                                        slidesToShow: 1,
-                                    },
-                                },
-                            ]}
-                        >
-                            {couponSource.map((coupon) => {
-                                const isCouponClaimed = getCouponClaimKeys(coupon).some((key) =>
-                                    claimedCouponIds.has(key),
-                                );
-
-                                return (
-                                    <div key={coupon.id} className="webcake-coupon-slide">
-                                        <article
-                                            className={`webcake-coupon-card ${
-                                                isCouponClaimed ? "webcake-coupon-card-claimed" : ""
-                                            }`}
-                                        >
-                                            <div className="webcake-coupon-value">
-                                                <GiftOutlined />
-                                                <strong>{getCouponValue(coupon)}</strong>
-                                                <span>OFF</span>
-                                            </div>
-                                            <div className="webcake-coupon-content">
-                                                <Text className="webcake-coupon-code">{coupon.code}</Text>
-                                                <Paragraph>
-                                                    {coupon.description ||
-                                                        `Đơn hàng từ ${new Intl.NumberFormat("vi-VN").format(
-                                                            coupon.minOrderAmount || 0,
-                                                        )}đ`}
-                                                </Paragraph>
-                                                <div className="webcake-coupon-meta">
-                                                    <span>
-                                                        <ClockCircleOutlined /> Còn {getDaysLeft(coupon.expiryDate)} ngày
-                                                    </span>
-                                                    {coupon.maxDiscountAmount && (
-                                                        <span>
-                                                            <CheckCircleOutlined /> Tối đa{" "}
-                                                            {formatCompactCurrency(coupon.maxDiscountAmount)}đ
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <Button
-                                                    type={isCouponClaimed ? "default" : "primary"}
-                                                    icon={isCouponClaimed ? <CheckCircleOutlined /> : null}
-                                                    disabled={isCouponClaimed}
-                                                    loading={claimingCouponId === coupon.id}
-                                                    onClick={() => handleCouponAction(coupon)}
-                                                >
-                                                    {isCouponClaimed ? "ĐÃ LẤY MÃ" : "LƯU MÃ"}
-                                                </Button>
-                                            </div>
-                                        </article>
-                                    </div>
-                                );
-                            })}
-                        </Carousel>
-                        {couponSource.length > 1 && (
-                            <div className="webcake-coupon-custom-dots" aria-label="Coupon carousel navigation">
-                                {couponSource.map((coupon, index) => (
-                                    <button
-                                        key={coupon.id || coupon.code || index}
-                                        type="button"
-                                        aria-label={`Go to coupon ${index + 1}`}
-                                        aria-current={couponSlideIndex === index ? "true" : undefined}
-                                        className={couponSlideIndex === index ? "is-active" : ""}
-                                        onClick={() => {
-                                            couponCarouselRef.current?.goTo?.(index);
-                                            setCouponSlideIndex(index);
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                        <div className="webcake-coupon-mobile-list">
+                            {homepageCouponItems.map((coupon) => (
+                                <div key={coupon.id || coupon.code} className="webcake-coupon-mobile-item">
+                                    {renderGiftCodeCard(coupon)}
+                                </div>
+                            ))}
+                            {couponSource.length > 1 && (
+                                <Button
+                                    className="webcake-coupon-view-all"
+                                    onClick={() => router.push("/gift-codes")}
+                                >
+                                    Xem tất cả mã
+                                </Button>
+                            )}
+                        </div>
+                        <div className="webcake-coupon-all-action">
+                            <Button onClick={() => router.push("/gift-codes")}>Xem tất cả mã</Button>
+                        </div>
                     </div>
                 </section>
             )}

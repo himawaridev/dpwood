@@ -164,7 +164,7 @@ export default function Navbar() {
                     aria-label="Coupons"
                     className="webcake-icon-button"
                     icon={<GiftOutlined />}
-                    onClick={() => goTo("/#special-offers")}
+                    onClick={() => goTo("/gift-codes")}
                 />
                 <Badge count={cartCount} size="small" offset={[1, 1]}>
                     <Button
