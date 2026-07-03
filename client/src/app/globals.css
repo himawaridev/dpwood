@@ -1393,6 +1393,19 @@ a {
   text-align: center;
 }
 
+.dp-auth-verify-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dp-auth-verify-alert .ant-btn {
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .dp-auth-switch {
   margin-top: 18px;
   text-align: center;

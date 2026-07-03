@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { App, Button, Card, Divider, Form, Input, Typography } from "antd";
+import { useEffect, useState } from "react";
+import { Alert, App, Button, Card, Divider, Form, Input, Typography } from "antd";
 import {
     LockOutlined,
     LoginOutlined,
@@ -21,6 +21,8 @@ const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 export default function LoginPage() {
     const { message } = App.useApp();
     const router = useRouter();
+    const [unverifiedLogin, setUnverifiedLogin] = useState("");
+    const [resendingVerification, setResendingVerification] = useState(false);
 
     useEffect(() => {
         if (window.location.hostname === "127.0.0.1") {
@@ -46,13 +48,32 @@ export default function LoginPage() {
 
     const onFinish = async (values) => {
         try {
+            setUnverifiedLogin("");
             const response = await api.post("/auth/login", {
                 login: values.login,
                 password: values.password,
             });
             handleLoginSuccess(response.data);
         } catch (error) {
-            message.error(error.response?.data?.message || "Dang nhap that bai. Vui long thu lai.");
+            const errorMessage = error.response?.data?.message || "Dang nhap that bai. Vui long thu lai.";
+            if (error.response?.status === 403 && /verified|activate|xac minh|kích hoạt/i.test(errorMessage)) {
+                setUnverifiedLogin(values.login);
+            }
+            message.error(errorMessage);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        if (!unverifiedLogin) return;
+
+        try {
+            setResendingVerification(true);
+            const response = await api.post("/auth/resend-verification", { login: unverifiedLogin });
+            message.success(response.data?.message || "Da gui lai email xac minh.");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Khong the gui lai email xac minh.");
+        } finally {
+            setResendingVerification(false);
         }
     };
 
@@ -98,6 +119,29 @@ export default function LoginPage() {
                     </div>
 
                     <Form layout="vertical" onFinish={onFinish} className="dp-auth-form">
+                        {unverifiedLogin && (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                title="Tai khoan chua xac minh email"
+                                description={
+                                    <div className="dp-auth-verify-alert">
+                                        <span>
+                                            Kiem tra hop thu den, spam/quang cao hoac bam gui lai email xac minh.
+                                        </span>
+                                        <Button
+                                            size="small"
+                                            type="primary"
+                                            loading={resendingVerification}
+                                            onClick={handleResendVerification}
+                                        >
+                                            Gui lai email
+                                        </Button>
+                                    </div>
+                                }
+                            />
+                        )}
+
                         <Form.Item
                             label="Tai khoan"
                             name="login"

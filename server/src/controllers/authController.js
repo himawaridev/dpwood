@@ -81,9 +81,13 @@ const resendVerification = async (req, res) => {
             return res.status(400).json({ message: "Vui long nhap email can gui lai xac minh." });
         }
 
-        const user = await User.findOne({ where: { email: login } });
+        const user = await User.findOne({
+            where: {
+                [Op.or]: [{ email: login }, { username: login }, { phone: login }],
+            },
+        });
         if (!user) {
-            return res.status(404).json({ message: "Khong tim thay tai khoan voi email nay." });
+            return res.status(404).json({ message: "Khong tim thay tai khoan can xac minh." });
         }
 
         if (user.isVerified) {
