@@ -37,21 +37,29 @@ const CATEGORY_IMAGE_FALLBACKS = {
 
 const PRODUCT_IMAGE_KEYWORDS = [
     { pattern: /noi chien|air fryer/i, keyword: "air fryer kitchen" },
+    { pattern: /may danh trung|egg beater|hand mixer/i, keyword: "electric hand mixer kitchen" },
     { pattern: /may xay sinh to|may xay|blender/i, keyword: "blender kitchen" },
     { pattern: /noi com|rice cooker/i, keyword: "rice cooker kitchen" },
+    { pattern: /am dun|binh dun|kettle/i, keyword: "electric glass kettle kitchen" },
+    { pattern: /nuoc rua chen|dish soap|dishwashing liquid/i, keyword: "dishwashing liquid bottle" },
+    { pattern: /noi su|ceramic pot/i, keyword: "ceramic cooking pot" },
     { pattern: /noi|pot|cooker|ap suat/i, keyword: "stainless steel cooking pot" },
     { pattern: /chao|pan|non stick|chong dinh/i, keyword: "non stick frying pan" },
-    { pattern: /bat|dia|chen|bowl|plate/i, keyword: "ceramic dinnerware bowl plate" },
-    { pattern: /thia|dia inox|dua|muong|fork|spoon|cutlery|flatware/i, keyword: "stainless steel cutlery" },
-    { pattern: /dao|knife/i, keyword: "chef knife kitchen" },
+    { pattern: /bat trang/i, keyword: "vietnamese ceramic dinnerware set" },
+    { pattern: /bat|dia|chen|bowl|plate/i, keyword: "ceramic dinnerware set" },
+    { pattern: /dua|chopstick/i, keyword: "wooden chopsticks set" },
+    { pattern: /muoi|thia go|wooden spoon/i, keyword: "wooden kitchen spoon set" },
+    { pattern: /thia|dia inox|muong|fork|spoon|cutlery|flatware/i, keyword: "stainless steel cutlery set" },
+    { pattern: /gia cam dao|ke dao|dao|knife/i, keyword: "chef knife kitchen set" },
     { pattern: /thot|cutting board/i, keyword: "wooden cutting board" },
-    { pattern: /khay|tray/i, keyword: "serving tray" },
+    { pattern: /khay lot ly|coaster/i, keyword: "wooden drink coasters" },
+    { pattern: /khay|tray/i, keyword: "wooden serving tray" },
+    { pattern: /hop com|lunch box/i, keyword: "stainless steel lunch box" },
     { pattern: /hop|container|bao quan/i, keyword: "glass food storage container" },
-    { pattern: /binh dun|kettle/i, keyword: "electric kettle kitchen" },
-    { pattern: /ke chen|dish rack/i, keyword: "stainless steel dish rack" },
+    { pattern: /hu gia vi|lo gia vi|spice/i, keyword: "glass spice jar set" },
+    { pattern: /ke chen|ke up bat|dish rack/i, keyword: "stainless steel dish rack" },
     { pattern: /co rua|brush|sponge/i, keyword: "dishwashing brush" },
     { pattern: /ly|cup|glass/i, keyword: "drinking glass cup" },
-    { pattern: /lo gia vi|spice/i, keyword: "glass spice jar" },
 ];
 const BLOG_IMAGE_KEYWORDS = [
     { pattern: /may hut mui|hut mui|hood/i, keyword: "modern kitchen range hood" },
@@ -115,6 +123,7 @@ const buildUniqueBlogSlug = async (title, index = 0) => {
 const normalizeSearchText = (value) =>
     cleanText(value)
         .toLowerCase()
+        .replace(/[đĐ]/g, "d")
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9\s]/g, " ")
@@ -307,6 +316,45 @@ const searchGoogleImages = async (searchText, limit = 8) => {
         .slice(0, limit);
 };
 
+const searchBingImages = async (searchText, limit = 8) => {
+    const query = buildImageSearchQuery(searchText) || "kitchenware product";
+    const params = new URLSearchParams({
+        q: query,
+        form: "HDRSC2",
+        first: "1",
+    });
+    const response = await fetch(`https://www.bing.com/images/search?${params.toString()}`, {
+        headers: {
+            "User-Agent": "Mozilla/5.0 DPWOOD Image Search",
+            Accept: "text/html,application/xhtml+xml",
+        },
+    });
+
+    if (!response.ok) throw new Error(`Bing image search failed: ${response.status}`);
+
+    const html = await response.text();
+    const results = [];
+    const seen = new Set();
+    const regex = /murl&quot;:&quot;(https?:\/\/[^&"]+)&quot;.*?t&quot;:&quot;([^&"]*)/g;
+    let match;
+
+    while ((match = regex.exec(html)) && results.length < limit * 2) {
+        const url = cleanText(match[1]).replace(/\\u002f/g, "/");
+        if (seen.has(url) || !isPublicImageUrl(url) || url.length >= 1500) continue;
+        seen.add(url);
+        results.push({
+            url,
+            title: cleanText(match[2], "Bing image").slice(0, 160),
+            source: "Bing Images",
+            license: "Check source rights",
+            creator: "Bing",
+            landingUrl: "",
+        });
+    }
+
+    return results.slice(0, limit);
+};
+
 const searchWikimediaImages = async (searchText, limit = 8) => {
     const query = buildImageSearchQuery(searchText) || "kitchenware product";
     const params = new URLSearchParams({
@@ -470,18 +518,20 @@ const getFreeResourceContext = async (searchText, imageLimit = 6) => {
     ]);
     const webImageResults = await Promise.allSettled([
         searchDuckDuckGoImages(searchText, imageLimit),
+        searchBingImages(searchText, imageLimit),
         searchGoogleImages(searchText, imageLimit),
         searchPexelsImages(searchText, imageLimit),
         searchWikimediaImages(searchText, imageLimit),
     ]);
     const duckDuckGoImages = webImageResults[0]?.status === "fulfilled" ? webImageResults[0].value : [];
-    const googleImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
-    const pexelsImages = webImageResults[2]?.status === "fulfilled" ? webImageResults[2].value : [];
-    const wikimediaImages = webImageResults[3]?.status === "fulfilled" ? webImageResults[3].value : [];
+    const bingImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
+    const googleImages = webImageResults[2]?.status === "fulfilled" ? webImageResults[2].value : [];
+    const pexelsImages = webImageResults[3]?.status === "fulfilled" ? webImageResults[3].value : [];
+    const wikimediaImages = webImageResults[4]?.status === "fulfilled" ? webImageResults[4].value : [];
     const openverseImages = imagesResult.status === "fulfilled" ? imagesResult.value : [];
 
     return {
-        images: [...duckDuckGoImages, ...googleImages, ...pexelsImages, ...wikimediaImages, ...openverseImages],
+        images: [...duckDuckGoImages, ...bingImages, ...googleImages, ...pexelsImages, ...wikimediaImages, ...openverseImages],
         references: referencesResult.status === "fulfilled" ? referencesResult.value : [],
     };
 };
@@ -905,6 +955,19 @@ const buildProductImageSearchText = (product, basePrompt = "") => {
     return matched?.keyword || categoryKeyword;
 };
 
+const buildProductExactImageQuery = (product) =>
+    buildImageSearchQuery(
+        [
+            product.name,
+            product.material,
+            product.capacity,
+            "product photo",
+        ]
+            .join(" ")
+            .replace(/\bDPWOOD\b/gi, "")
+            .replace(/\b(cao cap|premium|kitchen|style|pro)\b/gi, ""),
+    );
+
 const buildProductImageSearchTexts = (product, basePrompt = "") => {
     const matched = findImageKeyword(
         PRODUCT_IMAGE_KEYWORDS,
@@ -914,9 +977,12 @@ const buildProductImageSearchTexts = (product, basePrompt = "") => {
     const categoryKeyword = CATEGORY_IMAGE_KEYWORDS[product.category] || "kitchenware product";
     const categoryFallbacks = CATEGORY_IMAGE_FALLBACKS[product.category] || ["kitchenware product photo"];
     const materialKeyword = translateImageAttribute(product.material);
+    const exactProductQuery = buildProductExactImageQuery(product);
 
     return [
+        exactProductQuery,
         matched?.keyword,
+        matched?.keyword ? `${matched.keyword} product photo` : "",
         [categoryKeyword, materialKeyword].filter(Boolean).join(" "),
         categoryKeyword,
         ...categoryFallbacks,
