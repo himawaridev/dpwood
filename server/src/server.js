@@ -227,6 +227,13 @@ const startServer = async () => {
 
         try {
             const tableDesc = await queryInterface.describeTable("Products");
+            if (tableDesc.imageUrl && !String(tableDesc.imageUrl.type || "").toUpperCase().includes("TEXT")) {
+                await queryInterface.changeColumn("Products", "imageUrl", {
+                    type: DataTypes.TEXT,
+                    allowNull: true,
+                });
+                console.log("Changed Products.imageUrl to TEXT via QueryInterface");
+            }
             if (!tableDesc.category) {
                 await queryInterface.addColumn("Products", "category", {
                     type: DataTypes.STRING,

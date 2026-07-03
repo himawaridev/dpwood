@@ -119,6 +119,9 @@ const generateJson = async ({ systemInstruction, prompt, temperature = 0.65 }) =
         const message = lastErrorMessage || data?.error?.message || "Gemini request failed";
         const error = new Error(message);
         error.statusCode = response.status;
+        error.isQuotaExceeded =
+            response.status === 429 ||
+            /quota|rate[-\s]?limit|free_tier|retry/i.test(message);
         throw error;
     }
 

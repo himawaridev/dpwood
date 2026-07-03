@@ -151,7 +151,6 @@ export function AdminAiCenterSection({ section = "blog" }) {
                 prompt: values.prompt,
                 count: values.count,
                 useFreeResources: values.useFreeResources,
-                imageSourceMode: values.imageSourceMode,
                 createMode: values.createMode,
             });
             const products = response.data?.products || [];
@@ -159,12 +158,20 @@ export function AdminAiCenterSection({ section = "blog" }) {
                 setPendingProducts(products);
                 setCreatedProducts([]);
                 setBrokenProductImages({});
-                message.success(response.data?.message || `AI đã tạo ${products.length} bản nháp để duyệt.`);
+                if (response.data?.fallback) {
+                    message.warning(response.data?.message || `Gemini hết quota, hệ thống đã tạo ${products.length} bản nháp nội bộ.`);
+                } else {
+                    message.success(response.data?.message || `AI đã tạo ${products.length} bản nháp để duyệt.`);
+                }
             } else {
                 setCreatedProducts(products);
                 setPendingProducts([]);
                 setBrokenProductImages({});
-                message.success(response.data?.message || `AI đã tạo ${products.length} sản phẩm.`);
+                if (response.data?.fallback) {
+                    message.warning(response.data?.message || `Gemini hết quota, hệ thống đã tạo ${products.length} sản phẩm nội bộ.`);
+                } else {
+                    message.success(response.data?.message || `AI đã tạo ${products.length} sản phẩm.`);
+                }
             }
         } catch (error) {
             message.error(error.response?.data?.message || "Không thể tạo sản phẩm hàng loạt bằng AI");
@@ -588,7 +595,6 @@ export function AdminAiCenterSection({ section = "blog" }) {
                         initialValues={{
                             count: 12,
                             useFreeResources: true,
-                            imageSourceMode: "broad",
                             createMode: "review",
                         }}
                         onFinish={handleGenerateProducts}
@@ -611,32 +617,18 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             <InputNumber min={1} max={50} style={{ width: "100%" }} />
                         </Form.Item>
 
-                        <Row gutter={12}>
-                            <Col xs={24} md={12}>
-                                <Form.Item name="createMode" label="Cách tạo">
-                                    <Select
-                                        options={[
-                                            { value: "review", label: "Duyệt trước rồi lưu" },
-                                            { value: "auto", label: "Tự động lưu vào kho" },
-                                        ]}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12}>
-                                <Form.Item name="imageSourceMode" label="Nguồn ảnh">
-                                    <Select
-                                        options={[
-                                            { value: "broad", label: "Tự do tìm kiếm ảnh" },
-                                            { value: "safe", label: "Chỉ nguồn mở an toàn" },
-                                        ]}
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
+                        <Form.Item name="createMode" label="Cách tạo">
+                            <Select
+                                options={[
+                                    { value: "review", label: "Duyệt trước rồi lưu" },
+                                    { value: "auto", label: "Tự động lưu vào kho" },
+                                ]}
+                            />
+                        </Form.Item>
 
                         <Form.Item
                             name="useFreeResources"
-                            label="Tìm ảnh/tài nguyên từ internet"
+                            label="Tự do tìm kiếm ảnh sắc nét phù hợp"
                             valuePropName="checked"
                         >
                             <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />

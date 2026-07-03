@@ -6,6 +6,44 @@ const TicketMessage = require("../models/ticketMessage");
 const User = require("../models/user");
 
 const CATEGORY_VALUES = ["cookware", "tableware", "utensils", "storage", "appliances", "cleaning"];
+const FALLBACK_PRODUCT_TEMPLATES = [
+    { name: "Nồi inox 3 đáy", category: "cookware", price: 320000, stock: 120, material: "Inox 304" },
+    { name: "Chảo chống dính đá", category: "cookware", price: 260000, stock: 150, material: "Hợp kim phủ đá" },
+    { name: "Bộ bát đĩa sứ", category: "tableware", price: 480000, stock: 90, material: "Sứ cao cấp" },
+    { name: "Dao bếp thép không gỉ", category: "utensils", price: 180000, stock: 180, material: "Thép không gỉ" },
+    { name: "Thớt gỗ tự nhiên", category: "utensils", price: 150000, stock: 160, material: "Gỗ tự nhiên" },
+    { name: "Hộp bảo quản thủy tinh", category: "storage", price: 95000, stock: 220, material: "Thủy tinh" },
+    { name: "Bình đun siêu tốc", category: "appliances", price: 390000, stock: 80, material: "Inox" },
+    { name: "Máy xay mini", category: "appliances", price: 520000, stock: 65, material: "Nhựa ABS" },
+    { name: "Cọ rửa chén silicone", category: "cleaning", price: 45000, stock: 300, material: "Silicone" },
+    { name: "Kệ chén inox", category: "storage", price: 360000, stock: 100, material: "Inox" },
+];
+const CATEGORY_IMAGE_KEYWORDS = {
+    cookware: "kitchen cookware pot pan",
+    tableware: "ceramic dinnerware bowl plate tableware",
+    utensils: "kitchen utensils knife cutting board spoon",
+    storage: "glass food storage container kitchen organizer",
+    appliances: "small kitchen appliance electric kettle blender",
+    cleaning: "kitchen cleaning brush sponge dishwashing",
+};
+
+const PRODUCT_IMAGE_KEYWORDS = [
+    { pattern: /noi|pot|cooker|ap suat/i, keyword: "stainless steel cooking pot kitchen" },
+    { pattern: /noi chien|air fryer/i, keyword: "air fryer kitchen appliance" },
+    { pattern: /chao|pan|non stick|chong dinh/i, keyword: "non stick frying pan kitchen" },
+    { pattern: /bat|dia|chen|bowl|plate/i, keyword: "ceramic bowls plates dinnerware" },
+    { pattern: /thia|dia inox|dua|muong|fork|spoon|cutlery|flatware/i, keyword: "stainless steel cutlery set kitchen" },
+    { pattern: /dao|knife/i, keyword: "kitchen chef knife" },
+    { pattern: /thot|cutting board/i, keyword: "wooden cutting board kitchen" },
+    { pattern: /khay|tray/i, keyword: "serving tray kitchen" },
+    { pattern: /hop|container|bao quan/i, keyword: "glass food storage container" },
+    { pattern: /binh dun|kettle/i, keyword: "electric kettle kitchen appliance" },
+    { pattern: /may xay|blender/i, keyword: "small kitchen blender appliance" },
+    { pattern: /ke chen|dish rack/i, keyword: "stainless steel dish rack kitchen" },
+    { pattern: /co rua|brush|sponge/i, keyword: "dishwashing brush kitchen cleaning" },
+    { pattern: /ly|cup|glass/i, keyword: "drinking glass cups kitchen" },
+    { pattern: /lo gia vi|spice/i, keyword: "glass spice jar kitchen" },
+];
 
 const clampNumber = (value, min, max, fallback) => {
     const number = Number(value);
@@ -116,31 +154,28 @@ const buildImageSearchQuery = (searchText) =>
         .trim()
         .slice(0, 180);
 
-const buildFallbackImageUrls = (searchText, limit = 4) => {
+const buildFallbackImageUrls = (searchText, limit = 4, offset = 0) => {
     const query = encodeURIComponent(buildImageSearchQuery(searchText) || "kitchenware");
     const seed = normalizeSearchText(searchText) || "kitchenware";
     const urls = [];
 
     for (let index = 0; index < limit; index += 1) {
-        urls.push(`https://loremflickr.com/900/900/${query},kitchenware?lock=${index + 1}`);
+        urls.push(`https://loremflickr.com/900/900/${query},kitchenware?lock=${offset * 31 + index + 1}`);
     }
 
     for (let index = 0; urls.length < limit * 2; index += 1) {
-        urls.push(`https://picsum.photos/seed/${encodeURIComponent(`${seed}-${index}`)}/900/900`);
+        urls.push(`https://picsum.photos/seed/${encodeURIComponent(`${seed}-${offset}-${index}`)}/900/900`);
     }
 
     return urls.slice(0, limit);
 };
 
-const searchOpenverseImages = async (searchText, limit = 6, sourceMode = "safe") => {
+const searchOpenverseImages = async (searchText, limit = 6) => {
     const query = cleanText(searchText, "kitchenware").slice(0, 180);
     const params = new URLSearchParams({
         q: query,
         per_page: String(Math.min(Math.max(limit, 1), 20)),
     });
-    if (sourceMode !== "broad") {
-        params.set("license", "cc0,pdm");
-    }
 
     const response = await fetch(`https://api.openverse.org/v1/images/?${params.toString()}`, {
         headers: {
@@ -165,6 +200,155 @@ const searchOpenverseImages = async (searchText, limit = 6, sourceMode = "safe")
         }))
         .filter((item) => isPublicImageUrl(item.url))
         .slice(0, limit);
+};
+
+const searchPexelsImages = async (searchText, limit = 8) => {
+    const apiKey = process.env.PEXELS_API_KEY;
+    if (!apiKey) return [];
+
+    const query = buildImageSearchQuery(searchText) || "kitchenware";
+    const params = new URLSearchParams({
+        query,
+        per_page: String(Math.min(Math.max(limit, 1), 30)),
+        locale: "vi-VN",
+        orientation: "square",
+    });
+
+    const response = await fetch(`https://api.pexels.com/v1/search?${params.toString()}`, {
+        headers: {
+            Authorization: apiKey,
+            Accept: "application/json",
+        },
+    });
+
+    if (!response.ok) throw new Error(`Pexels image search failed: ${response.status}`);
+
+    const data = await response.json();
+    const photos = Array.isArray(data?.photos) ? data.photos : [];
+
+    return photos
+        .map((photo) => ({
+            url: cleanText(photo?.src?.large2x || photo?.src?.large || photo?.src?.medium || photo?.src?.original),
+            title: cleanText(photo?.alt, "Pexels image").slice(0, 160),
+            source: "Pexels",
+            license: "Pexels License",
+            creator: cleanText(photo?.photographer, "Pexels"),
+            landingUrl: cleanText(photo?.url),
+        }))
+        .filter((item) => isPublicImageUrl(item.url))
+        .slice(0, limit);
+};
+
+const searchGoogleImages = async (searchText, limit = 8) => {
+    const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+    const cx = process.env.GOOGLE_SEARCH_CX;
+    if (!apiKey || !cx) return [];
+
+    const query = buildImageSearchQuery(searchText) || "kitchenware";
+    const params = new URLSearchParams({
+        key: apiKey,
+        cx,
+        q: query,
+        searchType: "image",
+        num: String(Math.min(Math.max(limit, 1), 10)),
+        imgSize: "large",
+    });
+
+    const response = await fetch(`https://www.googleapis.com/customsearch/v1?${params.toString()}`, {
+        headers: {
+            Accept: "application/json",
+        },
+    });
+
+    if (!response.ok) throw new Error(`Google image search failed: ${response.status}`);
+
+    const data = await response.json();
+    const items = Array.isArray(data?.items) ? data.items : [];
+
+    return items
+        .map((item) => ({
+            url: cleanText(item.link),
+            title: cleanText(item.title, "Google image").slice(0, 160),
+            source: "Google Programmable Search",
+            license: "Check source rights",
+            creator: cleanText(item.displayLink, "Google"),
+            landingUrl: cleanText(item.image?.contextLink || item.link),
+        }))
+        .filter((item) => isPublicImageUrl(item.url))
+        .slice(0, limit);
+};
+
+const searchDuckDuckGoImages = async (searchText, limit = 8) => {
+    const query = buildImageSearchQuery(searchText) || "kitchenware product photo";
+    const homeUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`;
+    const homeResponse = await fetch(homeUrl, {
+        headers: {
+            "User-Agent": "Mozilla/5.0 DPWOOD Image Search",
+            Accept: "text/html,application/xhtml+xml",
+        },
+    });
+
+    if (!homeResponse.ok) throw new Error(`DuckDuckGo image token failed: ${homeResponse.status}`);
+
+    const html = await homeResponse.text();
+    const vqd = html.match(/vqd=['"]?([^'"&]+)['"]?/)?.[1];
+    if (!vqd) return [];
+
+    const params = new URLSearchParams({
+        l: "us-en",
+        o: "json",
+        q: query,
+        vqd,
+        f: ",,,,",
+        p: "1",
+    });
+    const response = await fetch(`https://duckduckgo.com/i.js?${params.toString()}`, {
+        headers: {
+            "User-Agent": "Mozilla/5.0 DPWOOD Image Search",
+            Accept: "application/json",
+            Referer: homeUrl,
+        },
+    });
+
+    if (!response.ok) throw new Error(`DuckDuckGo image search failed: ${response.status}`);
+
+    const data = await response.json();
+    const results = Array.isArray(data?.results) ? data.results : [];
+
+    return results
+        .map((item) => ({
+            url: cleanText(item.image),
+            title: cleanText(item.title, "Web image").slice(0, 160),
+            source: "DuckDuckGo Images",
+            license: "Check source rights",
+            creator: cleanText(item.source, "Web"),
+            landingUrl: cleanText(item.url),
+        }))
+        .filter((item) => isPublicImageUrl(item.url) && item.url.length < 1500)
+        .slice(0, limit);
+};
+
+const isReachableImageUrl = async (url) => {
+    try {
+        const response = await fetch(url, {
+            redirect: "follow",
+            signal: AbortSignal.timeout(6000),
+            headers: {
+                "User-Agent": "Mozilla/5.0 DPWOOD Image Check",
+                Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            },
+        });
+        if (!response.ok) return false;
+        const contentType = response.headers.get("content-type") || "";
+        return contentType.startsWith("image/");
+    } catch (_) {
+        return false;
+    }
+};
+
+const filterReachableImageUrls = async (urls, limit) => {
+    const checks = await Promise.allSettled(urls.map((url) => isReachableImageUrl(url)));
+    return urls.filter((url, index) => checks[index]?.status === "fulfilled" && checks[index].value).slice(0, limit);
 };
 
 const searchWikipediaReferences = async (searchText, limit = 3) => {
@@ -197,42 +381,60 @@ const searchWikipediaReferences = async (searchText, limit = 3) => {
     }));
 };
 
-const getFreeResourceContext = async (searchText, imageLimit = 6, sourceMode = "safe") => {
+const getFreeResourceContext = async (searchText, imageLimit = 6) => {
     const [imagesResult, referencesResult] = await Promise.allSettled([
-        searchOpenverseImages(searchText, imageLimit, sourceMode),
+        searchOpenverseImages(searchText, imageLimit),
         searchWikipediaReferences(searchText, 3),
     ]);
+    const webImageResults = await Promise.allSettled([
+        searchDuckDuckGoImages(searchText, imageLimit),
+        searchGoogleImages(searchText, imageLimit),
+        searchPexelsImages(searchText, imageLimit),
+    ]);
+    const duckDuckGoImages = webImageResults[0]?.status === "fulfilled" ? webImageResults[0].value : [];
+    const googleImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
+    const pexelsImages = webImageResults[2]?.status === "fulfilled" ? webImageResults[2].value : [];
+    const openverseImages = imagesResult.status === "fulfilled" ? imagesResult.value : [];
 
     return {
-        images: imagesResult.status === "fulfilled" ? imagesResult.value : [],
+        images: [...duckDuckGoImages, ...googleImages, ...pexelsImages, ...openverseImages],
         references: referencesResult.status === "fulfilled" ? referencesResult.value : [],
     };
 };
 
-const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = true, sourceMode = "safe") => {
+const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = true, options = {}) => {
+    const usedUrls = options.usedUrls || new Set();
+    const offset = Number(options.offset || 0);
     const freeResources = useFreeResources
-        ? await getFreeResourceContext(searchText, limit, sourceMode)
+        ? await getFreeResourceContext(searchText, limit)
         : { images: [], references: [] };
     const catalogImages = await getImageCandidatesFromCatalog(searchText, limit);
-    const fallbackImages = sourceMode === "broad" ? buildFallbackImageUrls(searchText, limit) : [];
+    const fallbackImages = buildFallbackImageUrls(searchText, limit, offset);
     const urls = [];
 
     for (const image of freeResources.images) {
-        if (!urls.includes(image.url)) urls.push(image.url);
+        if (!urls.includes(image.url) && !usedUrls.has(image.url)) urls.push(image.url);
         if (urls.length >= limit) break;
     }
 
     for (const url of catalogImages) {
-        if (!urls.includes(url)) urls.push(url);
+        if (!urls.includes(url) && !usedUrls.has(url)) urls.push(url);
         if (urls.length >= limit) break;
     }
 
     for (const url of fallbackImages) {
-        if (!urls.includes(url)) urls.push(url);
+        if (!urls.includes(url) && !usedUrls.has(url)) urls.push(url);
         if (urls.length >= limit) break;
     }
 
-    return { urls, resources: freeResources };
+    let reachableUrls = await filterReachableImageUrls(urls, limit);
+
+    if (!reachableUrls.length) {
+        const fallbackUrls = buildFallbackImageUrls(searchText, limit, offset + 100);
+        reachableUrls = await filterReachableImageUrls(fallbackUrls, limit);
+    }
+
+    return { urls: reachableUrls, resources: freeResources };
 };
 
 const getRequestBaseUrl = (req) => {
@@ -246,6 +448,39 @@ const buildImageProxyUrl = (req, url) => {
     if (!/^https?:\/\//i.test(cleaned)) return "";
     if (cleaned.includes("/api/ai/image-proxy?url=")) return cleaned;
     return `${getRequestBaseUrl(req)}/api/ai/image-proxy?url=${encodeURIComponent(cleaned)}`;
+};
+
+const unwrapImageProxyUrl = (url) => {
+    const cleaned = cleanText(url);
+    if (!cleaned.includes("/api/ai/image-proxy?url=")) return cleaned;
+
+    try {
+        const parsed = new URL(cleaned);
+        return cleanText(parsed.searchParams.get("url"), cleaned);
+    } catch (_) {
+        const match = cleaned.match(/[?&]url=([^&]+)/);
+        return match ? cleanText(decodeURIComponent(match[1]), cleaned) : cleaned;
+    }
+};
+
+const normalizeProductImagesForStorage = (product) => {
+    const images = Array.isArray(product.images)
+        ? product.images.map((url) => unwrapImageProxyUrl(url)).filter((url) => /^https?:\/\//i.test(url))
+        : [];
+    const imageUrl = unwrapImageProxyUrl(product.imageUrl || images[0] || "");
+    const variants = Array.isArray(product.variants)
+        ? product.variants.map((variant) => ({
+              ...variant,
+              imageUrl: unwrapImageProxyUrl(variant.imageUrl),
+          }))
+        : [];
+
+    return {
+        ...product,
+        imageUrl,
+        images,
+        variants,
+    };
 };
 
 const proxifyProductImages = (req, product) => {
@@ -433,6 +668,101 @@ const sanitizeProductBatchDrafts = (value, imageCandidates = []) => {
     return drafts.map((draft, index) => sanitizeProductDraft(draft, imageCandidates.slice(index, index + 4)));
 };
 
+const buildFallbackProductDrafts = (prompt, count = 10) => {
+    const normalizedPrompt = normalizeSearchText(prompt);
+    return Array.from({ length: count }, (_, index) => {
+        const template = FALLBACK_PRODUCT_TEMPLATES[index % FALLBACK_PRODUCT_TEMPLATES.length];
+        const suffix = index >= FALLBACK_PRODUCT_TEMPLATES.length ? ` ${Math.floor(index / FALLBACK_PRODUCT_TEMPLATES.length) + 1}` : "";
+        const color = index % 3 === 0 ? "Trắng" : index % 3 === 1 ? "Đen" : "Hồng pastel";
+        const size = index % 2 === 0 ? "Tiêu chuẩn" : "Cỡ lớn";
+        const price = Math.round((template.price + index * 17000) / 1000) * 1000;
+        const stock = Math.max(30, template.stock - index * 3);
+
+        return {
+            name: `${template.name}${suffix} DPWOOD`,
+            description: `Sản phẩm ${template.name.toLowerCase()} phù hợp cho gian bếp gia đình. ${prompt ? `Gợi ý từ yêu cầu: ${prompt}.` : ""} Thiết kế thực dụng, dễ vệ sinh và dùng hằng ngày.`,
+            price,
+            stock,
+            images: [],
+            category: normalizedPrompt.includes("bat dia") || normalizedPrompt.includes("chen") ? "tableware" : template.category,
+            material: template.material,
+            color,
+            brand: "DPWOOD Kitchen",
+            capacity: size,
+            warranty: "12 tháng",
+            origin: "Việt Nam",
+            dishwasherSafe: ["tableware", "storage"].includes(template.category),
+            microwaveSafe: template.category === "tableware" || template.category === "storage",
+            variants: [
+                { color, size: "Tiêu chuẩn", price, stock: Math.floor(stock / 2), imageUrl: "" },
+                { color: color === "Trắng" ? "Đen" : "Trắng", size, price: price + 30000, stock: Math.ceil(stock / 2), imageUrl: "" },
+            ],
+        };
+    });
+};
+
+const translateImageAttribute = (value) => {
+    const normalized = normalizeSearchText(value);
+    if (!normalized) return "";
+
+    const dictionary = [
+        { pattern: /ma vang|vang|gold/i, value: "gold" },
+        { pattern: /hong|pink/i, value: "pink" },
+        { pattern: /den|black/i, value: "black" },
+        { pattern: /trang|white/i, value: "white" },
+        { pattern: /bac|silver/i, value: "silver" },
+        { pattern: /inox|stainless/i, value: "stainless steel" },
+        { pattern: /go|wood|tre|bamboo/i, value: "wooden" },
+        { pattern: /su|ceramic|porcelain/i, value: "ceramic" },
+        { pattern: /thuy tinh|glass/i, value: "glass" },
+        { pattern: /silicone/i, value: "silicone" },
+        { pattern: /nhua|plastic/i, value: "plastic" },
+        { pattern: /da|stone/i, value: "stone coating" },
+    ];
+    const matches = dictionary.filter((item) => item.pattern.test(normalized)).map((item) => item.value);
+    return [...new Set(matches)].join(" ");
+};
+
+const buildProductImageSearchText = (product, basePrompt = "") => {
+    const normalizedName = normalizeSearchText(product.name);
+    const matched = PRODUCT_IMAGE_KEYWORDS.find((item) => item.pattern.test(normalizedName));
+    const categoryKeyword = CATEGORY_IMAGE_KEYWORDS[product.category] || "kitchenware product";
+    const materialKeyword = translateImageAttribute(product.material);
+    const colorKeyword = translateImageAttribute(product.color);
+    const capacityKeyword = normalizeSearchText(product.capacity).replace(/\b(tieu chuan|co lon|bo|mon|dung tich)\b/g, "").trim();
+
+    return [
+        matched?.keyword,
+        categoryKeyword,
+        materialKeyword,
+        colorKeyword,
+        capacityKeyword,
+        "product photo",
+    ]
+        .filter(Boolean)
+        .join(" ");
+};
+
+const enrichProductDraftImages = async (req, drafts, basePrompt, useFreeResources) => {
+    const enriched = [];
+    const usedUrls = new Set();
+
+    for (const [index, draft] of drafts.entries()) {
+        const searchText = buildProductImageSearchText(draft, basePrompt);
+        const imageResult = await mergeImageCandidates(searchText, 5, useFreeResources, {
+            usedUrls,
+            offset: index,
+        });
+        const productWithImages = sanitizeProductDraft(draft, imageResult.urls);
+        for (const url of productWithImages.images || []) {
+            usedUrls.add(url);
+        }
+        enriched.push(proxifyProductImages(req, productWithImages));
+    }
+
+    return enriched;
+};
+
 const createBlogDraft = async (req, res) => {
     try {
         const prompt = ensurePrompt(req.body.prompt);
@@ -571,7 +901,6 @@ const createProductDraft = async (req, res) => {
     try {
         const prompt = ensurePrompt(req.body.prompt);
         const useFreeResources = req.body.useFreeResources !== false;
-        const imageSourceMode = cleanText(req.body.imageSourceMode, "safe") === "broad" ? "broad" : "safe";
 
         const draft = await generateJson({
             systemInstruction:
@@ -606,24 +935,15 @@ Khong chen markdown, khong giai thich ngoai JSON.
             `,
         });
 
+        const sanitizedDraft = sanitizeProductDraft(draft);
         const imageResult = await mergeImageCandidates(
-            [
-                prompt,
-                draft.name,
-                draft.description,
-                draft.category,
-                draft.material,
-                draft.color,
-                draft.brand,
-                draft.capacity,
-            ].join(" "),
-            4,
+            buildProductImageSearchText(sanitizedDraft, prompt),
+            5,
             useFreeResources,
-            imageSourceMode,
         );
 
         res.status(200).json({
-            draft: proxifyProductImages(req, sanitizeProductDraft(draft, imageResult.urls)),
+            draft: proxifyProductImages(req, sanitizeProductDraft(sanitizedDraft, imageResult.urls)),
             resources: imageResult.resources,
         });
     } catch (error) {
@@ -637,13 +957,16 @@ const createProductBatch = async (req, res) => {
         const prompt = ensurePrompt(req.body.prompt);
         const count = clampNumber(req.body.count, 1, 50, 10);
         const useFreeResources = req.body.useFreeResources !== false;
-        const imageSourceMode = cleanText(req.body.imageSourceMode, "safe") === "broad" ? "broad" : "safe";
         const createMode = cleanText(req.body.createMode, "review") === "auto" ? "auto" : "review";
 
-        const draftResponse = await generateJson({
-            systemInstruction:
-                "You are an ecommerce merchandising operations assistant for DPWOOD, a Vietnamese kitchenware store. Return only valid JSON. Write natural Vietnamese UTF-8. Use realistic VND prices and inventory.",
-            prompt: `
+        let draftResponse;
+        let usedLocalFallback = false;
+
+        try {
+            draftResponse = await generateJson({
+                systemInstruction:
+                    "You are an ecommerce merchandising operations assistant for DPWOOD, a Vietnamese kitchenware store. Return only valid JSON. Write natural Vietnamese UTF-8. Use realistic VND prices and inventory.",
+                prompt: `
 Tao ${count} san pham do gia dung nha bep cho DPWOOD.
 Yeu cau cua admin: ${prompt}
 
@@ -678,19 +1001,16 @@ Tra ve JSON dung dang:
 }
 Khong giai thich ngoai JSON.
             `,
-            temperature: 0.72,
-        });
+                temperature: 0.72,
+            });
+        } catch (error) {
+            if (!error.isQuotaExceeded) throw error;
+            usedLocalFallback = true;
+            draftResponse = { products: buildFallbackProductDrafts(prompt, count) };
+        }
 
-        const imageResult = await mergeImageCandidates(
-            prompt,
-            Math.min(count * 4, 40),
-            useFreeResources,
-            imageSourceMode,
-        );
-        const drafts = proxifyProductListImages(
-            req,
-            sanitizeProductBatchDrafts(draftResponse, imageResult.urls).slice(0, count),
-        );
+        const rawDrafts = sanitizeProductBatchDrafts(draftResponse).slice(0, count);
+        const drafts = await enrichProductDraftImages(req, rawDrafts, prompt, useFreeResources);
 
         if (!drafts.length) {
             const error = new Error("AI chua tao duoc danh sach san pham hop le");
@@ -700,20 +1020,26 @@ Khong giai thich ngoai JSON.
 
         if (createMode === "review") {
             return res.status(200).json({
-                message: `AI da tao ${drafts.length} ban nhap san pham de duyet.`,
+                message: usedLocalFallback
+                    ? `Gemini dang het quota, he thong da tao ${drafts.length} ban nhap noi bo de duyet.`
+                    : `AI da tao ${drafts.length} ban nhap san pham de duyet.`,
                 products: drafts,
                 created: false,
-                resources: imageResult.resources,
+                fallback: usedLocalFallback,
+                resources: { images: [], references: [] },
             });
         }
 
-        const createdProducts = await Product.bulkCreate(drafts);
+        const createdProducts = await Product.bulkCreate(drafts.map(normalizeProductImagesForStorage));
 
         res.status(201).json({
-            message: `AI da tao ${createdProducts.length} san pham moi.`,
+            message: usedLocalFallback
+                ? `Gemini dang het quota, he thong da tao ${createdProducts.length} san pham noi bo.`
+                : `AI da tao ${createdProducts.length} san pham moi.`,
             products: createdProducts,
             created: true,
-            resources: imageResult.resources,
+            fallback: usedLocalFallback,
+            resources: { images: [], references: [] },
         });
     } catch (error) {
         console.error("createProductBatch error:", error.message);
@@ -726,7 +1052,9 @@ Khong giai thich ngoai JSON.
 const saveProductBatchDrafts = async (req, res) => {
     try {
         const products = Array.isArray(req.body.products) ? req.body.products : [];
-        const drafts = products.map((product) => sanitizeProductDraft(product)).filter((product) => product.name && product.price);
+        const drafts = products
+            .map((product) => normalizeProductImagesForStorage(sanitizeProductDraft(product)))
+            .filter((product) => product.name && product.price);
 
         if (!drafts.length) {
             const error = new Error("Khong co san pham hop le de luu");
