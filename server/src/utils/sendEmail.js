@@ -1,16 +1,21 @@
 const nodemailer = require("nodemailer");
 const dns = require("dns").promises;
 
+const normalizeValue = (value) => String(value || "").trim();
 const normalizeHost = (value) => String(value || "smtp.gmail.com").trim().toLowerCase();
 const normalizePort = (value) => {
     const port = Number(String(value || 587).trim());
     return Number.isFinite(port) ? port : 587;
 };
-const normalizeUser = (value) => String(value || "").trim();
+const normalizeUser = normalizeValue;
 const normalizePass = (value, host) => {
     const pass = String(value || "").trim();
     return host === "smtp.gmail.com" ? pass.replace(/\s+/g, "") : pass;
 };
+const hasHtml = (content) => /<[a-z][\s\S]*>/i.test(content);
+const getDefaultFrom = (fallbackUser = "") =>
+    normalizeValue(process.env.EMAIL_FROM || process.env.RESEND_FROM || process.env.SMTP_FROM) ||
+    `"DPWOOD Store" <${fallbackUser || "onboarding@resend.dev"}>`;
 
 const getSmtpConfig = () => {
     const host = normalizeHost(process.env.SMTP_HOST);
@@ -86,11 +91,55 @@ const getSafeSmtpError = (error) => {
     return `${code}${error.message || "unknown SMTP error"}`.slice(0, 240);
 };
 
-const sendEmail = async (to, subject, content) => {
+const getSafeHttpError = (payload) => {
+    if (!payload) return "unknown provider error";
+    if (typeof payload === "string") return payload.slice(0, 240);
+    return (payload.message || payload.error || JSON.stringify(payload)).slice(0, 240);
+};
+
+const sendWithResend = async (to, subject, content) => {
+    const apiKey = normalizeValue(process.env.RESEND_API_KEY);
+    if (!apiKey) return false;
+
+    const isHtml = hasHtml(content);
+    const payload = {
+        from: getDefaultFrom(),
+        to: [to],
+        subject,
+        ...(isHtml ? { html: content } : { text: content }),
+    };
+
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "User-Agent": "DPWOOD/1.0",
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    let responseBody = responseText;
+    try {
+        responseBody = responseText ? JSON.parse(responseText) : {};
+    } catch (_) {
+        // Keep raw text for logging.
+    }
+
+    if (!response.ok) {
+        throw new Error(`Resend ${response.status}: ${getSafeHttpError(responseBody)}`);
+    }
+
+    console.log(`Email sent to ${to} via Resend | ID: ${responseBody.id || "unknown"}`);
+    return true;
+};
+
+const sendWithSmtp = async (to, subject, content) => {
     const smtpConfig = getSmtpConfig();
-    const isHtml = /<[a-z][\s\S]*>/i.test(content);
+    const isHtml = hasHtml(content);
     const mailOptions = {
-        from: process.env.SMTP_FROM || `"DPWOOD Store" <${smtpConfig.auth.user}>`,
+        from: getDefaultFrom(smtpConfig.auth.user),
         to,
         subject,
         ...(isHtml ? { html: content } : { text: content }),
@@ -116,6 +165,19 @@ const sendEmail = async (to, subject, content) => {
     }
 
     throw new Error(`Khong the gui email qua SMTP. Loi gan nhat: ${getSafeSmtpError(lastError || {})}`);
+};
+
+const sendEmail = async (to, subject, content) => {
+    if (normalizeValue(process.env.RESEND_API_KEY)) {
+        try {
+            return await sendWithResend(to, subject, content);
+        } catch (error) {
+            console.error(`Email send failed via Resend: ${getSafeHttpError(error.message)}`);
+            throw new Error(`Khong the gui email qua Resend. Loi: ${getSafeHttpError(error.message)}`);
+        }
+    }
+
+    return sendWithSmtp(to, subject, content);
 };
 
 module.exports = sendEmail;
