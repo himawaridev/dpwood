@@ -13,6 +13,7 @@ const AuditLog = require("../models/auditLog");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const VERIFICATION_EMAIL_COOLDOWN_MS = 60 * 1000;
+const verificationEmailJobs = new Map();
 const getFrontendUrl = (req) => {
     const configuredUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
     if (configuredUrl) return configuredUrl.split(",")[0].trim().replace(/\/$/, "");
@@ -34,7 +35,21 @@ const getVerificationRetryAfter = (user) => {
     return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
 };
 
+const deliverVerificationEmail = async ({ frontendUrl, userId, email, displayName, token }) => {
+    const verifyLink = `${frontendUrl}/verify/${token}`;
+    const emailContent = buildVerificationEmail(displayName || email, verifyLink);
+    await sendEmail(email, "[DPWOOD] Xac minh tai khoan", emailContent);
+    console.log(`Verification email queued job completed for user ${userId}`);
+};
+
 const sendVerificationEmail = async (req, user, options = {}) => {
+    if (verificationEmailJobs.has(user.id)) {
+        const error = new Error("Email xac minh dang duoc gui. Vui long doi 60 giay truoc khi gui lai.");
+        error.statusCode = 429;
+        error.retryAfter = 60;
+        throw error;
+    }
+
     const retryAfter = options.enforceCooldown ? getVerificationRetryAfter(user) : 0;
     if (retryAfter > 0) {
         const error = new Error(`Vui long doi ${retryAfter} giay de gui lai email xac minh.`);
@@ -46,14 +61,24 @@ const sendVerificationEmail = async (req, user, options = {}) => {
     if (!user.emailVerifyToken) {
         user.emailVerifyToken = crypto.randomBytes(32).toString("hex");
     }
-    await user.save();
-
-    const verifyLink = `${getFrontendUrl(req)}/verify/${user.emailVerifyToken}`;
-    const emailContent = buildVerificationEmail(user.name || user.username || user.email, verifyLink);
-    await sendEmail(user.email, "[DPWOOD] Xac minh tai khoan", emailContent);
-
     user.emailVerifySentAt = new Date();
     await user.save();
+
+    const jobPayload = {
+        frontendUrl: getFrontendUrl(req),
+        userId: user.id,
+        email: user.email,
+        displayName: user.name || user.username || user.email,
+        token: user.emailVerifyToken,
+    };
+
+    const job = deliverVerificationEmail(jobPayload).catch((error) => {
+        console.error(`Verification email job failed for user ${user.id}:`, error.message);
+    }).finally(() => {
+        verificationEmailJobs.delete(user.id);
+    });
+
+    verificationEmailJobs.set(user.id, job);
 };
 
 // --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL XÁC THỰC TÀI KHOẢN ---
