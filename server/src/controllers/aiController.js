@@ -28,8 +28,10 @@ const CATEGORY_IMAGE_KEYWORDS = {
 };
 
 const PRODUCT_IMAGE_KEYWORDS = [
-    { pattern: /noi|pot|cooker|ap suat/i, keyword: "stainless steel cooking pot kitchen" },
     { pattern: /noi chien|air fryer/i, keyword: "air fryer kitchen appliance" },
+    { pattern: /may xay sinh to|may xay|blender/i, keyword: "kitchen blender smoothie maker appliance" },
+    { pattern: /noi com|rice cooker/i, keyword: "rice cooker kitchen appliance" },
+    { pattern: /noi|pot|cooker|ap suat/i, keyword: "stainless steel cooking pot kitchen" },
     { pattern: /chao|pan|non stick|chong dinh/i, keyword: "non stick frying pan kitchen" },
     { pattern: /bat|dia|chen|bowl|plate/i, keyword: "ceramic bowls plates dinnerware" },
     { pattern: /thia|dia inox|dua|muong|fork|spoon|cutlery|flatware/i, keyword: "stainless steel cutlery set kitchen" },
@@ -38,11 +40,24 @@ const PRODUCT_IMAGE_KEYWORDS = [
     { pattern: /khay|tray/i, keyword: "serving tray kitchen" },
     { pattern: /hop|container|bao quan/i, keyword: "glass food storage container" },
     { pattern: /binh dun|kettle/i, keyword: "electric kettle kitchen appliance" },
-    { pattern: /may xay|blender/i, keyword: "small kitchen blender appliance" },
     { pattern: /ke chen|dish rack/i, keyword: "stainless steel dish rack kitchen" },
     { pattern: /co rua|brush|sponge/i, keyword: "dishwashing brush kitchen cleaning" },
     { pattern: /ly|cup|glass/i, keyword: "drinking glass cups kitchen" },
     { pattern: /lo gia vi|spice/i, keyword: "glass spice jar kitchen" },
+];
+const BLOG_IMAGE_KEYWORDS = [
+    { pattern: /may hut mui|hut mui|hood/i, keyword: "modern kitchen range hood" },
+    { pattern: /may rua bat|dishwasher/i, keyword: "dishwasher in modern kitchen" },
+    { pattern: /noi chien|air fryer/i, keyword: "air fryer on kitchen counter" },
+    { pattern: /may xay sinh to|may xay|blender|smoothie/i, keyword: "kitchen blender smoothie maker on counter" },
+    { pattern: /noi com|rice cooker/i, keyword: "rice cooker in modern kitchen" },
+    { pattern: /noi inox|noi ap suat|cookware|noi|chao/i, keyword: "cookware set in modern kitchen" },
+    { pattern: /bat dia|chen dia|tableware|dinnerware/i, keyword: "ceramic dinnerware table setting" },
+    { pattern: /dao|thot|utensils|dung cu bep/i, keyword: "kitchen utensils cutting board" },
+    { pattern: /hop bao quan|storage|bao quan/i, keyword: "glass food storage containers kitchen" },
+    { pattern: /ve sinh|cleaning|khu mui/i, keyword: "clean organized kitchen counter" },
+    { pattern: /go|noi that|ban an|tu bep/i, keyword: "wooden kitchen dining interior" },
+    { pattern: /meo|kinh nghiem|huong dan|cach chon/i, keyword: "bright modern kitchen lifestyle" },
 ];
 
 const clampNumber = (value, min, max, fallback) => {
@@ -597,9 +612,7 @@ const isSensitiveSupportTicket = (ticket, messages = []) => {
 };
 
 const sanitizeBlogDraft = (draft, imageCandidates = []) => {
-    const thumbnail = /^https?:\/\//i.test(cleanText(draft.thumbnail))
-        ? cleanText(draft.thumbnail)
-        : imageCandidates[0] || "";
+    const thumbnail = imageCandidates[0] || (/^https?:\/\//i.test(cleanText(draft.thumbnail)) ? cleanText(draft.thumbnail) : "");
 
     return {
         title: cleanText(draft.title, "Bai viet moi tu DPWOOD").slice(0, 180),
@@ -723,9 +736,56 @@ const translateImageAttribute = (value) => {
     return [...new Set(matches)].join(" ");
 };
 
+const findImageKeyword = (rules, primaryText, secondaryText = "") => {
+    const primary = normalizeSearchText(primaryText);
+    const secondary = normalizeSearchText(secondaryText);
+    return (
+        rules.find((item) => item.pattern.test(primary)) ||
+        rules.find((item) => item.pattern.test(secondary)) ||
+        null
+    );
+};
+
+const buildBlogImageSearchText = (blog, basePrompt = "") => {
+    const primaryText = [blog.title, blog.metaTitle].join(" ");
+    const secondaryText = [blog.summary, blog.metaDescription, blog.metaKeywords, basePrompt].join(" ");
+    const matched = findImageKeyword(BLOG_IMAGE_KEYWORDS, primaryText, secondaryText);
+    const text = [primaryText, secondaryText].join(" ");
+    const materialKeyword = translateImageAttribute(text);
+
+    return [
+        matched?.keyword || "modern kitchen lifestyle",
+        materialKeyword,
+        "high quality editorial photo",
+    ]
+        .filter(Boolean)
+        .join(" ");
+};
+
+const enrichBlogDraftImages = async (drafts, basePrompt, useFreeResources) => {
+    const enriched = [];
+    const usedUrls = new Set();
+
+    for (const [index, draft] of drafts.entries()) {
+        const searchText = buildBlogImageSearchText(draft, basePrompt);
+        const imageResult = await mergeImageCandidates(searchText, 3, useFreeResources, {
+            usedUrls,
+            offset: index,
+        });
+        const blogWithImage = sanitizeBlogDraft(draft, imageResult.urls);
+        if (blogWithImage.thumbnail) usedUrls.add(blogWithImage.thumbnail);
+        enriched.push(blogWithImage);
+    }
+
+    return enriched;
+};
+
 const buildProductImageSearchText = (product, basePrompt = "") => {
-    const normalizedName = normalizeSearchText(product.name);
-    const matched = PRODUCT_IMAGE_KEYWORDS.find((item) => item.pattern.test(normalizedName));
+    const matched = findImageKeyword(
+        PRODUCT_IMAGE_KEYWORDS,
+        product.name,
+        [product.description, product.material, product.color, product.capacity, basePrompt].join(" "),
+    );
     const categoryKeyword = CATEGORY_IMAGE_KEYWORDS[product.category] || "kitchenware product";
     const materialKeyword = translateImageAttribute(product.material);
     const colorKeyword = translateImageAttribute(product.color);
@@ -795,7 +855,7 @@ Khong chen markdown, khong giai thich ngoai JSON.
         });
 
         const imageResult = await mergeImageCandidates(
-            [prompt, draft.title, draft.summary, draft.metaKeywords].join(" "),
+            buildBlogImageSearchText(draft, prompt),
             3,
             useFreeResources,
         );
@@ -856,8 +916,8 @@ Khong giai thich ngoai JSON.
             temperature: 0.75,
         });
 
-        const imageResult = await mergeImageCandidates(prompt, Math.min(count * 3, 24), useFreeResources);
-        const drafts = sanitizeBlogBatchDrafts(draftResponse, imageResult.urls).slice(0, count);
+        const rawDrafts = sanitizeBlogBatchDrafts(draftResponse).slice(0, count);
+        const drafts = await enrichBlogDraftImages(rawDrafts, prompt, useFreeResources);
 
         if (!drafts.length) {
             const error = new Error("AI chua tao duoc danh sach blog hop le");
@@ -887,7 +947,7 @@ Khong giai thich ngoai JSON.
             message: `AI da tao ${createdBlogs.length} blog ${publish ? "cong khai" : "ban nhap"}.`,
             blogs: createdBlogs,
             resources: {
-                images: imageResult.resources.images,
+                images: drafts.map((draft) => draft.thumbnail).filter(Boolean),
                 references: freeContext.references,
             },
         });

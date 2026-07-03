@@ -195,6 +195,13 @@ const startServer = async () => {
 
         try {
             const tableDesc = await queryInterface.describeTable("Blogs");
+            if (tableDesc.thumbnail && !String(tableDesc.thumbnail.type || "").toUpperCase().includes("TEXT")) {
+                await queryInterface.changeColumn("Blogs", "thumbnail", {
+                    type: DataTypes.TEXT,
+                    allowNull: true,
+                });
+                console.log("Changed Blogs.thumbnail to TEXT via QueryInterface");
+            }
             if (!tableDesc.comments) {
                 await queryInterface.addColumn("Blogs", "comments", { type: DataTypes.JSON, allowNull: true });
                 console.log("Added comments column to Blogs via QueryInterface");

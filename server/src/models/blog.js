@@ -19,7 +19,7 @@ const Blog = sequelize.define(
             allowNull: false,
         },
         thumbnail: {
-            type: DataTypes.STRING,
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         summary: {
