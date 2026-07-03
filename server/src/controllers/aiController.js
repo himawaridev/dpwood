@@ -536,6 +536,36 @@ const getFreeResourceContext = async (searchText, imageLimit = 6) => {
     };
 };
 
+const IMAGE_QUERY_STOPWORDS = new Set([
+    "product",
+    "photo",
+    "kitchen",
+    "set",
+    "cao",
+    "cap",
+    "dpwood",
+    "premium",
+    "style",
+]);
+
+const getImageQueryTokens = (searchText) =>
+    normalizeSearchText(searchText)
+        .split(" ")
+        .filter((token) => token.length >= 3 && !IMAGE_QUERY_STOPWORDS.has(token));
+
+const scoreImageCandidate = (image, searchText) => {
+    const tokens = getImageQueryTokens(searchText);
+    if (!tokens.length) return 1;
+    const haystack = normalizeSearchText([image.title, image.url, image.landingUrl, image.source].join(" "));
+    return tokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
+};
+
+const sortImagesByQueryRelevance = (images, searchText) =>
+    images
+        .map((image, index) => ({ image, index, score: scoreImageCandidate(image, searchText) }))
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map((item) => item.image);
+
 const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = true, options = {}) => {
     const usedUrls = options.usedUrls || new Set();
     const offset = Number(options.offset || 0);
@@ -558,7 +588,7 @@ const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = tr
         urls.push(cleaned);
     };
 
-    for (const image of freeResources.images) {
+    for (const image of sortImagesByQueryRelevance(freeResources.images, searchText)) {
         pushCandidate(image.url);
         if (urls.length >= limit) break;
     }
@@ -844,7 +874,6 @@ const sanitizeProductBatchDrafts = (value, imageCandidates = []) => {
 };
 
 const buildFallbackProductDrafts = (prompt, count = 10) => {
-    const normalizedPrompt = normalizeSearchText(prompt);
     return Array.from({ length: count }, (_, index) => {
         const template = FALLBACK_PRODUCT_TEMPLATES[index % FALLBACK_PRODUCT_TEMPLATES.length];
         const suffix = index >= FALLBACK_PRODUCT_TEMPLATES.length ? ` ${Math.floor(index / FALLBACK_PRODUCT_TEMPLATES.length) + 1}` : "";
@@ -859,7 +888,7 @@ const buildFallbackProductDrafts = (prompt, count = 10) => {
             price,
             stock,
             images: [],
-            category: normalizedPrompt.includes("bat dia") || normalizedPrompt.includes("chen") ? "tableware" : template.category,
+            category: template.category,
             material: template.material,
             color,
             brand: "DPWOOD Kitchen",
@@ -980,12 +1009,12 @@ const buildProductImageSearchTexts = (product, basePrompt = "") => {
     const exactProductQuery = buildProductExactImageQuery(product);
 
     return [
-        exactProductQuery,
         matched?.keyword,
         matched?.keyword ? `${matched.keyword} product photo` : "",
         [categoryKeyword, materialKeyword].filter(Boolean).join(" "),
         categoryKeyword,
         ...categoryFallbacks,
+        exactProductQuery,
         "kitchenware product photo",
     ].filter(Boolean);
 };
