@@ -11,6 +11,7 @@ router.post("/blog-draft", authMiddleware, roleMiddleware("admin", "root"), aiCo
 router.post("/blog-batch", authMiddleware, roleMiddleware("admin", "root"), aiController.createBlogBatch);
 router.post("/product-draft", authMiddleware, roleMiddleware("admin", "root"), aiController.createProductDraft);
 router.post("/product-batch", authMiddleware, roleMiddleware("admin", "root"), aiController.createProductBatch);
+router.post("/product-json-import", authMiddleware, roleMiddleware("admin", "root"), aiController.importProductJsonDrafts);
 router.post("/product-batch-save", authMiddleware, roleMiddleware("admin", "root"), aiController.saveProductBatchDrafts);
 router.post(
     "/support-auto-resolve",

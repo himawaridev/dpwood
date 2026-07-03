@@ -1439,6 +1439,50 @@ const saveProductBatchDrafts = async (req, res) => {
     }
 };
 
+const importProductJsonDrafts = async (req, res) => {
+    try {
+        const payloadProducts = Array.isArray(req.body)
+            ? req.body
+            : Array.isArray(req.body?.products)
+              ? req.body.products
+              : [];
+        const count = clampNumber(req.body?.limit || payloadProducts.length, 1, 100, payloadProducts.length || 1);
+        const rawDrafts = sanitizeProductBatchDrafts({ products: payloadProducts }).slice(0, count);
+
+        if (!rawDrafts.length) {
+            const error = new Error("File JSON khong co san pham hop le de import");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const draftsWithProvidedImages = rawDrafts.map((draft) => sanitizeProductDraft(draft));
+        const missingImageDrafts = draftsWithProvidedImages.filter((draft) => !getProductImages(draft).length);
+        const enrichedMissingDrafts = missingImageDrafts.length
+            ? await enrichProductDraftImages(
+                  req,
+                  missingImageDrafts,
+                  "imported kitchenware product catalog photo",
+                  req.body?.useFreeResources !== false,
+              )
+            : [];
+        const enrichedByName = new Map(enrichedMissingDrafts.map((draft) => [draft.name, draft]));
+        const drafts = draftsWithProvidedImages.map((draft) =>
+            enrichedByName.get(draft.name) || proxifyProductImages(req, draft),
+        );
+
+        res.status(200).json({
+            message: `Da nap ${drafts.length} san pham tu JSON de duyet.`,
+            products: drafts,
+            created: false,
+        });
+    } catch (error) {
+        console.error("importProductJsonDrafts error:", error.message);
+        res.status(error.statusCode || 500).json({
+            message: error.message || "Khong the import san pham tu JSON",
+        });
+    }
+};
+
 const proxyImage = async (req, res) => {
     try {
         const targetUrl = cleanText(req.query.url);
@@ -1671,6 +1715,7 @@ module.exports = {
     createBlogBatch,
     createProductDraft,
     createProductBatch,
+    importProductJsonDrafts,
     saveProductBatchDrafts,
     proxyImage,
     productImagePlaceholder,
