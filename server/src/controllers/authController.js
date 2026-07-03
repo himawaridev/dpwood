@@ -12,38 +12,89 @@ const { Op } = require("sequelize");
 const AuditLog = require("../models/auditLog");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const getFrontendUrl = () =>
-    (process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
+const getFrontendUrl = (req) => {
+    const configuredUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
+    if (configuredUrl) return configuredUrl.split(",")[0].trim().replace(/\/$/, "");
+
+    const origin = req.get("origin");
+    if (origin) return origin.replace(/\/$/, "");
+
+    const forwardedHost = req.get("x-forwarded-host");
+    const forwardedProto = req.get("x-forwarded-proto") || "https";
+    if (forwardedHost) return `${forwardedProto}://${forwardedHost}`.replace(/\/$/, "");
+
+    return "http://localhost:3000";
+};
+
+const sendVerificationEmail = async (req, user) => {
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+    user.emailVerifyToken = verifyToken;
+    await user.save();
+
+    const verifyLink = `${getFrontendUrl(req)}/verify/${verifyToken}`;
+    const emailContent = buildVerificationEmail(user.name || user.username || user.email, verifyLink);
+    await sendEmail(user.email, "[DPWOOD] Xac minh tai khoan", emailContent);
+};
 
 // --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL XÁC THỰC TÀI KHOẢN ---
 // =========================================================================
 
 const register = async (req, res) => {
     try {
-        const { name, username, email, phone, password } = req.body;
+        const name = String(req.body.name || "").trim();
+        const username = String(req.body.username || "").trim();
+        const email = String(req.body.email || "").trim().toLowerCase();
+        const phone = String(req.body.phone || "").trim();
+        const { password } = req.body;
 
         const exist = await User.findOne({
             where: { [Op.or]: [{ email }, { username }, { phone }] },
         });
         if (exist) {
+            if (exist.email === email && !exist.isVerified) {
+                await sendVerificationEmail(req, exist);
+                return res.status(200).json({
+                    message: "Tai khoan da ton tai nhung chua xac minh. DPWOOD da gui lai email xac minh.",
+                });
+            }
             return res.status(400).json({ message: "Email, username, or phone already exists" });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await User.create({ name, username, email, phone, password: hashedPassword });
 
-        const verifyToken = crypto.randomBytes(32).toString("hex");
-        user.emailVerifyToken = verifyToken;
-        await user.save();
+        await sendVerificationEmail(req, user);
 
         // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
-        const verifyLink = `${getFrontendUrl()}/verify/${verifyToken}`;
-        const emailContent = buildVerificationEmail(name, verifyLink);
-        await sendEmail(email, "[DPWOOD] Xac minh tai khoan", emailContent);
 
-        res.status(201).json({ message: "Register succes. Please check your email" });
+        res.status(201).json({ message: "Dang ky thanh cong. Vui long kiem tra email de xac minh tai khoan." });
     } catch (error) {
+        console.error("Register error:", error.message);
         res.status(500).json({ message: error.message });
+    }
+};
+
+const resendVerification = async (req, res) => {
+    try {
+        const login = String(req.body.email || req.body.login || "").trim().toLowerCase();
+        if (!login) {
+            return res.status(400).json({ message: "Vui long nhap email can gui lai xac minh." });
+        }
+
+        const user = await User.findOne({ where: { email: login } });
+        if (!user) {
+            return res.status(404).json({ message: "Khong tim thay tai khoan voi email nay." });
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ message: "Tai khoan nay da duoc xac minh." });
+        }
+
+        await sendVerificationEmail(req, user);
+        return res.json({ message: "DPWOOD da gui lai email xac minh. Vui long kiem tra hop thu." });
+    } catch (error) {
+        console.error("Resend verification error:", error.message);
+        return res.status(500).json({ message: error.message });
     }
 };
 
@@ -201,7 +252,7 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         // 🔴 Đã thay đổi: Truyền Template HTML thay vì link text
-        const resetLink = `${getFrontendUrl()}/reset/${resetToken}`;
+        const resetLink = `${getFrontendUrl(req)}/reset/${resetToken}`;
         const emailContent = buildResetPasswordEmail(resetLink);
 
         await sendEmail(email, "[DPWOOD] Dat lai mat khau", emailContent);
@@ -356,4 +407,14 @@ const googleLogin = async (req, res) => {
     }
 };
 
-module.exports = { register, login, refresh, forgotPassword, resetPassword, verifyEmail, logout, googleLogin };
+module.exports = {
+    register,
+    resendVerification,
+    login,
+    refresh,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+    logout,
+    googleLogin,
+};

@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
     register,
+    resendVerification,
     login,
     refresh,
     forgotPassword,
@@ -17,6 +18,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 // [PUBLIC] ROUTES - Không yêu cầu đăng nhập
 // ==========================================
 router.post("/register", register);
+router.post("/resend-verification", resendVerification);
 router.post("/login", login);
 router.post("/google", googleLogin);
 router.post("/refresh", refresh);
