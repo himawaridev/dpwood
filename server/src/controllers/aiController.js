@@ -878,17 +878,10 @@ const buildProductImageSearchText = (product, basePrompt = "") => {
         [product.description, product.material, product.color, product.capacity, basePrompt].join(" "),
     );
     const categoryKeyword = CATEGORY_IMAGE_KEYWORDS[product.category] || "kitchenware product";
-    const materialKeyword = translateImageAttribute(product.material);
-    const capacityKeyword = normalizeSearchText(product.capacity).replace(/\b(tieu chuan|co lon|bo|mon|dung tich)\b/g, "").trim();
 
-    return [
-        matched?.keyword,
-        matched?.keyword ? "" : categoryKeyword,
-        materialKeyword,
-        capacityKeyword,
-    ]
-        .filter(Boolean)
-        .join(" ");
+    // Keep web image queries short and object-focused. Long queries like
+    // "blender kitchen glass 1 5l" often return no free image results.
+    return matched?.keyword || categoryKeyword;
 };
 
 const enrichProductDraftImages = async (req, drafts, basePrompt, useFreeResources) => {
