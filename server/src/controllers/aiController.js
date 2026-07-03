@@ -26,6 +26,14 @@ const CATEGORY_IMAGE_KEYWORDS = {
     appliances: "kitchen appliance",
     cleaning: "dishwashing brush",
 };
+const CATEGORY_IMAGE_FALLBACKS = {
+    cookware: ["cookware set", "stainless steel cooking pot", "non stick frying pan"],
+    tableware: ["dinnerware set", "ceramic bowl plate", "wooden serving tray"],
+    utensils: ["kitchen utensils", "chef knife kitchen", "wooden cutting board", "wooden spoon"],
+    storage: ["food storage container", "glass food jar", "kitchen storage"],
+    appliances: ["small kitchen appliance", "electric kettle kitchen", "blender kitchen"],
+    cleaning: ["kitchen cleaning supplies", "dishwashing brush", "dish soap bottle"],
+};
 
 const PRODUCT_IMAGE_KEYWORDS = [
     { pattern: /noi chien|air fryer/i, keyword: "air fryer kitchen" },
@@ -77,7 +85,6 @@ const isGeneratedPlaceholderUrl = (url) => {
         cleaned.includes("/api/ai/product-image-placeholder") ||
         cleaned.includes("product-image-placeholder?") ||
         cleaned.includes("placehold.co/") ||
-        cleaned.includes("loremflickr.com/") ||
         cleaned.includes("picsum.photos/")
     );
 };
@@ -183,15 +190,10 @@ const buildImageSearchQuery = (searchText) =>
 
 const buildFallbackImageUrls = (searchText, limit = 4, offset = 0) => {
     const query = encodeURIComponent(buildImageSearchQuery(searchText) || "kitchenware");
-    const seed = normalizeSearchText(searchText) || "kitchenware";
     const urls = [];
 
     for (let index = 0; index < limit; index += 1) {
         urls.push(`https://loremflickr.com/900/900/${query},kitchenware?lock=${offset * 31 + index + 1}`);
-    }
-
-    for (let index = 0; urls.length < limit * 2; index += 1) {
-        urls.push(`https://picsum.photos/seed/${encodeURIComponent(`${seed}-${offset}-${index}`)}/900/900`);
     }
 
     return urls.slice(0, limit);
@@ -526,6 +528,25 @@ const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = tr
     }
 
     return { urls: reachableUrls, resources: freeResources };
+};
+
+const mergeImageCandidatesFromQueries = async (searchTexts, limit = 6, useFreeResources = true, options = {}) => {
+    const queries = [...new Set([].concat(searchTexts).map((item) => cleanText(item)).filter(Boolean))];
+    const resources = { images: [], references: [] };
+    let lastResult = { urls: [], resources };
+
+    for (const [index, query] of queries.entries()) {
+        const result = await mergeImageCandidates(query, limit, useFreeResources, {
+            ...options,
+            offset: Number(options.offset || 0) + index * 17,
+        });
+        resources.images.push(...(result.resources?.images || []));
+        resources.references.push(...(result.resources?.references || []));
+        lastResult = { ...result, resources };
+        if (result.urls.length) return lastResult;
+    }
+
+    return lastResult;
 };
 
 const getRequestBaseUrl = (req) => {
@@ -884,13 +905,32 @@ const buildProductImageSearchText = (product, basePrompt = "") => {
     return matched?.keyword || categoryKeyword;
 };
 
+const buildProductImageSearchTexts = (product, basePrompt = "") => {
+    const matched = findImageKeyword(
+        PRODUCT_IMAGE_KEYWORDS,
+        product.name,
+        [product.description, product.material, product.color, product.capacity, basePrompt].join(" "),
+    );
+    const categoryKeyword = CATEGORY_IMAGE_KEYWORDS[product.category] || "kitchenware product";
+    const categoryFallbacks = CATEGORY_IMAGE_FALLBACKS[product.category] || ["kitchenware product photo"];
+    const materialKeyword = translateImageAttribute(product.material);
+
+    return [
+        matched?.keyword,
+        [categoryKeyword, materialKeyword].filter(Boolean).join(" "),
+        categoryKeyword,
+        ...categoryFallbacks,
+        "kitchenware product photo",
+    ].filter(Boolean);
+};
+
 const enrichProductDraftImages = async (req, drafts, basePrompt, useFreeResources) => {
     const enriched = [];
     const usedUrls = new Set();
 
     for (const [index, draft] of drafts.entries()) {
-        const searchText = buildProductImageSearchText(draft, basePrompt);
-        const imageResult = await mergeImageCandidates(searchText, 5, useFreeResources, {
+        const searchTexts = buildProductImageSearchTexts(draft, basePrompt);
+        const imageResult = await mergeImageCandidatesFromQueries(searchTexts, 5, useFreeResources, {
             usedUrls,
             offset: index,
         });
@@ -1077,8 +1117,8 @@ Khong chen markdown, khong giai thich ngoai JSON.
         });
 
         const sanitizedDraft = sanitizeProductDraft(draft);
-        const imageResult = await mergeImageCandidates(
-            buildProductImageSearchText(sanitizedDraft, prompt),
+        const imageResult = await mergeImageCandidatesFromQueries(
+            buildProductImageSearchTexts(sanitizedDraft, prompt),
             5,
             useFreeResources,
         );
