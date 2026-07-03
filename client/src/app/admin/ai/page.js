@@ -89,6 +89,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
     const [createdBlogs, setCreatedBlogs] = useState([]);
     const [createdProducts, setCreatedProducts] = useState([]);
     const [pendingProducts, setPendingProducts] = useState([]);
+    const [brokenProductImages, setBrokenProductImages] = useState({});
     const [supportResult, setSupportResult] = useState(null);
 
     const stats = useMemo(
@@ -157,10 +158,12 @@ export function AdminAiCenterSection({ section = "blog" }) {
             if (response.data?.created === false || values.createMode === "review") {
                 setPendingProducts(products);
                 setCreatedProducts([]);
+                setBrokenProductImages({});
                 message.success(response.data?.message || `AI đã tạo ${products.length} bản nháp để duyệt.`);
             } else {
                 setCreatedProducts(products);
                 setPendingProducts([]);
+                setBrokenProductImages({});
                 message.success(response.data?.message || `AI đã tạo ${products.length} sản phẩm.`);
             }
         } catch (error) {
@@ -178,6 +181,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
             const products = response.data?.products || [];
             setCreatedProducts(products);
             setPendingProducts([]);
+            setBrokenProductImages({});
             message.success(response.data?.message || `Đã lưu ${products.length} sản phẩm.`);
         } catch (error) {
             message.error(error.response?.data?.message || "Không thể lưu danh sách sản phẩm đã duyệt");
@@ -185,6 +189,11 @@ export function AdminAiCenterSection({ section = "blog" }) {
             setProductLoading(false);
         }
     };
+
+    const getProductPlaceholder = (product) =>
+        `${api.defaults.baseURL}/ai/product-image-placeholder?name=${encodeURIComponent(
+            product?.name || "DPWOOD",
+        )}&category=${encodeURIComponent(product?.category || "kitchenware")}`;
 
     const handleAutoResolveSupport = async (values) => {
         try {
@@ -266,16 +275,24 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     <div className="dp-admin-ai-result-list">
                         {pendingProducts.map((product, index) => {
                             const previewImage = product.imageUrl || product.images?.[0];
+                            const imageKey = `${product.name}-${index}`;
+                            const imageSrc = brokenProductImages[imageKey] ? getProductPlaceholder(product) : previewImage;
                             return (
-                                <div className="dp-admin-ai-result-item" key={`${product.name}-${index}`}>
+                                <div className="dp-admin-ai-result-item" key={imageKey}>
                                     <Space align="start" size={12}>
-                                        {previewImage ? (
+                                        {imageSrc ? (
                                             <Image
-                                                src={previewImage}
+                                                src={imageSrc}
                                                 alt={product.name}
                                                 width={64}
                                                 height={64}
                                                 style={{ objectFit: "cover" }}
+                                                onError={() =>
+                                                    setBrokenProductImages((current) => ({
+                                                        ...current,
+                                                        [imageKey]: true,
+                                                    }))
+                                                }
                                             />
                                         ) : (
                                             <div className="dp-admin-ai-image-placeholder">No image</div>
@@ -289,8 +306,8 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                     </Space>
                                     <Space wrap>
                                         <Tag>{product.category || "kitchen"}</Tag>
-                                        <Tag color={previewImage ? "success" : "warning"}>
-                                            {previewImage ? "Có ảnh" : "Thiếu ảnh"}
+                                        <Tag color={imageSrc ? "success" : "warning"}>
+                                            {imageSrc ? "Có ảnh" : "Thiếu ảnh"}
                                         </Tag>
                                     </Space>
                                 </div>
@@ -609,7 +626,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                 <Form.Item name="imageSourceMode" label="Nguồn ảnh">
                                     <Select
                                         options={[
-                                            { value: "broad", label: "Mở rộng nguồn ảnh" },
+                                            { value: "broad", label: "Tự do tìm kiếm ảnh" },
                                             { value: "safe", label: "Chỉ nguồn mở an toàn" },
                                         ]}
                                     />

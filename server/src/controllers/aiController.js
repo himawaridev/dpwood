@@ -122,7 +122,7 @@ const buildFallbackImageUrls = (searchText, limit = 4) => {
     const urls = [];
 
     for (let index = 0; index < limit; index += 1) {
-        urls.push(`https://source.unsplash.com/900x900/?${query},kitchenware&sig=${index + 1}`);
+        urls.push(`https://loremflickr.com/900/900/${query},kitchenware?lock=${index + 1}`);
     }
 
     for (let index = 0; urls.length < limit * 2; index += 1) {
@@ -233,6 +233,48 @@ const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = tr
     }
 
     return { urls, resources: freeResources };
+};
+
+const getRequestBaseUrl = (req) => {
+    const forwardedProto = cleanText(req.headers["x-forwarded-proto"]);
+    const protocol = forwardedProto || req.protocol || "http";
+    return `${protocol}://${req.get("host")}`;
+};
+
+const buildImageProxyUrl = (req, url) => {
+    const cleaned = cleanText(url);
+    if (!/^https?:\/\//i.test(cleaned)) return "";
+    if (cleaned.includes("/api/ai/image-proxy?url=")) return cleaned;
+    return `${getRequestBaseUrl(req)}/api/ai/image-proxy?url=${encodeURIComponent(cleaned)}`;
+};
+
+const proxifyProductImages = (req, product) => {
+    const images = Array.isArray(product.images) ? product.images : [];
+    const proxiedImages = images.map((url) => buildImageProxyUrl(req, url)).filter(Boolean);
+    const placeholderUrl = buildProductPlaceholderUrl(req, product.name, product.category);
+    const variants = Array.isArray(product.variants)
+        ? product.variants.map((variant) => ({
+              ...variant,
+              imageUrl: buildImageProxyUrl(req, variant.imageUrl) || variant.imageUrl || placeholderUrl,
+          }))
+        : [];
+
+    return {
+        ...product,
+        imageUrl: buildImageProxyUrl(req, product.imageUrl) || proxiedImages[0] || placeholderUrl,
+        images: proxiedImages.length ? proxiedImages : [placeholderUrl],
+        variants,
+    };
+};
+
+const proxifyProductListImages = (req, products) => products.map((product) => proxifyProductImages(req, product));
+
+const buildProductPlaceholderUrl = (req, name, category = "kitchenware") => {
+    const params = new URLSearchParams({
+        name: cleanText(name, "DPWOOD"),
+        category: cleanText(category, "kitchenware"),
+    });
+    return `${getRequestBaseUrl(req)}/api/ai/product-image-placeholder?${params.toString()}`;
 };
 
 const buildReferencePrompt = (references = []) => {
@@ -361,7 +403,7 @@ const sanitizeProductDraft = (draft, imageCandidates = []) => {
     const aiImages = Array.isArray(draft.images)
         ? draft.images.map((item) => cleanText(item)).filter((item) => /^https?:\/\//i.test(item)).slice(0, 6)
         : [];
-    const images = aiImages.length ? aiImages : imageCandidates.slice(0, 4);
+    const images = imageCandidates.length ? imageCandidates.slice(0, 4) : aiImages;
 
     return {
         name: cleanText(draft.name, "San pham nha bep moi").slice(0, 180),
@@ -580,7 +622,10 @@ Khong chen markdown, khong giai thich ngoai JSON.
             imageSourceMode,
         );
 
-        res.status(200).json({ draft: sanitizeProductDraft(draft, imageResult.urls), resources: imageResult.resources });
+        res.status(200).json({
+            draft: proxifyProductImages(req, sanitizeProductDraft(draft, imageResult.urls)),
+            resources: imageResult.resources,
+        });
     } catch (error) {
         console.error("createProductDraft error:", error.message);
         res.status(error.statusCode || 500).json({ message: error.message || "Khong the tao nhap san pham bang AI" });
@@ -642,7 +687,10 @@ Khong giai thich ngoai JSON.
             useFreeResources,
             imageSourceMode,
         );
-        const drafts = sanitizeProductBatchDrafts(draftResponse, imageResult.urls).slice(0, count);
+        const drafts = proxifyProductListImages(
+            req,
+            sanitizeProductBatchDrafts(draftResponse, imageResult.urls).slice(0, count),
+        );
 
         if (!drafts.length) {
             const error = new Error("AI chua tao duoc danh sach san pham hop le");
@@ -698,6 +746,71 @@ const saveProductBatchDrafts = async (req, res) => {
             message: error.message || "Khong the luu danh sach san pham da duyet",
         });
     }
+};
+
+const proxyImage = async (req, res) => {
+    try {
+        const targetUrl = cleanText(req.query.url);
+        if (!/^https?:\/\//i.test(targetUrl)) {
+            return res.status(400).send("Invalid image URL");
+        }
+
+        const response = await fetch(targetUrl, {
+            redirect: "follow",
+            headers: {
+                "User-Agent": "Mozilla/5.0 DPWOOD Image Proxy",
+                Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            },
+        });
+
+        if (!response.ok) {
+            return res.status(502).send("Image source unavailable");
+        }
+
+        const contentType = response.headers.get("content-type") || "image/jpeg";
+        if (!contentType.startsWith("image/")) {
+            return res.status(415).send("URL is not an image");
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        res.status(200).send(buffer);
+    } catch (error) {
+        console.error("proxyImage error:", error.message);
+        res.status(500).send("Cannot load image");
+    }
+};
+
+const productImagePlaceholder = (req, res) => {
+    const name = cleanText(req.query.name, "DPWOOD").slice(0, 70);
+    const category = cleanText(req.query.category, "Kitchenware").slice(0, 36);
+    const initials = normalizeSearchText(name)
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((word) => word[0]?.toUpperCase())
+        .join("") || "DP";
+    const safeName = name.replace(/[<>&"]/g, "");
+    const safeCategory = category.replace(/[<>&"]/g, "");
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+  <rect width="900" height="900" fill="#f8f8f8"/>
+  <rect x="42" y="42" width="816" height="816" fill="#ffffff" stroke="#f09b90" stroke-width="6"/>
+  <circle cx="450" cy="330" r="138" fill="#f09b90" opacity="0.16"/>
+  <text x="450" y="368" text-anchor="middle" font-family="Arial, sans-serif" font-size="118" font-weight="800" fill="#f09b90">${initials}</text>
+  <text x="450" y="548" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="800" fill="#111111">DPWOOD</text>
+  <text x="450" y="614" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#777777">${safeCategory}</text>
+  <foreignObject x="110" y="660" width="680" height="120">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:32px;font-weight:700;color:#222;text-align:center;line-height:1.25;word-break:break-word;">${safeName}</div>
+  </foreignObject>
+</svg>`;
+
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    res.status(200).send(svg);
 };
 
 const createSupportChatReply = async (req, res) => {
@@ -868,6 +981,8 @@ module.exports = {
     createProductDraft,
     createProductBatch,
     saveProductBatchDrafts,
+    proxyImage,
+    productImagePlaceholder,
     createSupportChatReply,
     autoResolveSupportTickets,
 };
