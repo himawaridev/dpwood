@@ -109,13 +109,38 @@ const getImageCandidatesFromCatalog = async (searchText, limit = 4) => {
 
 const isPublicImageUrl = (url) => /^https?:\/\//i.test(cleanText(url));
 
-const searchOpenverseImages = async (searchText, limit = 6) => {
+const buildImageSearchQuery = (searchText) =>
+    cleanText(searchText, "kitchenware")
+        .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 180);
+
+const buildFallbackImageUrls = (searchText, limit = 4) => {
+    const query = encodeURIComponent(buildImageSearchQuery(searchText) || "kitchenware");
+    const seed = normalizeSearchText(searchText) || "kitchenware";
+    const urls = [];
+
+    for (let index = 0; index < limit; index += 1) {
+        urls.push(`https://source.unsplash.com/900x900/?${query},kitchenware&sig=${index + 1}`);
+    }
+
+    for (let index = 0; urls.length < limit * 2; index += 1) {
+        urls.push(`https://picsum.photos/seed/${encodeURIComponent(`${seed}-${index}`)}/900/900`);
+    }
+
+    return urls.slice(0, limit);
+};
+
+const searchOpenverseImages = async (searchText, limit = 6, sourceMode = "safe") => {
     const query = cleanText(searchText, "kitchenware").slice(0, 180);
     const params = new URLSearchParams({
         q: query,
-        license: "cc0,pdm",
         per_page: String(Math.min(Math.max(limit, 1), 20)),
     });
+    if (sourceMode !== "broad") {
+        params.set("license", "cc0,pdm");
+    }
 
     const response = await fetch(`https://api.openverse.org/v1/images/?${params.toString()}`, {
         headers: {
@@ -172,9 +197,9 @@ const searchWikipediaReferences = async (searchText, limit = 3) => {
     }));
 };
 
-const getFreeResourceContext = async (searchText, imageLimit = 6) => {
+const getFreeResourceContext = async (searchText, imageLimit = 6, sourceMode = "safe") => {
     const [imagesResult, referencesResult] = await Promise.allSettled([
-        searchOpenverseImages(searchText, imageLimit),
+        searchOpenverseImages(searchText, imageLimit, sourceMode),
         searchWikipediaReferences(searchText, 3),
     ]);
 
@@ -184,9 +209,12 @@ const getFreeResourceContext = async (searchText, imageLimit = 6) => {
     };
 };
 
-const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = true) => {
-    const freeResources = useFreeResources ? await getFreeResourceContext(searchText, limit) : { images: [], references: [] };
+const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = true, sourceMode = "safe") => {
+    const freeResources = useFreeResources
+        ? await getFreeResourceContext(searchText, limit, sourceMode)
+        : { images: [], references: [] };
     const catalogImages = await getImageCandidatesFromCatalog(searchText, limit);
+    const fallbackImages = sourceMode === "broad" ? buildFallbackImageUrls(searchText, limit) : [];
     const urls = [];
 
     for (const image of freeResources.images) {
@@ -195,6 +223,11 @@ const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = tr
     }
 
     for (const url of catalogImages) {
+        if (!urls.includes(url)) urls.push(url);
+        if (urls.length >= limit) break;
+    }
+
+    for (const url of fallbackImages) {
         if (!urls.includes(url)) urls.push(url);
         if (urls.length >= limit) break;
     }
@@ -496,6 +529,7 @@ const createProductDraft = async (req, res) => {
     try {
         const prompt = ensurePrompt(req.body.prompt);
         const useFreeResources = req.body.useFreeResources !== false;
+        const imageSourceMode = cleanText(req.body.imageSourceMode, "safe") === "broad" ? "broad" : "safe";
 
         const draft = await generateJson({
             systemInstruction:
@@ -543,6 +577,7 @@ Khong chen markdown, khong giai thich ngoai JSON.
             ].join(" "),
             4,
             useFreeResources,
+            imageSourceMode,
         );
 
         res.status(200).json({ draft: sanitizeProductDraft(draft, imageResult.urls), resources: imageResult.resources });
@@ -557,6 +592,8 @@ const createProductBatch = async (req, res) => {
         const prompt = ensurePrompt(req.body.prompt);
         const count = clampNumber(req.body.count, 1, 50, 10);
         const useFreeResources = req.body.useFreeResources !== false;
+        const imageSourceMode = cleanText(req.body.imageSourceMode, "safe") === "broad" ? "broad" : "safe";
+        const createMode = cleanText(req.body.createMode, "review") === "auto" ? "auto" : "review";
 
         const draftResponse = await generateJson({
             systemInstruction:
@@ -599,7 +636,12 @@ Khong giai thich ngoai JSON.
             temperature: 0.72,
         });
 
-        const imageResult = await mergeImageCandidates(prompt, Math.min(count * 4, 40), useFreeResources);
+        const imageResult = await mergeImageCandidates(
+            prompt,
+            Math.min(count * 4, 40),
+            useFreeResources,
+            imageSourceMode,
+        );
         const drafts = sanitizeProductBatchDrafts(draftResponse, imageResult.urls).slice(0, count);
 
         if (!drafts.length) {
@@ -608,21 +650,52 @@ Khong giai thich ngoai JSON.
             throw error;
         }
 
-        const createdProducts = [];
-        for (const draft of drafts) {
-            const product = await Product.create(draft);
-            createdProducts.push(product);
+        if (createMode === "review") {
+            return res.status(200).json({
+                message: `AI da tao ${drafts.length} ban nhap san pham de duyet.`,
+                products: drafts,
+                created: false,
+                resources: imageResult.resources,
+            });
         }
+
+        const createdProducts = await Product.bulkCreate(drafts);
 
         res.status(201).json({
             message: `AI da tao ${createdProducts.length} san pham moi.`,
             products: createdProducts,
+            created: true,
             resources: imageResult.resources,
         });
     } catch (error) {
         console.error("createProductBatch error:", error.message);
         res.status(error.statusCode || 500).json({
             message: error.message || "Khong the tao san pham hang loat bang AI",
+        });
+    }
+};
+
+const saveProductBatchDrafts = async (req, res) => {
+    try {
+        const products = Array.isArray(req.body.products) ? req.body.products : [];
+        const drafts = products.map((product) => sanitizeProductDraft(product)).filter((product) => product.name && product.price);
+
+        if (!drafts.length) {
+            const error = new Error("Khong co san pham hop le de luu");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const createdProducts = await Product.bulkCreate(drafts);
+
+        res.status(201).json({
+            message: `Da luu ${createdProducts.length} san pham da duyet.`,
+            products: createdProducts,
+        });
+    } catch (error) {
+        console.error("saveProductBatchDrafts error:", error.message);
+        res.status(error.statusCode || 500).json({
+            message: error.message || "Khong the luu danh sach san pham da duyet",
         });
     }
 };
@@ -794,6 +867,7 @@ module.exports = {
     createBlogBatch,
     createProductDraft,
     createProductBatch,
+    saveProductBatchDrafts,
     createSupportChatReply,
     autoResolveSupportTickets,
 };

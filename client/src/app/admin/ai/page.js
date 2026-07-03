@@ -14,6 +14,7 @@ import {
     Form,
     Input,
     InputNumber,
+    Image,
     Progress,
     Row,
     Select,
@@ -87,6 +88,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
     const [supportLoading, setSupportLoading] = useState(false);
     const [createdBlogs, setCreatedBlogs] = useState([]);
     const [createdProducts, setCreatedProducts] = useState([]);
+    const [pendingProducts, setPendingProducts] = useState([]);
     const [supportResult, setSupportResult] = useState(null);
 
     const stats = useMemo(
@@ -148,12 +150,37 @@ export function AdminAiCenterSection({ section = "blog" }) {
                 prompt: values.prompt,
                 count: values.count,
                 useFreeResources: values.useFreeResources,
+                imageSourceMode: values.imageSourceMode,
+                createMode: values.createMode,
             });
             const products = response.data?.products || [];
-            setCreatedProducts(products);
-            message.success(response.data?.message || `AI đã tạo ${products.length} sản phẩm.`);
+            if (response.data?.created === false || values.createMode === "review") {
+                setPendingProducts(products);
+                setCreatedProducts([]);
+                message.success(response.data?.message || `AI đã tạo ${products.length} bản nháp để duyệt.`);
+            } else {
+                setCreatedProducts(products);
+                setPendingProducts([]);
+                message.success(response.data?.message || `AI đã tạo ${products.length} sản phẩm.`);
+            }
         } catch (error) {
             message.error(error.response?.data?.message || "Không thể tạo sản phẩm hàng loạt bằng AI");
+        } finally {
+            setProductLoading(false);
+        }
+    };
+
+    const handleSavePendingProducts = async () => {
+        if (!pendingProducts.length) return;
+        try {
+            setProductLoading(true);
+            const response = await api.post("/ai/product-batch-save", { products: pendingProducts });
+            const products = response.data?.products || [];
+            setCreatedProducts(products);
+            setPendingProducts([]);
+            message.success(response.data?.message || `Đã lưu ${products.length} sản phẩm.`);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể lưu danh sách sản phẩm đã duyệt");
         } finally {
             setProductLoading(false);
         }
@@ -207,6 +234,68 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                 </Space>
                             </div>
                         ))}
+                    </div>
+                </Card>
+            )}
+
+            {pendingProducts.length > 0 && (
+                <Card
+                    className="dp-admin-ai-card"
+                    title={
+                        <Space>
+                            <AppstoreAddOutlined />
+                            Sản phẩm chờ duyệt
+                        </Space>
+                    }
+                    extra={
+                        <Space wrap>
+                            <Button onClick={() => setPendingProducts([])}>Xóa bản nháp</Button>
+                            <Button type="primary" loading={productLoading} onClick={handleSavePendingProducts}>
+                                Lưu tất cả
+                            </Button>
+                        </Space>
+                    }
+                >
+                    <Alert
+                        type="info"
+                        showIcon
+                        title="Duyệt trước khi lưu"
+                        description="Các sản phẩm dưới đây chưa được lưu vào database. Kiểm tra nhanh ảnh, giá và tồn kho rồi bấm Lưu tất cả."
+                        style={{ marginBottom: 14 }}
+                    />
+                    <div className="dp-admin-ai-result-list">
+                        {pendingProducts.map((product, index) => {
+                            const previewImage = product.imageUrl || product.images?.[0];
+                            return (
+                                <div className="dp-admin-ai-result-item" key={`${product.name}-${index}`}>
+                                    <Space align="start" size={12}>
+                                        {previewImage ? (
+                                            <Image
+                                                src={previewImage}
+                                                alt={product.name}
+                                                width={64}
+                                                height={64}
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            <div className="dp-admin-ai-image-placeholder">No image</div>
+                                        )}
+                                        <div>
+                                            <Text strong>{product.name}</Text>
+                                            <Paragraph type="secondary" className="dp-admin-ai-result-summary">
+                                                {`${Number(product.price || 0).toLocaleString("vi-VN")} đ - Tồn kho ${product.stock || 0}`}
+                                            </Paragraph>
+                                        </div>
+                                    </Space>
+                                    <Space wrap>
+                                        <Tag>{product.category || "kitchen"}</Tag>
+                                        <Tag color={previewImage ? "success" : "warning"}>
+                                            {previewImage ? "Có ảnh" : "Thiếu ảnh"}
+                                        </Tag>
+                                    </Space>
+                                </div>
+                            );
+                        })}
                     </div>
                 </Card>
             )}
@@ -479,7 +568,12 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     <Form
                         form={productForm}
                         layout="vertical"
-                        initialValues={{ count: 12, useFreeResources: true }}
+                        initialValues={{
+                            count: 12,
+                            useFreeResources: true,
+                            imageSourceMode: "broad",
+                            createMode: "review",
+                        }}
                         onFinish={handleGenerateProducts}
                     >
                         <Form.Item
@@ -500,9 +594,32 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             <InputNumber min={1} max={50} style={{ width: "100%" }} />
                         </Form.Item>
 
+                        <Row gutter={12}>
+                            <Col xs={24} md={12}>
+                                <Form.Item name="createMode" label="Cách tạo">
+                                    <Select
+                                        options={[
+                                            { value: "review", label: "Duyệt trước rồi lưu" },
+                                            { value: "auto", label: "Tự động lưu vào kho" },
+                                        ]}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item name="imageSourceMode" label="Nguồn ảnh">
+                                    <Select
+                                        options={[
+                                            { value: "broad", label: "Mở rộng nguồn ảnh" },
+                                            { value: "safe", label: "Chỉ nguồn mở an toàn" },
+                                        ]}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+
                         <Form.Item
                             name="useFreeResources"
-                            label="Tìm ảnh miễn phí từ Openverse"
+                            label="Tìm ảnh/tài nguyên từ internet"
                             valuePropName="checked"
                         >
                             <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />

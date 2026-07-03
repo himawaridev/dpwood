@@ -862,6 +862,19 @@ a {
   color: #777;
 }
 
+.dp-admin-ai-image-placeholder {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eeeeee;
+  background: #fafafa;
+  color: #999999;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
 .dp-admin-ai-tabs .ant-tabs-nav {
   margin-bottom: 16px;
 }
