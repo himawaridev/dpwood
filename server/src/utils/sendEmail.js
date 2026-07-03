@@ -1,6 +1,8 @@
 const nodemailer = require("nodemailer");
 const dns = require("dns").promises;
 
+let preferredSmtpAttempt = null;
+
 const normalizeValue = (value) => String(value || "").trim();
 const normalizeHost = (value) => String(value || "smtp.gmail.com").trim().toLowerCase();
 const normalizePort = (value) => {
@@ -37,45 +39,49 @@ const getSmtpConfig = () => {
         tls: {
             servername: host,
         },
-        connectionTimeout: 20000,
-        greetingTimeout: 20000,
-        socketTimeout: 45000,
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 15000,
     };
 };
 
 const buildSmtpAttempts = async (config) => {
-    const ports = config.host === "smtp.gmail.com" ? [config.port, config.port === 465 ? 587 : 465] : [config.port];
-    const hosts = [config.host];
+    const attempts = [];
+    const seen = new Set();
+    const pushAttempt = (host, port) => {
+        const key = `${host}:${port}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        attempts.push({
+            ...config,
+            host,
+            port,
+            secure: port === 465,
+            requireTLS: port === 587,
+            tls: {
+                ...config.tls,
+                servername: config.tls?.servername || config.host,
+            },
+        });
+    };
+
+    if (preferredSmtpAttempt) {
+        pushAttempt(preferredSmtpAttempt.host, preferredSmtpAttempt.port);
+    }
 
     if (config.host === "smtp.gmail.com") {
         try {
             const ipv4Addresses = await dns.resolve4(config.host);
-            hosts.push(...ipv4Addresses);
+            for (const host of ipv4Addresses) pushAttempt(host, 465);
+            for (const host of ipv4Addresses) pushAttempt(host, 587);
         } catch (error) {
             console.warn(`SMTP DNS IPv4 lookup failed for ${config.host}: ${error.message}`);
         }
-    }
 
-    const seen = new Set();
-    const attempts = [];
-
-    for (const host of hosts) {
-        for (const port of ports) {
-            const key = `${host}:${port}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            attempts.push({
-                ...config,
-                host,
-                port,
-                secure: port === 465,
-                requireTLS: port === 587,
-                tls: {
-                    ...config.tls,
-                    servername: config.tls?.servername || config.host,
-                },
-            });
-        }
+        pushAttempt(config.host, 465);
+        pushAttempt(config.host, 587);
+    } else {
+        pushAttempt(config.host, config.port);
     }
 
     return attempts;
@@ -154,6 +160,7 @@ const sendWithSmtp = async (to, subject, content) => {
             const transporter = nodemailer.createTransport(attempt);
             const info = await transporter.sendMail(mailOptions);
 
+            preferredSmtpAttempt = { host: attempt.host, port: attempt.port };
             console.log(`Email sent to ${to} via ${attempt.host}:${attempt.port} | MessageID: ${info.messageId}`);
             return true;
         } catch (error) {

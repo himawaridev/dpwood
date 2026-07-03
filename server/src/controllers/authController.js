@@ -12,6 +12,7 @@ const { Op } = require("sequelize");
 const AuditLog = require("../models/auditLog");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const VERIFICATION_EMAIL_COOLDOWN_MS = 60 * 1000;
 const getFrontendUrl = (req) => {
     const configuredUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
     if (configuredUrl) return configuredUrl.split(",")[0].trim().replace(/\/$/, "");
@@ -26,14 +27,33 @@ const getFrontendUrl = (req) => {
     return "http://localhost:3000";
 };
 
-const sendVerificationEmail = async (req, user) => {
-    const verifyToken = crypto.randomBytes(32).toString("hex");
-    user.emailVerifyToken = verifyToken;
+const getVerificationRetryAfter = (user) => {
+    if (!user.emailVerifySentAt) return 0;
+    const elapsed = Date.now() - new Date(user.emailVerifySentAt).getTime();
+    const remaining = VERIFICATION_EMAIL_COOLDOWN_MS - elapsed;
+    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
+};
+
+const sendVerificationEmail = async (req, user, options = {}) => {
+    const retryAfter = options.enforceCooldown ? getVerificationRetryAfter(user) : 0;
+    if (retryAfter > 0) {
+        const error = new Error(`Vui long doi ${retryAfter} giay de gui lai email xac minh.`);
+        error.statusCode = 429;
+        error.retryAfter = retryAfter;
+        throw error;
+    }
+
+    if (!user.emailVerifyToken) {
+        user.emailVerifyToken = crypto.randomBytes(32).toString("hex");
+    }
     await user.save();
 
-    const verifyLink = `${getFrontendUrl(req)}/verify/${verifyToken}`;
+    const verifyLink = `${getFrontendUrl(req)}/verify/${user.emailVerifyToken}`;
     const emailContent = buildVerificationEmail(user.name || user.username || user.email, verifyLink);
     await sendEmail(user.email, "[DPWOOD] Xac minh tai khoan", emailContent);
+
+    user.emailVerifySentAt = new Date();
+    await user.save();
 };
 
 // --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL XÁC THỰC TÀI KHOẢN ---
@@ -52,9 +72,10 @@ const register = async (req, res) => {
         });
         if (exist) {
             if (exist.email === email && !exist.isVerified) {
-                await sendVerificationEmail(req, exist);
+                await sendVerificationEmail(req, exist, { enforceCooldown: true });
                 return res.status(200).json({
                     message: "Tai khoan da ton tai nhung chua xac minh. DPWOOD da gui lai email xac minh.",
+                    retryAfter: 60,
                 });
             }
             return res.status(400).json({ message: "Email, username, or phone already exists" });
@@ -70,7 +91,7 @@ const register = async (req, res) => {
         res.status(201).json({ message: "Dang ky thanh cong. Vui long kiem tra email de xac minh tai khoan." });
     } catch (error) {
         console.error("Register error:", error.message);
-        res.status(500).json({ message: error.message });
+        res.status(error.statusCode || 500).json({ message: error.message, retryAfter: error.retryAfter || 0 });
     }
 };
 
@@ -94,11 +115,11 @@ const resendVerification = async (req, res) => {
             return res.status(400).json({ message: "Tai khoan nay da duoc xac minh." });
         }
 
-        await sendVerificationEmail(req, user);
-        return res.json({ message: "DPWOOD da gui lai email xac minh. Vui long kiem tra hop thu." });
+        await sendVerificationEmail(req, user, { enforceCooldown: true });
+        return res.json({ message: "DPWOOD da gui lai email xac minh. Vui long kiem tra hop thu.", retryAfter: 60 });
     } catch (error) {
         console.error("Resend verification error:", error.message);
-        return res.status(500).json({ message: error.message });
+        return res.status(error.statusCode || 500).json({ message: error.message, retryAfter: error.retryAfter || 0 });
     }
 };
 
@@ -294,6 +315,7 @@ const verifyEmail = async (req, res) => {
 
         user.isVerified = true;
         user.emailVerifyToken = null;
+        user.emailVerifySentAt = null;
         await user.save();
 
         res.json({ message: "Email verified" });

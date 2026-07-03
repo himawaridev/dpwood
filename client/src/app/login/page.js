@@ -23,6 +23,7 @@ export default function LoginPage() {
     const router = useRouter();
     const [unverifiedLogin, setUnverifiedLogin] = useState("");
     const [resendingVerification, setResendingVerification] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
 
     useEffect(() => {
         if (window.location.hostname === "127.0.0.1") {
@@ -30,6 +31,16 @@ export default function LoginPage() {
             window.location.replace(`${protocol}//localhost${port ? `:${port}` : ""}${pathname}${search}${hash}`);
         }
     }, []);
+
+    useEffect(() => {
+        if (resendCooldown <= 0) return undefined;
+
+        const timerId = window.setInterval(() => {
+            setResendCooldown((current) => Math.max(0, current - 1));
+        }, 1000);
+
+        return () => window.clearInterval(timerId);
+    }, [resendCooldown]);
 
     const handleLoginSuccess = (data) => {
         localStorage.setItem("token", data.token);
@@ -49,6 +60,7 @@ export default function LoginPage() {
     const onFinish = async (values) => {
         try {
             setUnverifiedLogin("");
+            setResendCooldown(0);
             const response = await api.post("/auth/login", {
                 login: values.login,
                 password: values.password,
@@ -69,8 +81,11 @@ export default function LoginPage() {
         try {
             setResendingVerification(true);
             const response = await api.post("/auth/resend-verification", { login: unverifiedLogin });
+            setResendCooldown(Number(response.data?.retryAfter || 60));
             message.success(response.data?.message || "Da gui lai email xac minh.");
         } catch (error) {
+            const retryAfter = Number(error.response?.data?.retryAfter || 0);
+            if (retryAfter > 0) setResendCooldown(retryAfter);
             message.error(error.response?.data?.message || "Khong the gui lai email xac minh.");
         } finally {
             setResendingVerification(false);
@@ -133,9 +148,10 @@ export default function LoginPage() {
                                             size="small"
                                             type="primary"
                                             loading={resendingVerification}
+                                            disabled={resendCooldown > 0}
                                             onClick={handleResendVerification}
                                         >
-                                            Gui lai email
+                                            {resendCooldown > 0 ? `Gui lai sau ${resendCooldown}s` : "Gui lai email"}
                                         </Button>
                                     </div>
                                 }

@@ -194,6 +194,19 @@ const startServer = async () => {
         }
 
         try {
+            const tableDesc = await queryInterface.describeTable("users");
+            if (!tableDesc.emailVerifySentAt) {
+                await queryInterface.addColumn("users", "emailVerifySentAt", {
+                    type: DataTypes.DATE,
+                    allowNull: true,
+                });
+                console.log("Added emailVerifySentAt column to users via QueryInterface");
+            }
+        } catch (e) {
+            console.log("QueryInterface users check skipped:", e.message);
+        }
+
+        try {
             const tableDesc = await queryInterface.describeTable("Blogs");
             if (tableDesc.thumbnail && !String(tableDesc.thumbnail.type || "").toUpperCase().includes("TEXT")) {
                 await queryInterface.changeColumn("Blogs", "thumbnail", {

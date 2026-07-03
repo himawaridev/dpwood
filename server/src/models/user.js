@@ -62,6 +62,10 @@ const User = sequelize.define(
         emailVerifyToken: {
             type: DataTypes.STRING,
         },
+        emailVerifySentAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
         refreshToken: {
             type: DataTypes.STRING,
         },
