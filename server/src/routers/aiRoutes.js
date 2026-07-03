@@ -7,6 +7,8 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 
 router.get("/image-proxy", aiController.proxyImage);
 router.get("/product-image-placeholder", aiController.productImagePlaceholder);
+router.get("/sample-product-image", aiController.sampleProductImage);
+router.get("/product-json-sample", authMiddleware, roleMiddleware("admin", "root"), aiController.downloadProductJsonSample);
 router.post("/blog-draft", authMiddleware, roleMiddleware("admin", "root"), aiController.createBlogDraft);
 router.post("/blog-batch", authMiddleware, roleMiddleware("admin", "root"), aiController.createBlogBatch);
 router.post("/product-draft", authMiddleware, roleMiddleware("admin", "root"), aiController.createProductDraft);

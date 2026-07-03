@@ -5,9 +5,6 @@
       "description": "Bộ nồi inox 304 dùng cho bếp gia đình, đáy từ truyền nhiệt đều, dễ vệ sinh và phù hợp nấu canh, hầm, luộc hằng ngày.",
       "price": 1890000,
       "stock": 80,
-      "images": [
-        "https://loremflickr.com/900/900/noi,inox,304,cookware,pot,pan,kitchen?lock=2100"
-      ],
       "imageSearchQueries": [
         "stainless steel cookware set product photo white background",
         "5 piece stainless steel pot set catalog"
@@ -21,16 +18,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/noi,inox,304,cookware,pot,pan,kitchen?lock=2100"
+      "images": []
     },
     {
       "name": "Chảo gang chống dính 26cm",
       "description": "Chảo gang giữ nhiệt tốt, phù hợp áp chảo steak, chiên trứng và chế biến món Âu trong căn bếp gia đình.",
       "price": 720000,
       "stock": 55,
-      "images": [
-        "https://loremflickr.com/900/900/chao,gang,chong,cookware,pot,pan,kitchen?lock=2101"
-      ],
       "imageSearchQueries": [
         "cast iron skillet product photo white background",
         "cast iron frying pan catalog product"
@@ -44,16 +38,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/chao,gang,chong,cookware,pot,pan,kitchen?lock=2101"
+      "images": []
     },
     {
       "name": "Nồi đất kho cá giữ nhiệt 2L",
       "description": "Nồi đất dung tích 2L phù hợp kho cá, hầm thịt và nấu món truyền thống, giữ nhiệt lâu và hương vị đậm đà.",
       "price": 480000,
       "stock": 70,
-      "images": [
-        "https://loremflickr.com/900/900/noi,dat,kho,cookware,pot,pan,kitchen?lock=2102"
-      ],
       "imageSearchQueries": [
         "ceramic clay cooking pot product photo",
         "clay pot cookware white background"
@@ -67,16 +58,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/noi,dat,kho,cookware,pot,pan,kitchen?lock=2102"
+      "images": []
     },
     {
       "name": "Chảo chống dính vân đá 28cm",
       "description": "Chảo chống dính vân đá đáy từ, hạn chế bám dính, phù hợp chiên xào nhanh và dùng ít dầu.",
       "price": 390000,
       "stock": 120,
-      "images": [
-        "https://loremflickr.com/900/900/chao,chong,dinh,cookware,pot,pan,kitchen?lock=2103"
-      ],
       "imageSearchQueries": [
         "non stick frying pan product photo white background",
         "stone coating frying pan catalog"
@@ -90,16 +78,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/chao,chong,dinh,cookware,pot,pan,kitchen?lock=2103"
+      "images": []
     },
     {
       "name": "Bộ bát đĩa sứ trắng 12 món",
       "description": "Bộ bát đĩa sứ trắng tối giản gồm 12 món, dễ phối bàn ăn gia đình và dùng được trong máy rửa chén.",
       "price": 850000,
       "stock": 90,
-      "images": [
-        "https://loremflickr.com/900/900/bat,dia,trang,tableware,bowl,plate,kitchen?lock=2104"
-      ],
       "imageSearchQueries": [
         "white ceramic dinnerware set product photo",
         "12 piece porcelain dinnerware set catalog"
@@ -113,16 +98,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": true,
-      "imageUrl": "https://loremflickr.com/900/900/bat,dia,trang,tableware,bowl,plate,kitchen?lock=2104"
+      "images": []
     },
     {
       "name": "Bộ đũa gỗ tự nhiên 10 đôi",
       "description": "Bộ đũa gỗ tự nhiên bề mặt nhẵn, cầm chắc tay, phù hợp bữa cơm gia đình và bàn ăn phong cách mộc.",
       "price": 150000,
       "stock": 180,
-      "images": [
-        "https://loremflickr.com/900/900/dua,nhien,doi,tableware,bowl,plate,kitchen?lock=2105"
-      ],
       "imageSearchQueries": [
         "wooden chopsticks set product photo",
         "natural wood chopsticks catalog white background"
@@ -136,16 +118,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/dua,nhien,doi,tableware,bowl,plate,kitchen?lock=2105"
+      "images": []
     },
     {
       "name": "Khay trà gỗ tre ép chống trượt",
       "description": "Khay trà gỗ tre ép nhẹ, chắc chắn, dùng bày ly tách, bánh ngọt hoặc phục vụ đồ uống.",
       "price": 310000,
       "stock": 75,
-      "images": [
-        "https://loremflickr.com/900/900/khay,tra,tre,tableware,bowl,plate,kitchen?lock=2106"
-      ],
       "imageSearchQueries": [
         "bamboo serving tray product photo white background",
         "wooden tea tray catalog product"
@@ -159,16 +138,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/khay,tra,tre,tableware,bowl,plate,kitchen?lock=2106"
+      "images": []
     },
     {
       "name": "Ly thủy tinh cao 420ml bộ 6 chiếc",
       "description": "Bộ ly thủy tinh trong suốt dung tích 420ml, phù hợp dùng nước lọc, nước ép và đồ uống hằng ngày.",
       "price": 360000,
       "stock": 110,
-      "images": [
-        "https://loremflickr.com/900/900/thuy,tinh,420ml,tableware,bowl,plate,kitchen?lock=2107"
-      ],
       "imageSearchQueries": [
         "clear glass tumbler set product photo",
         "6 piece drinking glass set catalog"
@@ -182,16 +158,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/thuy,tinh,420ml,tableware,bowl,plate,kitchen?lock=2107"
+      "images": []
     },
     {
       "name": "Bộ dao bếp thép không gỉ 5 món",
       "description": "Bộ dao bếp 5 món gồm dao chef, dao thái, dao gọt và kéo, lưỡi thép không gỉ sắc bén cho sơ chế thực phẩm.",
       "price": 790000,
       "stock": 70,
-      "images": [
-        "https://loremflickr.com/900/900/dao,bep,thep,kitchen,utensils,tools?lock=2108"
-      ],
       "imageSearchQueries": [
         "chef knife kitchen set product photo",
         "stainless steel kitchen knife set catalog"
@@ -205,16 +178,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/dao,bep,thep,kitchen,utensils,tools?lock=2108"
+      "images": []
     },
     {
       "name": "Thớt gỗ teak ghép đầu cây size M",
       "description": "Thớt gỗ teak ghép đầu cây chắc chắn, bền đẹp, phù hợp thái rau củ, thịt cá và trình bày món ăn.",
       "price": 450000,
       "stock": 95,
-      "images": [
-        "https://loremflickr.com/900/900/thot,teak,ghep,kitchen,utensils,tools?lock=2109"
-      ],
       "imageSearchQueries": [
         "wooden cutting board product photo white background",
         "teak cutting board catalog product"
@@ -228,16 +198,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/thot,teak,ghep,kitchen,utensils,tools?lock=2109"
+      "images": []
     },
     {
       "name": "Bộ muôi thìa gỗ tự nhiên 6 món",
       "description": "Bộ muôi thìa gỗ tự nhiên dùng cho nồi chảo chống dính, hạn chế trầy xước và tạo cảm giác ấm cúng.",
       "price": 220000,
       "stock": 140,
-      "images": [
-        "https://loremflickr.com/900/900/muoi,thia,nhien,kitchen,utensils,tools?lock=2110"
-      ],
       "imageSearchQueries": [
         "wooden kitchen spoon set product photo",
         "wooden cooking utensils catalog"
@@ -251,16 +218,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/muoi,thia,nhien,kitchen,utensils,tools?lock=2110"
+      "images": []
     },
     {
       "name": "Kéo nhà bếp đa năng inox",
       "description": "Kéo nhà bếp đa năng dùng cắt thịt, rau, bao bì thực phẩm, tay cầm chắc chắn và dễ vệ sinh.",
       "price": 145000,
       "stock": 130,
-      "images": [
-        "https://loremflickr.com/900/900/keo,nha,bep,kitchen,utensils,tools?lock=2111"
-      ],
       "imageSearchQueries": [
         "kitchen scissors product photo white background",
         "stainless steel kitchen shears catalog"
@@ -274,16 +238,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/keo,nha,bep,kitchen,utensils,tools?lock=2111"
+      "images": []
     },
     {
       "name": "Bộ hộp thủy tinh nắp kín 4 hộp",
       "description": "Bộ hộp thủy tinh borosilicate nắp kín khí, phù hợp bảo quản thức ăn trong tủ lạnh và hâm nóng.",
       "price": 590000,
       "stock": 100,
-      "images": [
-        "https://loremflickr.com/900/900/hop,thuy,tinh,food,storage,container,kitchen?lock=2112"
-      ],
       "imageSearchQueries": [
         "glass food storage container set product photo",
         "borosilicate glass container set catalog"
@@ -297,16 +258,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": true,
-      "imageUrl": "https://loremflickr.com/900/900/hop,thuy,tinh,food,storage,container,kitchen?lock=2112"
+      "images": []
     },
     {
       "name": "Hũ gia vị thủy tinh nắp gỗ bộ 12 hũ",
       "description": "Bộ hũ gia vị thủy tinh nắp gỗ giúp khu bếp gọn gàng, dễ nhận diện gia vị và bảo quản khô ráo.",
       "price": 360000,
       "stock": 90,
-      "images": [
-        "https://loremflickr.com/900/900/gia,thuy,tinh,food,storage,container,kitchen?lock=2113"
-      ],
       "imageSearchQueries": [
         "glass spice jar set wooden lid product photo",
         "spice jars with wooden lids catalog"
@@ -320,16 +278,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/gia,thuy,tinh,food,storage,container,kitchen?lock=2113"
+      "images": []
     },
     {
       "name": "Hộp cơm inox giữ nhiệt 3 tầng",
       "description": "Hộp cơm inox 3 tầng giữ nhiệt tốt, tiện mang cơm đi học, đi làm và phân chia món ăn gọn gàng.",
       "price": 550000,
       "stock": 75,
-      "images": [
-        "https://loremflickr.com/900/900/hop,com,inox,food,storage,container,kitchen?lock=2114"
-      ],
       "imageSearchQueries": [
         "stainless steel lunch box 3 tier product photo",
         "insulated lunch box stainless steel catalog"
@@ -343,16 +298,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/hop,com,inox,food,storage,container,kitchen?lock=2114"
+      "images": []
     },
     {
       "name": "Kệ úp bát đĩa inox 304 hai tầng",
       "description": "Kệ úp bát đĩa inox 304 hai tầng giúp bát đĩa ráo nước nhanh, tối ưu không gian bếp nhỏ.",
       "price": 890000,
       "stock": 60,
-      "images": [
-        "https://loremflickr.com/900/900/bat,dia,inox,food,storage,container,kitchen?lock=2115"
-      ],
       "imageSearchQueries": [
         "stainless steel dish rack product photo",
         "two tier dish drying rack catalog"
@@ -366,16 +318,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/bat,dia,inox,food,storage,container,kitchen?lock=2115"
+      "images": []
     },
     {
       "name": "Máy xay sinh tố thủy tinh 1.5L",
       "description": "Máy xay sinh tố cối thủy tinh 1.5L, xay trái cây, đá nhỏ và thực phẩm mềm cho bữa sáng tiện lợi.",
       "price": 1250000,
       "stock": 55,
-      "images": [
-        "https://loremflickr.com/900/900/may,xay,sinh,kitchen,appliance?lock=2116"
-      ],
       "imageSearchQueries": [
         "glass blender 1.5L product photo",
         "kitchen blender glass jar catalog"
@@ -389,16 +338,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/may,xay,sinh,kitchen,appliance?lock=2116"
+      "images": []
     },
     {
       "name": "Ấm siêu tốc inox 1.8L",
       "description": "Ấm siêu tốc inox dung tích 1.8L đun nước nhanh, tự ngắt khi sôi và phù hợp dùng hằng ngày.",
       "price": 450000,
       "stock": 100,
-      "images": [
-        "https://loremflickr.com/900/900/sieu,toc,inox,kitchen,appliance?lock=2117"
-      ],
       "imageSearchQueries": [
         "electric kettle stainless steel 1.8L product photo",
         "stainless steel electric kettle catalog"
@@ -412,16 +358,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/sieu,toc,inox,kitchen,appliance?lock=2117"
+      "images": []
     },
     {
       "name": "Máy đánh trứng cầm tay 5 tốc độ",
       "description": "Máy đánh trứng cầm tay nhỏ gọn với 5 tốc độ, phù hợp làm bánh, đánh kem và trộn bột nhẹ.",
       "price": 680000,
       "stock": 65,
-      "images": [
-        "https://loremflickr.com/900/900/may,danh,trung,kitchen,appliance?lock=2118"
-      ],
       "imageSearchQueries": [
         "electric hand mixer product photo white background",
         "hand mixer kitchen appliance catalog"
@@ -435,16 +378,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/may,danh,trung,kitchen,appliance?lock=2118"
+      "images": []
     },
     {
       "name": "Nồi chiên không dầu 5L",
       "description": "Nồi chiên không dầu dung tích 5L giúp chiên nướng ít dầu, phù hợp gia đình 3-5 người.",
       "price": 1890000,
       "stock": 45,
-      "images": [
-        "https://loremflickr.com/900/900/noi,chien,khong,kitchen,appliance?lock=2119"
-      ],
       "imageSearchQueries": [
         "air fryer 5L product photo white background",
         "black air fryer kitchen appliance catalog"
@@ -458,16 +398,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/noi,chien,khong,kitchen,appliance?lock=2119"
+      "images": []
     },
     {
       "name": "Cọ rửa chai lọ cán dài",
       "description": "Cọ rửa chai lọ cán dài giúp vệ sinh bình nước, ly cao và hũ thủy tinh sâu lòng dễ dàng.",
       "price": 68000,
       "stock": 180,
-      "images": [
-        "https://loremflickr.com/900/900/rua,chai,can,kitchen,cleaning?lock=2120"
-      ],
       "imageSearchQueries": [
         "bottle cleaning brush product photo",
         "long handle bottle brush catalog"
@@ -481,16 +418,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/rua,chai,can,kitchen,cleaning?lock=2120"
+      "images": []
     },
     {
       "name": "Bộ khăn lau bếp microfiber 5 chiếc",
       "description": "Bộ khăn lau bếp microfiber thấm hút tốt, nhanh khô, dùng lau mặt bàn, bếp và dụng cụ nấu ăn.",
       "price": 95000,
       "stock": 220,
-      "images": [
-        "https://loremflickr.com/900/900/khan,lau,bep,kitchen,cleaning?lock=2121"
-      ],
       "imageSearchQueries": [
         "microfiber kitchen towel set product photo",
         "kitchen cleaning cloths catalog"
@@ -504,16 +438,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/khan,lau,bep,kitchen,cleaning?lock=2121"
+      "images": []
     },
     {
       "name": "Nước rửa chén hữu cơ chai 750ml",
       "description": "Nước rửa chén hữu cơ dịu nhẹ, hỗ trợ làm sạch dầu mỡ và an toàn hơn cho da tay khi dùng hằng ngày.",
       "price": 85000,
       "stock": 250,
-      "images": [
-        "https://loremflickr.com/900/900/nuoc,rua,chen,kitchen,cleaning?lock=2122"
-      ],
       "imageSearchQueries": [
         "dishwashing liquid bottle product photo",
         "dish soap bottle catalog white background"
@@ -527,16 +458,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/nuoc,rua,chen,kitchen,cleaning?lock=2122"
+      "images": []
     },
     {
       "name": "Miếng rửa chén silicone bộ 6 miếng",
       "description": "Bộ miếng rửa chén silicone mềm, dễ vệ sinh, hạn chế bám mùi và dùng được nhiều lần.",
       "price": 79000,
       "stock": 200,
-      "images": [
-        "https://loremflickr.com/900/900/mieng,rua,chen,kitchen,cleaning?lock=2123"
-      ],
       "imageSearchQueries": [
         "silicone dish sponge set product photo",
         "silicone dish scrubber catalog"
@@ -550,16 +478,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/mieng,rua,chen,kitchen,cleaning?lock=2123"
+      "images": []
     },
     {
       "name": "Nồi áp suất inox 5L đáy từ",
       "description": "Nồi áp suất inox 5L giúp nấu nhanh các món hầm, cháo và súp, tiết kiệm thời gian cho gia đình bận rộn.",
       "price": 1290000,
       "stock": 50,
-      "images": [
-        "https://loremflickr.com/900/900/noi,suat,inox,cookware,pot,pan,kitchen?lock=2124"
-      ],
       "imageSearchQueries": [
         "stainless steel pressure cooker product photo",
         "5L pressure cooker catalog white background"
@@ -573,16 +498,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/noi,suat,inox,cookware,pot,pan,kitchen?lock=2124"
+      "images": []
     },
     {
       "name": "Nồi lẩu inox 28cm hai quai",
       "description": "Nồi lẩu inox 28cm hai quai chắc chắn, phù hợp bếp từ, bếp gas và các bữa ăn quây quần.",
       "price": 690000,
       "stock": 65,
-      "images": [
-        "https://loremflickr.com/900/900/noi,lau,inox,cookware,pot,pan,kitchen?lock=2125"
-      ],
       "imageSearchQueries": [
         "stainless steel hot pot 28cm product photo",
         "two handle stainless steel cooking pot catalog"
@@ -596,16 +518,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/noi,lau,inox,cookware,pot,pan,kitchen?lock=2125"
+      "images": []
     },
     {
       "name": "Quánh bột chống dính 18cm",
       "description": "Quánh bột chống dính 18cm tiện nấu cháo, sốt, sữa và món ăn dặm với tay cầm cách nhiệt.",
       "price": 320000,
       "stock": 95,
-      "images": [
-        "https://loremflickr.com/900/900/quanh,bot,chong,cookware,pot,pan,kitchen?lock=2126"
-      ],
       "imageSearchQueries": [
         "nonstick milk pan 18cm product photo",
         "small saucepan non stick catalog"
@@ -619,16 +538,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/quanh,bot,chong,cookware,pot,pan,kitchen?lock=2126"
+      "images": []
     },
     {
       "name": "Xửng hấp inox 2 tầng",
       "description": "Xửng hấp inox 2 tầng dùng hấp rau củ, bánh bao, hải sản và giữ hương vị tự nhiên của món ăn.",
       "price": 480000,
       "stock": 70,
-      "images": [
-        "https://loremflickr.com/900/900/xung,hap,inox,cookware,pot,pan,kitchen?lock=2127"
-      ],
       "imageSearchQueries": [
         "stainless steel steamer pot 2 tier product photo",
         "two tier food steamer cookware catalog"
@@ -642,16 +558,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/xung,hap,inox,cookware,pot,pan,kitchen?lock=2127"
+      "images": []
     },
     {
       "name": "Tô ramen sứ sâu lòng 900ml",
       "description": "Tô ramen sứ sâu lòng dung tích 900ml, dùng cho mì, phở, bún và các món nước nóng.",
       "price": 145000,
       "stock": 140,
-      "images": [
-        "https://loremflickr.com/900/900/ramen,sau,long,tableware,bowl,plate,kitchen?lock=2128"
-      ],
       "imageSearchQueries": [
         "ceramic ramen bowl product photo",
         "deep ceramic noodle bowl catalog"
@@ -665,16 +578,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": true,
-      "imageUrl": "https://loremflickr.com/900/900/ramen,sau,long,tableware,bowl,plate,kitchen?lock=2128"
+      "images": []
     },
     {
       "name": "Đĩa sứ phẳng 25cm",
       "description": "Đĩa sứ phẳng 25cm dùng bày món chính, salad hoặc bánh ngọt, kiểu dáng tối giản dễ phối bàn ăn.",
       "price": 165000,
       "stock": 160,
-      "images": [
-        "https://loremflickr.com/900/900/dia,phang,25cm,tableware,bowl,plate,kitchen?lock=2129"
-      ],
       "imageSearchQueries": [
         "white ceramic dinner plate product photo",
         "flat porcelain plate 25cm catalog"
@@ -688,16 +598,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": true,
-      "imageUrl": "https://loremflickr.com/900/900/dia,phang,25cm,tableware,bowl,plate,kitchen?lock=2129"
+      "images": []
     },
     {
       "name": "Bình nước thủy tinh 1.5L",
       "description": "Bình nước thủy tinh 1.5L dùng đựng nước lọc, trà lạnh, nước ép và dễ vệ sinh sau khi dùng.",
       "price": 230000,
       "stock": 90,
-      "images": [
-        "https://loremflickr.com/900/900/binh,nuoc,thuy,tableware,bowl,plate,kitchen?lock=2130"
-      ],
       "imageSearchQueries": [
         "glass water pitcher 1.5L product photo",
         "glass jug pitcher catalog white background"
@@ -711,16 +618,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/binh,nuoc,thuy,tableware,bowl,plate,kitchen?lock=2130"
+      "images": []
     },
     {
       "name": "Bộ muỗng nĩa inox 24 món",
       "description": "Bộ muỗng nĩa inox 24 món cho gia đình 6 người, bề mặt sáng bóng và cầm chắc tay.",
       "price": 520000,
       "stock": 80,
-      "images": [
-        "https://loremflickr.com/900/900/muong,nia,inox,tableware,bowl,plate,kitchen?lock=2131"
-      ],
       "imageSearchQueries": [
         "stainless steel cutlery set 24 piece product photo",
         "flatware set catalog white background"
@@ -734,16 +638,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/muong,nia,inox,tableware,bowl,plate,kitchen?lock=2131"
+      "images": []
     },
     {
       "name": "Dao chef thép Đức 20cm",
       "description": "Dao chef thép Đức 20cm sắc bén, cân bằng tốt, phù hợp thái thịt, rau củ và sơ chế hằng ngày.",
       "price": 420000,
       "stock": 75,
-      "images": [
-        "https://loremflickr.com/900/900/dao,chef,thep,kitchen,utensils,tools?lock=2132"
-      ],
       "imageSearchQueries": [
         "chef knife 20cm product photo",
         "german steel chef knife catalog"
@@ -757,16 +658,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/dao,chef,thep,kitchen,utensils,tools?lock=2132"
+      "images": []
     },
     {
       "name": "Thớt nhựa phân màu bộ 3 tấm",
       "description": "Bộ thớt nhựa phân màu giúp tách riêng thực phẩm sống, chín và rau củ, hạn chế lẫn mùi.",
       "price": 195000,
       "stock": 120,
-      "images": [
-        "https://loremflickr.com/900/900/thot,nhua,phan,kitchen,utensils,tools?lock=2133"
-      ],
       "imageSearchQueries": [
         "color coded plastic cutting board set product photo",
         "3 piece chopping board set catalog"
@@ -780,16 +678,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/thot,nhua,phan,kitchen,utensils,tools?lock=2133"
+      "images": []
     },
     {
       "name": "Kẹp gắp thực phẩm inox 30cm",
       "description": "Kẹp gắp thực phẩm inox 30cm dùng gắp thịt nướng, salad, mì và thực phẩm nóng an toàn.",
       "price": 95000,
       "stock": 150,
-      "images": [
-        "https://loremflickr.com/900/900/kep,gap,thuc,kitchen,utensils,tools?lock=2134"
-      ],
       "imageSearchQueries": [
         "stainless steel kitchen tongs product photo",
         "food tong 30cm catalog"
@@ -803,16 +698,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/kep,gap,thuc,kitchen,utensils,tools?lock=2134"
+      "images": []
     },
     {
       "name": "Rây lọc inox cán dài 18cm",
       "description": "Rây lọc inox cán dài dùng lọc bột, nước dùng, trà và thực phẩm nhỏ trong quá trình nấu nướng.",
       "price": 115000,
       "stock": 140,
-      "images": [
-        "https://loremflickr.com/900/900/ray,loc,inox,kitchen,utensils,tools?lock=2135"
-      ],
       "imageSearchQueries": [
         "stainless steel mesh strainer product photo",
         "kitchen sieve long handle catalog"
@@ -826,16 +718,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/ray,loc,inox,kitchen,utensils,tools?lock=2135"
+      "images": []
     },
     {
       "name": "Kệ gia vị xoay 360 độ 16 hũ",
       "description": "Kệ gia vị xoay 360 độ gồm 16 hũ, giúp bàn bếp gọn gàng và lấy gia vị nhanh khi nấu.",
       "price": 520000,
       "stock": 65,
-      "images": [
-        "https://loremflickr.com/900/900/gia,xoay,360,food,storage,container,kitchen?lock=2136"
-      ],
       "imageSearchQueries": [
         "rotating spice rack 16 jars product photo",
         "360 spice rack set catalog"
@@ -849,16 +738,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/gia,xoay,360,food,storage,container,kitchen?lock=2136"
+      "images": []
     },
     {
       "name": "Giỏ đựng rau củ xếp tầng",
       "description": "Giỏ đựng rau củ xếp tầng giúp lưu trữ hành, khoai, trái cây và đồ khô gọn gàng trong bếp.",
       "price": 260000,
       "stock": 100,
-      "images": [
-        "https://loremflickr.com/900/900/gio,dung,rau,food,storage,container,kitchen?lock=2137"
-      ],
       "imageSearchQueries": [
         "tiered vegetable storage basket product photo",
         "kitchen storage basket rack catalog"
@@ -872,16 +758,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/gio,dung,rau,food,storage,container,kitchen?lock=2137"
+      "images": []
     },
     {
       "name": "Khay chia ngăn tủ lạnh trong suốt",
       "description": "Khay chia ngăn tủ lạnh trong suốt giúp phân loại rau củ, đồ ăn và chai lọ nhỏ gọn hơn.",
       "price": 180000,
       "stock": 150,
-      "images": [
-        "https://loremflickr.com/900/900/khay,chia,ngan,food,storage,container,kitchen?lock=2138"
-      ],
       "imageSearchQueries": [
         "clear refrigerator organizer bins product photo",
         "fridge storage container catalog"
@@ -895,16 +778,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/khay,chia,ngan,food,storage,container,kitchen?lock=2138"
+      "images": []
     },
     {
       "name": "Túi zip silicone tái sử dụng bộ 6 túi",
       "description": "Túi zip silicone tái sử dụng giúp bảo quản thực phẩm, trái cây và đồ ăn nhẹ khi đi làm hoặc đi học.",
       "price": 225000,
       "stock": 115,
-      "images": [
-        "https://loremflickr.com/900/900/tui,zip,silicone,food,storage,container,kitchen?lock=2139"
-      ],
       "imageSearchQueries": [
         "reusable silicone food storage bags product photo",
         "silicone zip bag set catalog"
@@ -918,16 +798,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": true,
-      "imageUrl": "https://loremflickr.com/900/900/tui,zip,silicone,food,storage,container,kitchen?lock=2139"
+      "images": []
     },
     {
       "name": "Máy ép chậm compact 500ml",
       "description": "Máy ép chậm compact 500ml giữ vị trái cây tự nhiên, phù hợp ép nước cho 1-2 người.",
       "price": 2250000,
       "stock": 35,
-      "images": [
-        "https://loremflickr.com/900/900/may,cham,compact,kitchen,appliance?lock=2140"
-      ],
       "imageSearchQueries": [
         "compact slow juicer product photo",
         "small masticating juicer catalog"
@@ -941,16 +818,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/may,cham,compact,kitchen,appliance?lock=2140"
+      "images": []
     },
     {
       "name": "Bếp điện từ đơn mặt kính",
       "description": "Bếp điện từ đơn mặt kính công suất 2000W, phù hợp nấu lẩu, nấu nhanh và dùng trong căn hộ nhỏ.",
       "price": 990000,
       "stock": 60,
-      "images": [
-        "https://loremflickr.com/900/900/bep,dien,don,kitchen,appliance?lock=2141"
-      ],
       "imageSearchQueries": [
         "single induction cooktop product photo",
         "portable induction cooker catalog"
@@ -964,16 +838,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/bep,dien,don,kitchen,appliance?lock=2141"
+      "images": []
     },
     {
       "name": "Máy pha cà phê mini 650ml",
       "description": "Máy pha cà phê mini dung tích 650ml, phù hợp căn bếp nhỏ, văn phòng và người yêu cà phê tại nhà.",
       "price": 1580000,
       "stock": 32,
-      "images": [
-        "https://loremflickr.com/900/900/may,pha,phe,kitchen,appliance?lock=2142"
-      ],
       "imageSearchQueries": [
         "mini coffee maker product photo",
         "small drip coffee machine catalog"
@@ -987,16 +858,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/may,pha,phe,kitchen,appliance?lock=2142"
+      "images": []
     },
     {
       "name": "Cọ rửa bát đĩa cán gỗ",
       "description": "Cọ rửa bát đĩa cán gỗ thân thiện, lông cọ chắc, dùng vệ sinh xoong nồi và chén đĩa hằng ngày.",
       "price": 75000,
       "stock": 190,
-      "images": [
-        "https://loremflickr.com/900/900/rua,bat,dia,kitchen,cleaning?lock=2143"
-      ],
       "imageSearchQueries": [
         "dish brush wooden handle product photo",
         "kitchen dishwashing brush catalog"
@@ -1010,16 +878,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/rua,bat,dia,kitchen,cleaning?lock=2143"
+      "images": []
     },
     {
       "name": "Thùng rác bếp nắp nhấn 12L",
       "description": "Thùng rác bếp nắp nhấn dung tích 12L, thiết kế gọn, hạn chế mùi và dễ đặt dưới bàn bếp.",
       "price": 260000,
       "stock": 80,
-      "images": [
-        "https://loremflickr.com/900/900/thung,rac,bep,kitchen,cleaning?lock=2144"
-      ],
       "imageSearchQueries": [
         "kitchen trash can 12L product photo",
         "small kitchen bin push lid catalog"
@@ -1033,16 +898,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/thung,rac,bep,kitchen,cleaning?lock=2144"
+      "images": []
     },
     {
       "name": "Bộ chổi quét và hót rác mini nhà bếp",
       "description": "Bộ chổi quét và hót rác mini dùng vệ sinh mặt bàn bếp, góc tủ và vụn thực phẩm nhỏ.",
       "price": 99000,
       "stock": 140,
-      "images": [
-        "https://loremflickr.com/900/900/choi,quet,hot,kitchen,cleaning?lock=2145"
-      ],
       "imageSearchQueries": [
         "mini dustpan and brush set product photo",
         "small kitchen cleaning broom catalog"
@@ -1056,16 +918,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/choi,quet,hot,kitchen,cleaning?lock=2145"
+      "images": []
     },
     {
       "name": "Móc treo khăn lau bếp inox dán tường",
       "description": "Móc treo khăn lau bếp inox dán tường giúp treo khăn, găng tay và dụng cụ nhỏ gọn gàng.",
       "price": 89000,
       "stock": 160,
-      "images": [
-        "https://loremflickr.com/900/900/moc,treo,khan,food,storage,container,kitchen?lock=2146"
-      ],
       "imageSearchQueries": [
         "stainless steel kitchen towel hook product photo",
         "wall mounted towel hook kitchen catalog"
@@ -1079,16 +938,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/moc,treo,khan,food,storage,container,kitchen?lock=2146"
+      "images": []
     },
     {
       "name": "Khay lót ly gỗ bần bộ 6 miếng",
       "description": "Khay lót ly gỗ bần chống nóng, bảo vệ mặt bàn và tạo điểm nhấn tự nhiên cho bàn ăn.",
       "price": 120000,
       "stock": 170,
-      "images": [
-        "https://loremflickr.com/900/900/khay,lot,ban,tableware,bowl,plate,kitchen?lock=2147"
-      ],
       "imageSearchQueries": [
         "cork drink coasters set product photo",
         "wood cork coaster catalog"
@@ -1102,16 +958,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": false,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/khay,lot,ban,tableware,bowl,plate,kitchen?lock=2147"
+      "images": []
     },
     {
       "name": "Bộ rổ rá nhựa rửa rau 3 món",
       "description": "Bộ rổ rá nhựa 3 món dùng rửa rau, vo gạo, để ráo trái cây và sơ chế thực phẩm.",
       "price": 175000,
       "stock": 145,
-      "images": [
-        "https://loremflickr.com/900/900/nhua,rua,rau,kitchen,utensils,tools?lock=2148"
-      ],
       "imageSearchQueries": [
         "plastic colander set product photo",
         "kitchen strainer basket set catalog"
@@ -1125,16 +978,13 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": false,
-      "imageUrl": "https://loremflickr.com/900/900/nhua,rua,rau,kitchen,utensils,tools?lock=2148"
+      "images": []
     },
     {
       "name": "Bộ khuôn làm bánh silicone 6 khuôn",
       "description": "Bộ khuôn làm bánh silicone chịu nhiệt, mềm dẻo, dễ lấy bánh và phù hợp làm muffin, cupcake.",
       "price": 210000,
       "stock": 100,
-      "images": [
-        "https://loremflickr.com/900/900/khuon,lam,banh,kitchen,utensils,tools?lock=2149"
-      ],
       "imageSearchQueries": [
         "silicone baking mold set product photo",
         "cupcake silicone mold catalog"
@@ -1148,7 +998,7 @@
       "origin": "Việt Nam",
       "dishwasherSafe": true,
       "microwaveSafe": true,
-      "imageUrl": "https://loremflickr.com/900/900/khuon,lam,banh,kitchen,utensils,tools?lock=2149"
+      "images": []
     }
   ]
 }

@@ -230,6 +230,25 @@ export function AdminAiCenterSection({ section = "blog" }) {
         return Upload.LIST_IGNORE;
     };
 
+    const handleDownloadProductJsonSample = async () => {
+        try {
+            setProductLoading(true);
+            const response = await api.get("/ai/product-json-sample", { responseType: "blob" });
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/json" }));
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "sample-kitchen-products.json";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể tải file JSON mẫu. Vui lòng kiểm tra quyền admin.");
+        } finally {
+            setProductLoading(false);
+        }
+    };
+
     const isGeneratedPlaceholderUrl = (url) => {
         const value = String(url || "").toLowerCase();
         return (
@@ -695,9 +714,8 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             </Upload>
                             <Button
                                 icon={<DownloadOutlined />}
-                                href="/sample-kitchen-products.json"
-                                target="_blank"
-                                rel="noreferrer"
+                                onClick={handleDownloadProductJsonSample}
+                                loading={productLoading}
                             >
                                 Tải file mẫu
                             </Button>

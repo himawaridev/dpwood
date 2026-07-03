@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const { generateJson } = require("../services/geminiService");
 const Product = require("../models/product");
 const Blog = require("../models/blog");
@@ -787,6 +789,14 @@ const buildProductPlaceholderUrl = (req, name, category = "kitchenware") => {
     return `${getRequestBaseUrl(req)}/api/ai/product-image-placeholder?${params.toString()}`;
 };
 
+const buildSampleProductImageUrl = (req, name, category = "kitchenware") => {
+    const params = new URLSearchParams({
+        name: cleanText(name, "DPWOOD"),
+        category: cleanText(category, "kitchenware"),
+    });
+    return `${getRequestBaseUrl(req)}/api/ai/sample-product-image?${params.toString()}`;
+};
+
 const buildReferencePrompt = (references = []) => {
     if (!references.length) return "";
     return `Nguon tham khao mo co the dung de lay y tuong, khong sao chep nguyen van:\n${references
@@ -1483,6 +1493,31 @@ const importProductJsonDrafts = async (req, res) => {
     }
 };
 
+const downloadProductJsonSample = (req, res) => {
+    try {
+        const samplePath = path.join(__dirname, "../data/sample-kitchen-products.json");
+        const sample = JSON.parse(fs.readFileSync(samplePath, "utf8"));
+        const products = Array.isArray(sample.products) ? sample.products : [];
+        const productsWithImages = products.map((product) => {
+            const imageUrl = buildSampleProductImageUrl(req, product.name, product.category);
+            return {
+                ...product,
+                imageUrl,
+                images: [imageUrl],
+            };
+        });
+
+        const payload = JSON.stringify({ ...sample, products: productsWithImages }, null, 2);
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.setHeader("Content-Disposition", 'attachment; filename="sample-kitchen-products.json"');
+        res.setHeader("Cache-Control", "private, no-store");
+        res.status(200).send(payload);
+    } catch (error) {
+        console.error("downloadProductJsonSample error:", error.message);
+        res.status(500).json({ message: "Khong the tai file JSON mau" });
+    }
+};
+
 const proxyImage = async (req, res) => {
     try {
         const targetUrl = cleanText(req.query.url);
@@ -1547,6 +1582,8 @@ const productImagePlaceholder = (req, res) => {
     res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     res.status(200).send(svg);
 };
+
+const sampleProductImage = productImagePlaceholder;
 
 const createSupportChatReply = async (req, res) => {
     try {
@@ -1716,9 +1753,11 @@ module.exports = {
     createProductDraft,
     createProductBatch,
     importProductJsonDrafts,
+    downloadProductJsonSample,
     saveProductBatchDrafts,
     proxyImage,
     productImagePlaceholder,
+    sampleProductImage,
     createSupportChatReply,
     autoResolveSupportTickets,
 };
