@@ -184,6 +184,10 @@ const sendEmail = async (to, subject, content) => {
         }
     }
 
+    if (process.env.NODE_ENV === "production" || normalizeValue(process.env.RENDER)) {
+        throw new Error("Chua cau hinh RESEND_API_KEY tren Render nen khong the gui email on dinh.");
+    }
+
     return sendWithSmtp(to, subject, content);
 };
 

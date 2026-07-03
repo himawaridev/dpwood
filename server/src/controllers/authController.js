@@ -13,7 +13,6 @@ const AuditLog = require("../models/auditLog");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const VERIFICATION_EMAIL_COOLDOWN_MS = 60 * 1000;
-const verificationEmailJobs = new Map();
 const getFrontendUrl = (req) => {
     const configuredUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
     if (configuredUrl) return configuredUrl.split(",")[0].trim().replace(/\/$/, "");
@@ -43,13 +42,6 @@ const deliverVerificationEmail = async ({ frontendUrl, userId, email, displayNam
 };
 
 const sendVerificationEmail = async (req, user, options = {}) => {
-    if (verificationEmailJobs.has(user.id)) {
-        const error = new Error("Email xac minh dang duoc gui. Vui long doi 60 giay truoc khi gui lai.");
-        error.statusCode = 429;
-        error.retryAfter = 60;
-        throw error;
-    }
-
     const retryAfter = options.enforceCooldown ? getVerificationRetryAfter(user) : 0;
     if (retryAfter > 0) {
         const error = new Error(`Vui long doi ${retryAfter} giay de gui lai email xac minh.`);
@@ -72,13 +64,7 @@ const sendVerificationEmail = async (req, user, options = {}) => {
         token: user.emailVerifyToken,
     };
 
-    const job = deliverVerificationEmail(jobPayload).catch((error) => {
-        console.error(`Verification email job failed for user ${user.id}:`, error.message);
-    }).finally(() => {
-        verificationEmailJobs.delete(user.id);
-    });
-
-    verificationEmailJobs.set(user.id, job);
+    await deliverVerificationEmail(jobPayload);
 };
 
 // --- HÀM HỖ TRỢ: TẠO GIAO DIỆN EMAIL XÁC THỰC TÀI KHOẢN ---
