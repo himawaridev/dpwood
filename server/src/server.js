@@ -140,6 +140,15 @@ app.use(express.json());
 setupDatabaseAssociations();
 setupSocketIO();
 
+app.get("/api/health", (req, res) => {
+    res.status(200).json({
+        ok: true,
+        service: "dpwood-api",
+        uptime: Math.round(process.uptime()),
+        timestamp: new Date().toISOString(),
+    });
+});
+
 // Kích hoạt Routers
 const routes = {
     "/api/auth": authRoutes,
