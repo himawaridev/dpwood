@@ -316,6 +316,15 @@ const searchGoogleImages = async (searchText, limit = 8) => {
         .slice(0, limit);
 };
 
+const decodeHtmlAttribute = (value) =>
+    cleanText(value)
+        .replace(/&quot;/g, '"')
+        .replace(/&#34;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">");
+
 const searchBingImages = async (searchText, limit = 8) => {
     const query = buildImageSearchQuery(searchText) || "kitchenware product";
     const params = new URLSearchParams({
@@ -335,20 +344,27 @@ const searchBingImages = async (searchText, limit = 8) => {
     const html = await response.text();
     const results = [];
     const seen = new Set();
-    const regex = /murl&quot;:&quot;(https?:\/\/[^&"]+)&quot;.*?t&quot;:&quot;([^&"]*)/g;
+    const blockRegex = /class="iusc"[^>]+m="([^"]+)"/g;
     let match;
 
-    while ((match = regex.exec(html)) && results.length < limit * 2) {
-        const url = cleanText(match[1]).replace(/\\u002f/g, "/");
+    while ((match = blockRegex.exec(html)) && results.length < limit * 3) {
+        let item;
+        try {
+            item = JSON.parse(decodeHtmlAttribute(match[1]));
+        } catch (_) {
+            continue;
+        }
+
+        const url = cleanText(item.murl).replace(/\\u002f/g, "/");
         if (seen.has(url) || !isPublicImageUrl(url) || url.length >= 1500) continue;
         seen.add(url);
         results.push({
             url,
-            title: cleanText(match[2], "Bing image").slice(0, 160),
+            title: cleanText(item.t || item.desc, "Bing image").slice(0, 180),
             source: "Bing Images",
             license: "Check source rights",
             creator: "Bing",
-            landingUrl: "",
+            landingUrl: cleanText(item.purl),
         });
     }
 
@@ -557,7 +573,18 @@ const scoreImageCandidate = (image, searchText) => {
     const tokens = getImageQueryTokens(searchText);
     if (!tokens.length) return 1;
     const haystack = normalizeSearchText([image.title, image.url, image.landingUrl, image.source].join(" "));
-    return tokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
+    const tokenScore = tokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
+    const commerceBonus = /amazon|walmart|ikea|target|shop|store|product|catalog|kitchen|cookware|home|cdn|media/i.test(
+        [image.url, image.landingUrl, image.title].join(" "),
+    )
+        ? 2
+        : 0;
+    const genericPenalty = /forest|tree|waterfall|landscape|wallpaper|nature|vector|drawing|illustration|map|clipart/i.test(
+        [image.url, image.landingUrl, image.title].join(" "),
+    )
+        ? 3
+        : 0;
+    return tokenScore + commerceBonus - genericPenalty;
 };
 
 const getProductAnchorTokens = (searchText) => {
@@ -1243,7 +1270,7 @@ Yeu cau cua admin: ${prompt}
 
 Category chi duoc chon 1 trong: ${CATEGORY_VALUES.join(", ")}.
 Neu san pham co mau/kich co, tao variants doc lap de moi mau co the di voi nhieu kich co khi hop ly.
-Tao imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai cu the dung san pham, uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query.
+Tao imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai co danh tu san pham chinh nhu cutting board, cast iron pan, chef knife set, glass food container, kettle, dish brush. Uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query. Khong tao query chi noi ve chat lieu/cam giac nhu natural wood, water, bamboo fiber, eco friendly.
 Tra ve JSON voi dung cac truong:
 {
   "name": "string",
@@ -1308,7 +1335,7 @@ Moi san pham phai khac nhau ve ten, gia, cong dung hoac phan loai.
 Category chi duoc chon 1 trong: ${CATEGORY_VALUES.join(", ")}.
 Neu san pham co mau/kich co, tao variants doc lap de moi mau co the di voi nhieu kich co khi hop ly.
 Khong tu bia ra URL anh. Truong images co the de [] neu khong chac URL ton tai.
-Moi san pham phai co imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai cu the dung san pham, uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query.
+Moi san pham phai co imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai co danh tu san pham chinh nhu cutting board, cast iron pan, chef knife set, glass food container, kettle, dish brush. Uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query. Khong tao query chi noi ve chat lieu/cam giac nhu natural wood, water, bamboo fiber, eco friendly.
 
 Tra ve JSON dung dang:
 {
