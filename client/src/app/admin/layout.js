@@ -179,7 +179,7 @@ export default function AdminLayout({ children }) {
                 open={mobileNavOpen}
                 onClose={() => setMobileNavOpen(false)}
                 placement="left"
-                width={300}
+                size={300}
                 className="dp-admin-drawer"
                 styles={{ body: { padding: 0 } }}
             >

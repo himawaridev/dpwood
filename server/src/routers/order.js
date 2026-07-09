@@ -4,12 +4,13 @@ const router = express.Router();
 const orderController = require("../controllers/orderController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const roleMiddleware = require("../middlewares/roleMiddleware");
+const { orderStatusLimiter, paymentLimiter } = require("../middlewares/securityMiddleware");
 
 // ==========================================
 // [PUBLIC] ROUTES - Khách vãng lai & Hệ thống thứ 3
 // ==========================================
-router.post("/webhook", orderController.handleWebhook);
-router.get("/:orderCode/status", orderController.getOrderStatus);
+router.post("/webhook", paymentLimiter, orderController.handleWebhook);
+router.get("/:orderCode/status", orderStatusLimiter, authMiddleware, orderController.getOrderStatus);
 
 // ==========================================
 // [CLIENT] ROUTES - Khách hàng

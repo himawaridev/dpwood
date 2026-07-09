@@ -13,17 +13,18 @@ const {
     googleLogin,
 } = require("../controllers/authController");
 const authMiddleware = require("../middlewares/authMiddleware");
+const { authLimiter, passwordLimiter } = require("../middlewares/securityMiddleware");
 
 // ==========================================
 // [PUBLIC] ROUTES - Không yêu cầu đăng nhập
 // ==========================================
-router.post("/register", register);
-router.post("/resend-verification", resendVerification);
-router.post("/login", login);
-router.post("/google", googleLogin);
+router.post("/register", authLimiter, register);
+router.post("/resend-verification", passwordLimiter, resendVerification);
+router.post("/login", authLimiter, login);
+router.post("/google", authLimiter, googleLogin);
 router.post("/refresh", refresh);
-router.post("/forgot", forgotPassword);
-router.post("/reset", resetPassword);
+router.post("/forgot", passwordLimiter, forgotPassword);
+router.post("/reset", passwordLimiter, resetPassword);
 router.get("/verify/:token", verifyEmail);
 
 // ==========================================

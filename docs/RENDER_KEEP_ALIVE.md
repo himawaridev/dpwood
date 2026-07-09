@@ -27,6 +27,7 @@ Suggested free monitors:
 Notes:
 
 - The endpoint does not query the database.
+- The server starts listening before database initialization, so this endpoint can still return `200` while the database is reconnecting.
 - It returns only service status, uptime, and timestamp.
 - Do not ping heavy endpoints such as products, orders, AI, or checkout.
 - If the website becomes production-critical, a paid Render instance is still the most reliable option.

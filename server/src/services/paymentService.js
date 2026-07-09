@@ -54,11 +54,15 @@ class PaymentService {
             if (client.webhooks && typeof client.webhooks.verify === "function") {
                 return await client.webhooks.verify(webhookBody);
             }
-        } catch (error) {
-            console.warn("PayOS webhook verify failed:", error.message);
-        }
 
-        return webhookBody?.data || webhookBody;
+            throw new Error("PayOS SDK does not expose a webhook verification method.");
+        } catch (error) {
+            const safeMessage = error?.message || "Unknown PayOS webhook verification error";
+            console.warn("PayOS webhook verification rejected:", safeMessage);
+            const verifyError = new Error("Invalid PayOS webhook signature");
+            verifyError.status = 401;
+            throw verifyError;
+        }
     }
 
     async cancelPaymentLink(orderCode, cancellationReason) {

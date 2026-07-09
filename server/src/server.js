@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 require("dotenv").config();
 
 const { connectDB, sequelize } = require("./config/connectSequelize");
+const { securityHeaders, generalLimiter } = require("./middlewares/securityMiddleware");
 
 // Tách riêng file nạp Models để server.js sạch sẽ hơn
 const User = require("./models/user");
@@ -37,6 +38,14 @@ const aiRoutes = require("./routers/aiRoutes");
 
 const app = express();
 const server = http.createServer(app);
+const dbState = {
+    status: "starting",
+    ready: false,
+    lastError: null,
+    lastCheckedAt: null,
+};
+const DB_RETRY_DELAY_MS = Number(process.env.DB_RETRY_DELAY_MS || 60000);
+app.set("trust proxy", 1);
 
 // ==========================================
 // 1. HÀM CẤU HÌNH DATABASE ASSOCIATIONS
@@ -127,25 +136,52 @@ const setupSocketIO = () => {
 //     credentials: true,
 // }));
 const allowedOrigins = process.env.CLIENT_URL 
-    ? process.env.CLIENT_URL.split(',') 
+    ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
     : ["http://localhost:3000"];
 
 app.use(cors({
     origin: allowedOrigins, // Truyền hẳn một danh sách (mảng) vào đây
     credentials: true,
 }));
-app.use(express.json());
+app.use(securityHeaders);
+app.use(generalLimiter);
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Kích hoạt các cấu hình
 setupDatabaseAssociations();
 setupSocketIO();
 
 app.get("/api/health", (req, res) => {
-    res.status(200).json({
+    const payload = {
         ok: true,
-        service: "dpwood-api",
-        uptime: Math.round(process.uptime()),
         timestamp: new Date().toISOString(),
+    };
+
+    if (process.env.NODE_ENV !== "production") {
+        payload.service = "dpwood-api";
+        payload.uptime = Math.round(process.uptime());
+        payload.database = dbState.status;
+    }
+
+    res.status(200).json(payload);
+});
+
+app.use((req, res, next) => {
+    const dbIndependentPaths = [
+        "/api/health",
+        "/api/ai/image-proxy",
+        "/api/ai/product-image-placeholder",
+        "/api/ai/sample-product-image",
+        "/api/orders/webhook",
+    ];
+
+    if (dbIndependentPaths.includes(req.path) || dbState.ready) return next();
+
+    return res.status(503).json({
+        ok: false,
+        message: "Database is initializing. Please try again shortly.",
+        database: dbState.status,
     });
 });
 
@@ -169,13 +205,32 @@ Object.entries(routes).forEach(([path, route]) => {
     app.use(path, route);
 });
 
+app.use((error, req, res, next) => {
+    if (!error) return next();
+
+    if (error.type === "entity.too.large") {
+        return res.status(413).json({ message: "Request body is too large" });
+    }
+
+    if (error instanceof SyntaxError && "body" in error) {
+        return res.status(400).json({ message: "Invalid JSON body" });
+    }
+
+    console.error("Unhandled request error:", error.message);
+    return res.status(500).json({ message: "Internal server error" });
+});
+
 // ==========================================
 // 4. KHỞI ĐỘNG SERVER
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
-const startServer = async () => {
+const initializeDatabase = async () => {
     try {
+        dbState.status = "connecting";
+        dbState.lastCheckedAt = new Date().toISOString();
+        dbState.lastError = null;
+
         await connectDB();
         await sequelize.sync();
 
@@ -364,14 +419,27 @@ const startServer = async () => {
             console.log("QueryInterface Coupons check skipped:", e.message);
         }
 
-        server.listen(PORT, () => {
-            console.log(`🚀 Server running at http://localhost:${PORT}`);
-            console.log(`⚡ Socket.io is ready to connect`);
-        });
+        dbState.ready = true;
+        dbState.status = "ready";
+        dbState.lastCheckedAt = new Date().toISOString();
+        console.log("✅ Database is ready");
     } catch (error) {
-        console.error("❌ Can't run server: ", error);
-        process.exit(1);
+        dbState.ready = false;
+        dbState.status = "unavailable";
+        dbState.lastCheckedAt = new Date().toISOString();
+        dbState.lastError = error.message;
+        console.error("❌ Database initialization failed:", error.message);
+        console.log(`🔁 Retrying database initialization in ${Math.round(DB_RETRY_DELAY_MS / 1000)}s`);
+        setTimeout(initializeDatabase, DB_RETRY_DELAY_MS);
     }
+};
+
+const startServer = () => {
+    server.listen(PORT, () => {
+        console.log(`🚀 Server running at http://localhost:${PORT}`);
+        console.log(`⚡ Socket.io is ready to connect`);
+        initializeDatabase();
+    });
 };
 
 startServer();

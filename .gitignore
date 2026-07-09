@@ -17,6 +17,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
+package-lock.json
+
+# Accidental command-output artifacts
+/Common
+/Exited
+/node
+/server@*
 
 # =========================================
 # 3. NEXT.JS (FRONTEND BUILD)

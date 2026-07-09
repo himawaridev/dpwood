@@ -106,7 +106,7 @@ export default function AiSupportChat({ onOpenChange }) {
                 }
                 open={open}
                 onClose={closeChat}
-                width={420}
+                size={420}
                 className="dp-ai-chat-drawer"
             >
                 <Flex vertical className="dp-ai-chat-panel">

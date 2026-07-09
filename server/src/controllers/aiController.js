@@ -6,6 +6,7 @@ const Blog = require("../models/blog");
 const SupportTicket = require("../models/supportTicket");
 const TicketMessage = require("../models/ticketMessage");
 const User = require("../models/user");
+const { fetchSafeImage } = require("../utils/safeImageFetch");
 
 const CATEGORY_VALUES = ["cookware", "tableware", "utensils", "storage", "appliances", "cleaning"];
 const FALLBACK_PRODUCT_TEMPLATES = [
@@ -1521,36 +1522,14 @@ const downloadProductJsonSample = (req, res) => {
 const proxyImage = async (req, res) => {
     try {
         const targetUrl = cleanText(req.query.url);
-        if (!/^https?:\/\//i.test(targetUrl)) {
-            return res.status(400).send("Invalid image URL");
-        }
-
-        const response = await fetch(targetUrl, {
-            redirect: "follow",
-            headers: {
-                "User-Agent": "Mozilla/5.0 DPWOOD Image Proxy",
-                Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-            },
-        });
-
-        if (!response.ok) {
-            return res.status(502).send("Image source unavailable");
-        }
-
-        const contentType = response.headers.get("content-type") || "image/jpeg";
-        if (!contentType.startsWith("image/")) {
-            return res.status(415).send("URL is not an image");
-        }
-
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const { contentType, buffer } = await fetchSafeImage(targetUrl);
 
         res.setHeader("Content-Type", contentType);
         res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
         res.status(200).send(buffer);
     } catch (error) {
         console.error("proxyImage error:", error.message);
-        res.status(500).send("Cannot load image");
+        res.status(error.status || 500).send(error.status ? error.message : "Cannot load image");
     }
 };
 

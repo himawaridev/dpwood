@@ -6,8 +6,8 @@ services:
     container_name: dpwood_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: Dung22102003@@@ # Đổi mật khẩu này
-      MYSQL_DATABASE: dpwood_db   # Tên DB Sequelize sẽ connect
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_strong_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dpwood_db}
     ports:
       - "3307:3306"
     volumes:
@@ -28,9 +28,9 @@ services:
       - DB_HOST=db
       - DB_PORT=3306
       - DB_SSL=false
-      - DB_NAME=dpwood_db
+      - DB_NAME=${MYSQL_DATABASE:-dpwood_db}
       - DB_USER=root
-      - DB_PASSWORD=Dung22102003@@@
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-change_me_strong_password}
     depends_on:
       - db
 

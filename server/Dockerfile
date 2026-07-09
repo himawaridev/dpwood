@@ -1,14 +1,17 @@
-# Sử dụng môi trường Node.js bản 20 (Nhẹ và ổn định)
+# Sử dụng môi trường Node.js bản 20 (nhẹ và ổn định)
 FROM node:20-alpine
 
 # Tạo thư mục làm việc bên trong container
 WORKDIR /app
 
-# Copy file package.json vào trước để cài thư viện
-COPY package*.json ./
+# Bật pnpm theo phiên bản đã khai báo trong package.json
+RUN corepack enable
+
+# Copy manifest và lockfile vào trước để cài thư viện
+COPY package.json pnpm-lock.yaml ./
 
 # Cài đặt thư viện
-RUN npm install --legacy-peer-deps
+RUN pnpm install --frozen-lockfile
 
 # Copy toàn bộ code còn lại vào container
 COPY . .
@@ -17,5 +20,5 @@ COPY . .
 EXPOSE 5000
 
 # Lệnh khởi chạy server
-CMD ["npm", "start"] 
-# (Lưu ý: Đảm bảo trong package.json của server có lệnh "start": "node server.js")
+CMD ["pnpm", "start"]
+# package.json chạy entrypoint: node src/server.js

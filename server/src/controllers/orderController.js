@@ -15,6 +15,9 @@ const paymentService = require("../services/paymentService");
 const getFrontendUrl = () =>
     (process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
 
+const ORDER_STATUSES = new Set(["PENDING", "PAID", "SHIPPING", "COMPLETED", "CANCELED"]);
+const PAYMENT_METHODS = new Set(["COD", "QR"]);
+
 const normalizeProductVariants = (variants) => (Array.isArray(variants) ? variants : []);
 
 const getVariantLabel = (variant = {}) =>
@@ -84,9 +87,24 @@ const checkout = async (req, res) => {
     try {
         const { items, paymentMethod, shippingInfo, discountCode } = req.body;
         const userId = req.user.id;
+        const normalizedPaymentMethod = String(paymentMethod || "COD").toUpperCase();
 
         if (!items || items.length === 0) {
-            return res.status(400).json({ message: "Giỏ hàng không được để trống" });
+            const error = new Error("Giỏ hàng không được để trống");
+            error.status = 400;
+            throw error;
+        }
+
+        if (!PAYMENT_METHODS.has(normalizedPaymentMethod)) {
+            const error = new Error("Phương thức thanh toán không hợp lệ");
+            error.status = 400;
+            throw error;
+        }
+
+        if (!shippingInfo?.recipientName || !shippingInfo?.phoneNumber || !shippingInfo?.fullAddress) {
+            const error = new Error("Thông tin giao hàng không hợp lệ");
+            error.status = 400;
+            throw error;
         }
 
         const accountUser = await User.findByPk(userId, { transaction: t });
@@ -101,6 +119,13 @@ const checkout = async (req, res) => {
 
         // 2. DUYỆT GIỎ HÀNG VÀ TÍNH TOÁN GIÁ TRỊ THỰC TẾ TỪ DATABASE
         for (const item of items) {
+            const quantity = Number(item.quantity);
+            if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100) {
+                const error = new Error("Số lượng sản phẩm không hợp lệ");
+                error.status = 400;
+                throw error;
+            }
+
             const product = await Product.findByPk(item.productId, { transaction: t });
 
             if (!product) {
@@ -118,19 +143,19 @@ const checkout = async (req, res) => {
                 throw new Error(`Biến thể đã chọn của ${product.name} không còn tồn tại`);
             }
 
-            if (availableStock < item.quantity) {
+            if (availableStock < quantity) {
                 throw new Error(
                     `Sản phẩm ${orderItemName} chỉ còn ${availableStock} sản phẩm trong kho`,
                 );
             }
 
             // Tính tiền hàng dựa trên giá thực tế trong Database (Chống hack F12)
-            subTotal += itemPrice * item.quantity;
+            subTotal += itemPrice * quantity;
 
             // Chuẩn bị dữ liệu để lưu vào bảng OrderItem sau này
             orderItemsData.push({
                 productId: product.id,
-                quantity: item.quantity,
+                quantity,
                 priceAtPurchase: itemPrice, // Lưu giá lúc mua để sau này Admin đổi giá không làm sai lịch sử
                 variantId: selectedVariant?.variantId || null,
                 variantLabel,
@@ -140,13 +165,13 @@ const checkout = async (req, res) => {
 
             // Cập nhật tồn kho và số lượng đã bán
             if (selectedVariant) {
-                selectedVariant.stock = Math.max(0, Number(selectedVariant.stock || 0) - Number(item.quantity || 0));
+                selectedVariant.stock = Math.max(0, Number(selectedVariant.stock || 0) - quantity);
                 product.variants = variants;
                 product.stock = getVariantStockTotal(variants);
             } else {
-                product.stock -= item.quantity;
+                product.stock -= quantity;
             }
-            product.sold += item.quantity;
+            product.sold += quantity;
             await product.save({ transaction: t });
         }
 
@@ -233,7 +258,7 @@ const checkout = async (req, res) => {
         const finalTotalAmount = subTotal - discountAmount;
 
         // Kiểm tra điều kiện PayOS (Tối thiểu 2,000đ)
-        if (paymentMethod === "QR" && finalTotalAmount < 2000) {
+        if (normalizedPaymentMethod === "QR" && finalTotalAmount < 2000) {
             throw new Error("PayOS yêu cầu đơn hàng thanh toán qua QR phải từ 2,000 VNĐ trở lên.");
         }
 
@@ -247,7 +272,7 @@ const checkout = async (req, res) => {
                 discountCode: finalAppliedCode,
                 couponCode: finalAppliedCode,
                 discountAmount: discountAmount,
-                paymentMethod: paymentMethod || "COD",
+                paymentMethod: normalizedPaymentMethod,
                 status: "PENDING",
                 shippingName: shippingInfo.recipientName,
                 shippingPhone: shippingInfo.phoneNumber,
@@ -264,7 +289,7 @@ const checkout = async (req, res) => {
 
         // 5. XỬ LÝ THANH TOÁN QR (PAYOS)
         let payosData = null;
-        if (paymentMethod === "QR") {
+        if (normalizedPaymentMethod === "QR") {
             const paymentBody = {
                 orderCode: orderCodeNum,
                 amount: finalTotalAmount,
@@ -294,7 +319,7 @@ const checkout = async (req, res) => {
             shippingAddress: order.shippingAddress,
             totalAmount: order.totalAmount,
         };
-        const emailHtml = buildOrderEmail(orderInfo, orderItemsData, paymentMethod === "QR");
+        const emailHtml = buildOrderEmail(orderInfo, orderItemsData, normalizedPaymentMethod === "QR");
         sendEmail(user.email, `[DPWOOD] Xac nhan don hang #${orderCodeNum}`, emailHtml);
 
         res.status(201).json({
@@ -334,7 +359,8 @@ const handleWebhook = async (req, res) => {
 
         return res.json({ success: true });
     } catch (error) {
-        return res.json({ success: false });
+        console.warn("PayOS webhook rejected:", error.message);
+        return res.status(error.status || 401).json({ success: false, message: "Invalid payment webhook" });
     }
 };
 
@@ -346,6 +372,12 @@ const getOrderStatus = async (req, res) => {
             include: [{ model: User, attributes: ["email", "name"] }],
         });
         if (!order) return res.status(404).json({ message: "Khong tim thay don hang" });
+
+        const isOwner = String(order.userId) === String(req.user.id);
+        const isPrivileged = ["admin", "root"].includes(req.user.role);
+        if (!isOwner && !isPrivileged) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
 
         let paymentStatus = order.status;
 
@@ -441,7 +473,11 @@ const updateOrderStatusAdmin = async (req, res) => {
     try {
         const order = await Order.findByPk(req.params.id);
         if (!order) return res.status(404).json({ message: "Không tìm thấy" });
-        order.status = req.body.status;
+        const nextStatus = String(req.body.status || "").toUpperCase();
+        if (!ORDER_STATUSES.has(nextStatus)) {
+            return res.status(400).json({ message: "Trạng thái đơn hàng không hợp lệ" });
+        }
+        order.status = nextStatus;
         await order.save();
         res.status(200).json({ message: "Cập nhật thành công", order });
     } catch (error) {

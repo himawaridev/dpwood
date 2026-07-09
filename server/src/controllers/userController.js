@@ -9,6 +9,7 @@ const normalizeAccountPhone = (value = "") => {
 };
 
 const isValidAccountPhone = (phone) => /^0\d{9,10}$/.test(phone);
+const ALLOWED_ROLES = new Set(["root", "admin", "user", "seller"]);
 
 // Lấy danh sách tất cả người dùng
 const getAllUsers = async (req, res) => {
@@ -27,10 +28,22 @@ const getAllUsers = async (req, res) => {
 const updateRole = async (req, res) => {
     try {
         const { id } = req.params;
-        const { role } = req.body;
+        const role = String(req.body.role || "").trim();
+
+        if (!ALLOWED_ROLES.has(role)) {
+            return res.status(400).json({ message: "Vai trò không hợp lệ" });
+        }
 
         const user = await User.findByPk(id);
         if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+
+        if (user.role === "root" && req.user.role !== "root") {
+            return res.status(403).json({ message: "Không thể thay đổi tài khoản Root" });
+        }
+
+        if (["root", "admin"].includes(role) && req.user.role !== "root") {
+            return res.status(403).json({ message: "Chỉ Root mới có thể cấp quyền quản trị" });
+        }
 
         user.role = role;
         await user.save();
@@ -176,7 +189,7 @@ const getSystemLogs = async (req, res) => {
 const getMe = async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: { exclude: ["password"] },
+            attributes: { exclude: ["password", "refreshToken"] },
         });
 
         if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });

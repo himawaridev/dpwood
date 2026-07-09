@@ -4,8 +4,9 @@ const router = express.Router();
 const aiController = require("../controllers/aiController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const roleMiddleware = require("../middlewares/roleMiddleware");
+const { imageProxyLimiter, supportChatLimiter } = require("../middlewares/securityMiddleware");
 
-router.get("/image-proxy", aiController.proxyImage);
+router.get("/image-proxy", imageProxyLimiter, aiController.proxyImage);
 router.get("/product-image-placeholder", aiController.productImagePlaceholder);
 router.get("/sample-product-image", aiController.sampleProductImage);
 router.get("/product-json-sample", authMiddleware, roleMiddleware("admin", "root"), aiController.downloadProductJsonSample);
@@ -21,6 +22,6 @@ router.post(
     roleMiddleware("admin", "root"),
     aiController.autoResolveSupportTickets,
 );
-router.post("/support-chat", aiController.createSupportChatReply);
+router.post("/support-chat", supportChatLimiter, aiController.createSupportChatReply);
 
 module.exports = router;

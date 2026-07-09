@@ -10,6 +10,7 @@ const {
 } = require("../templates/emailTemplates");
 const { Op } = require("sequelize");
 const AuditLog = require("../models/auditLog");
+const { hashRefreshToken } = require("../utils/tokenSecurity");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const VERIFICATION_EMAIL_COOLDOWN_MS = 60 * 1000;
@@ -194,7 +195,7 @@ const login = async (req, res) => {
             expiresIn: "7d",
         });
 
-        user.refreshToken = refreshToken;
+        user.refreshToken = hashRefreshToken(refreshToken);
         await user.save();
 
         await AuditLog.create({
@@ -228,7 +229,7 @@ const logout = async (req, res) => {
 
         if (user) {
             // 1. Xóa refreshToken trong DB nếu có gửi lên
-            if (refreshToken === user.refreshToken) {
+            if (hashRefreshToken(refreshToken) === user.refreshToken) {
                 user.refreshToken = null;
                 await user.save();
             }
@@ -254,7 +255,7 @@ const refresh = async (req, res) => {
         if (!refreshToken) {
             return res.status(401).json({ message: "No refresh token" });
         }
-        const user = await User.findOne({ where: { refreshToken } });
+        const user = await User.findOne({ where: { refreshToken: hashRefreshToken(refreshToken) } });
         if (!user) {
             return res.status(403).json({ message: "Invalid refesh token" });
         }
@@ -420,7 +421,7 @@ const googleLogin = async (req, res) => {
             expiresIn: "7d",
         });
 
-        user.refreshToken = refreshToken;
+        user.refreshToken = hashRefreshToken(refreshToken);
         await user.save();
 
         await AuditLog.create({
