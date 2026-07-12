@@ -1,6 +1,8 @@
 const Product = require("../models/product");
 const ProductRating = require("../models/productRating");
 const Wishlist = require("../models/wishlist");
+const AuditLog = require("../models/auditLog");
+const { sequelize } = require("../config/connectSequelize");
 const { Op } = require("sequelize");
 
 const normalizeText = (value = "") =>
@@ -93,7 +95,10 @@ const refreshProductRatingSummary = async (product) => {
 
 const getAllProducts = async (req, res) => {
     try {
-        const allProducts = await Product.findAll({ order: [["createdAt", "DESC"]] });
+        const allProducts = await Product.findAll({
+            where: { isActive: true },
+            order: [["createdAt", "DESC"]],
+        });
         const query = req.query.search || req.query.q || "";
         const categories = normalizeListParam(req.query.category);
         const colors = normalizeListParam(req.query.color);
@@ -145,11 +150,13 @@ const getAllProducts = async (req, res) => {
 
 const getRelatedProducts = async (req, res) => {
     try {
-        const currentProduct = await Product.findByPk(req.params.id);
+        const currentProduct = await Product.findOne({
+            where: { id: req.params.id, isActive: true },
+        });
         if (!currentProduct) return res.status(404).json({ message: "San pham khong ton tai" });
 
         const products = await Product.findAll({
-            where: { id: { [Op.ne]: currentProduct.id } },
+            where: { id: { [Op.ne]: currentProduct.id }, isActive: true },
             limit: 80,
         });
         const currentText = productSearchText(currentProduct);
@@ -204,7 +211,7 @@ const getMyWishlist = async (req, res) => {
 
 const toggleWishlist = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id);
+        const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "San pham khong ton tai" });
 
         const existing = await Wishlist.findOne({
@@ -233,7 +240,7 @@ const toggleWishlist = async (req, res) => {
 
 const getProductById = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id);
+        const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "San pham khong ton tai" });
 
         res.status(200).json(product);
@@ -245,7 +252,7 @@ const getProductById = async (req, res) => {
 
 const getMyProductRating = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id);
+        const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "San pham khong ton tai" });
 
         const rating = await ProductRating.findOne({
@@ -264,7 +271,7 @@ const getMyProductRating = async (req, res) => {
 
 const rateProduct = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id);
+        const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "San pham khong ton tai" });
 
         const ratingValue = normalizeRating(req.body.rating);
@@ -342,7 +349,7 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id);
+        const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "Khong tim thay san pham" });
 
         await product.update(req.body);
@@ -355,15 +362,56 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id);
+        const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "Khong tim thay san pham" });
 
         await ProductRating.destroy({ where: { productId: product.id } });
-        await product.destroy();
+        await Wishlist.destroy({ where: { productId: product.id } });
+        await product.update({ isActive: false, stock: 0 });
         res.status(200).json({ message: "Da xoa san pham thanh cong" });
     } catch (error) {
         console.error("deleteProduct error:", error);
         res.status(500).json({ message: "Khong the xoa san pham", error: error.message });
+    }
+};
+
+const deleteAllProducts = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const productCount = await Product.count({
+            where: { isActive: true },
+            transaction,
+        });
+
+        if (!productCount) {
+            await transaction.rollback();
+            return res.status(200).json({ message: "Kho san pham da trong", deletedCount: 0 });
+        }
+
+        await Wishlist.destroy({ where: {}, transaction });
+        await ProductRating.destroy({ where: {}, transaction });
+        await Product.update(
+            { isActive: false, stock: 0 },
+            { where: { isActive: true }, transaction },
+        );
+        await AuditLog.create(
+            {
+                userId: req.user.id,
+                action: "ALL_PRODUCTS_ARCHIVED",
+                details: `Da xoa ${productCount} san pham khoi cua hang; lich su don hang duoc giu lai.`,
+            },
+            { transaction },
+        );
+
+        await transaction.commit();
+        res.status(200).json({
+            message: `Da xoa ${productCount} san pham khoi cua hang`,
+            deletedCount: productCount,
+        });
+    } catch (error) {
+        await transaction.rollback();
+        console.error("deleteAllProducts error:", error);
+        res.status(500).json({ message: "Khong the xoa toan bo san pham", error: error.message });
     }
 };
 
@@ -378,4 +426,5 @@ module.exports = {
     createProduct,
     updateProduct,
     deleteProduct,
+    deleteAllProducts,
 };

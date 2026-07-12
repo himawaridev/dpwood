@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Table, Tag, Button, Popconfirm, Space, Input, Flex } from "antd";
+import { Table, Tag, Button, Popconfirm, Space, Input, Flex, Select } from "antd";
 import { DeleteOutlined, LockOutlined, UnlockOutlined, ReloadOutlined } from "@ant-design/icons";
 
 export default function StatusControlTab({
@@ -11,10 +11,19 @@ export default function StatusControlTab({
     onRestore,
 }) {
     const [searchText, setSearchText] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
 
     const filteredUsers = users.filter((user) => {
         const keyword = searchText.toLowerCase();
-        return (
+        const isDeleted = Boolean(user.deletedAt);
+        const isLocked = !isDeleted && user.lockUntil && new Date(user.lockUntil) > new Date();
+        const statusMatches =
+            statusFilter === "all" ||
+            (statusFilter === "deleted" && isDeleted) ||
+            (statusFilter === "locked" && isLocked) ||
+            (statusFilter === "active" && !isDeleted && !isLocked);
+
+        return statusMatches && (
             (user.name || "").toLowerCase().includes(keyword) ||
             (user.email || "").toLowerCase().includes(keyword) ||
             (user.username || "").toLowerCase().includes(keyword)
@@ -106,15 +115,29 @@ export default function StatusControlTab({
     return (
         <>
             <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
-                <Input.Search
-                    placeholder="Tìm theo tên, email, username..."
-                    allowClear
-                    enterButton="Tìm kiếm"
-                    size="large"
-                    onSearch={(value) => setSearchText(value)}
-                    onChange={(event) => setSearchText(event.target.value)}
-                    style={{ maxWidth: 400 }}
-                />
+                <Space wrap>
+                    <Input.Search
+                        placeholder="Tìm theo tên, email, username..."
+                        allowClear
+                        enterButton="Tìm kiếm"
+                        size="large"
+                        onSearch={(value) => setSearchText(value)}
+                        onChange={(event) => setSearchText(event.target.value)}
+                        style={{ width: 380, maxWidth: "100%" }}
+                    />
+                    <Select
+                        size="large"
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        style={{ minWidth: 170 }}
+                        options={[
+                            { value: "all", label: "Tất cả trạng thái" },
+                            { value: "active", label: "Đang hoạt động" },
+                            { value: "locked", label: "Đang bị khóa" },
+                            { value: "deleted", label: "Đã bị xóa" },
+                        ]}
+                    />
+                </Space>
                 <Button size="large" onClick={onRefresh} loading={loading}>
                     Làm mới dữ liệu
                 </Button>

@@ -365,6 +365,14 @@ const initializeDatabase = async () => {
                 });
                 console.log("Added microwaveSafe column to Products via QueryInterface");
             }
+            if (!tableDesc.isActive) {
+                await queryInterface.addColumn("Products", "isActive", {
+                    type: DataTypes.BOOLEAN,
+                    allowNull: false,
+                    defaultValue: true,
+                });
+                console.log("Added isActive column to Products via QueryInterface");
+            }
             if (!tableDesc.rating) {
                 await queryInterface.addColumn("Products", "rating", {
                     type: DataTypes.DECIMAL(3, 2),

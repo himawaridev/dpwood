@@ -142,6 +142,7 @@ const getProductImages = (product) => {
 
 const getImageCandidatesFromCatalog = async (searchText, limit = 4) => {
     const products = await Product.findAll({
+        where: { isActive: true },
         attributes: [
             "name",
             "description",
@@ -1457,7 +1458,7 @@ const importProductJsonDrafts = async (req, res) => {
             : Array.isArray(req.body?.products)
               ? req.body.products
               : [];
-        const count = clampNumber(req.body?.limit || payloadProducts.length, 1, 100, payloadProducts.length || 1);
+        const count = clampNumber(req.body?.limit || payloadProducts.length, 1, 500, payloadProducts.length || 1);
         const rawDrafts = sanitizeProductBatchDrafts({ products: payloadProducts }).slice(0, count);
 
         if (!rawDrafts.length) {
@@ -1600,6 +1601,7 @@ const createProductAdvisorReply = async (req, res) => {
         const messages = sanitizeChatMessages(req.body.messages);
         const prompt = ensurePrompt(req.body.prompt || messages[messages.length - 1]?.content);
         const products = await Product.findAll({
+            where: { isActive: true },
             order: [
                 ["sold", "DESC"],
                 ["rating", "DESC"],

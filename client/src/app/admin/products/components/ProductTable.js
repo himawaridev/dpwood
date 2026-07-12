@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { Table, Button, Typography, Image, Flex, Popconfirm, Input, Space, Tag } from "antd";
+import { Table, Button, Typography, Image, Flex, Popconfirm, Input, Space, Tag, Upload } from "antd";
 import {
     DeleteOutlined,
+    DownloadOutlined,
     EditOutlined,
     FireOutlined,
+    FileTextOutlined,
     PlusOutlined,
     ReloadOutlined,
     SearchOutlined,
+    UploadOutlined,
 } from "@ant-design/icons";
 import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
@@ -16,7 +19,20 @@ const { Title, Text } = Typography;
 const formatCurrency = (value) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 
-export default function ProductTable({ products, loading, onAdd, onEdit, onDelete, onRefresh }) {
+export default function ProductTable({
+    products,
+    loading,
+    onAdd,
+    onEdit,
+    onDelete,
+    onRefresh,
+    onExportJson,
+    onDeleteAll,
+    deletingAll,
+    onImportJson,
+    onDownloadSample,
+    jsonLoading,
+}) {
     const [searchText, setSearchText] = useState("");
 
     const filteredProducts = products.filter((product) =>
@@ -144,6 +160,39 @@ export default function ProductTable({ products, loading, onAdd, onEdit, onDelet
                     />
                     <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading}>
                         Làm mới
+                    </Button>
+                    <Button
+                        icon={<DownloadOutlined />}
+                        onClick={onExportJson}
+                        disabled={loading || !products.length}
+                    >
+                        Xuất JSON
+                    </Button>
+                    <Upload
+                        accept="application/json,.json"
+                        showUploadList={false}
+                        beforeUpload={onImportJson}
+                        disabled={jsonLoading}
+                    >
+                        <Button icon={<UploadOutlined />} loading={jsonLoading}>
+                            Import JSON
+                        </Button>
+                    </Upload>
+                    <Button
+                        icon={<FileTextOutlined />}
+                        onClick={onDownloadSample}
+                        loading={jsonLoading}
+                    >
+                        Tải file mẫu
+                    </Button>
+                    <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={onDeleteAll}
+                        loading={deletingAll}
+                        disabled={loading || !products.length}
+                    >
+                        Xóa tất cả
                     </Button>
                     <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
                         Thêm mới

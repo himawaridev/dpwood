@@ -131,8 +131,8 @@ export default function Navbar() {
             placement="bottomRight"
             arrow
             getPopupContainer={() => document.body}
-            overlayClassName="webcake-account-dropdown"
-            overlayStyle={{ zIndex: 5000 }}
+            classNames={{ root: "webcake-account-dropdown" }}
+            styles={{ root: { zIndex: 5000 } }}
         >
             <button type="button" className="webcake-account-button" aria-label="Account">
                 <Avatar

@@ -67,7 +67,7 @@ export default function AdminOrdersPage() {
         }
 
         if (searchText) {
-            const lowerSearch = searchText.toLowerCase().trim();
+            const lowerSearch = searchText.toLowerCase().trim().replace(/^#/, "");
             filtered = filtered.filter((order) => {
                 const searchableFields = [
                     order.orderCode,
@@ -128,10 +128,9 @@ export default function AdminOrdersPage() {
                     <Input.Search
                         placeholder="Tìm mã đơn, SĐT, tên..."
                         allowClear
+                        value={searchText}
                         onSearch={setSearchText}
-                        onChange={(event) => {
-                            if (!event.target.value) setSearchText("");
-                        }}
+                        onChange={(event) => setSearchText(event.target.value)}
                         style={{ width: 260 }}
                         enterButton={<SearchOutlined />}
                     />

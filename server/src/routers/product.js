@@ -27,6 +27,12 @@ router.put(
     productController.updateProduct,
 );
 router.delete(
+    "/all",
+    authMiddleware,
+    roleMiddleware("root", "admin"),
+    productController.deleteAllProducts,
+);
+router.delete(
     "/:id",
     authMiddleware,
     roleMiddleware("root", "admin"),

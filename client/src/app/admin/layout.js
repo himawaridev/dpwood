@@ -18,6 +18,10 @@ import {
     EditOutlined,
     PercentageOutlined,
     RobotOutlined,
+    LoginOutlined,
+    SafetyCertificateOutlined,
+    SolutionOutlined,
+    SwapOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -60,6 +64,12 @@ export default function AdminLayout({ children }) {
             return;
         }
 
+        if (pathname.startsWith("/admin/users")) {
+            setSelectedMenuKey(pathname === "/admin/users" ? "/admin/users/roles" : pathname);
+            setOpenMenuKeys(["/admin/users"]);
+            return;
+        }
+
         setSelectedMenuKey(
             ADMIN_ROUTE_KEYS.find((key) => pathname.startsWith(key)) || "/admin/dashboard",
         );
@@ -79,7 +89,17 @@ export default function AdminLayout({ children }) {
 
     const menuItems = [
         { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Tong quan" },
-        { key: "/admin/users", icon: <TeamOutlined />, label: "Nguoi dung" },
+        {
+            key: "/admin/users",
+            icon: <TeamOutlined />,
+            label: "Người dùng",
+            children: [
+                { key: "/admin/users/roles", icon: <SolutionOutlined />, label: "Phân quyền" },
+                { key: "/admin/users/status", icon: <SafetyCertificateOutlined />, label: "Trạng thái" },
+                { key: "/admin/users/auth-logs", icon: <LoginOutlined />, label: "Lịch sử đăng nhập" },
+                { key: "/admin/users/transactions", icon: <SwapOutlined />, label: "Lịch sử giao dịch" },
+            ],
+        },
         { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "San pham" },
         { key: "/admin/orders", icon: <FileTextOutlined />, label: "Don hang" },
         { key: "/admin/notifications", icon: <BellOutlined />, label: "Thong bao" },
@@ -125,7 +145,11 @@ export default function AdminLayout({ children }) {
     ];
 
     const activeKey =
-        pathname.startsWith("/admin/ai")
+        pathname.startsWith("/admin/users")
+            ? pathname === "/admin/users"
+                ? "/admin/users/roles"
+                : pathname
+            : pathname.startsWith("/admin/ai")
             ? pathname === "/admin/ai"
                 ? "/admin/ai/blog"
                 : pathname
@@ -201,7 +225,7 @@ export default function AdminLayout({ children }) {
                         placement="bottomRight"
                         arrow
                         getPopupContainer={() => document.body}
-                        overlayClassName="dp-admin-user-dropdown"
+                        classNames={{ root: "dp-admin-user-dropdown" }}
                     >
                         <button type="button" className="dp-admin-account">
                             <Avatar

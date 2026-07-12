@@ -30,7 +30,7 @@ class OrderService {
                     transaction: t,
                     lock: t.LOCK.UPDATE,
                 });
-                if (!product) throw new Error(`Sản phẩm không tồn tại`);
+                if (!product || product.isActive === false) throw new Error(`Sản phẩm không tồn tại`);
                 if (product.stock < item.quantity)
                     throw new Error(`"${product.name}" chỉ còn ${product.stock} kiện.`);
 

@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useCallback, useEffect, useState } from "react";
-import { App, Typography, Tabs } from "antd";
+import { App, Typography } from "antd";
 import api from "@/utils/axios";
 
 import RoleManagementTab from "./components/RoleManagementTab";
@@ -10,7 +10,14 @@ import TransactionLogTab from "./components/TransactionLogTab";
 
 const { Title } = Typography;
 
-export default function AdminUsersPage() {
+const SECTION_TITLES = {
+    roles: ["Phân quyền người dùng", "Quản lý vai trò và số điện thoại của từng tài khoản."],
+    status: ["Trạng thái tài khoản", "Khóa, mở khóa, xóa mềm hoặc khôi phục tài khoản."],
+    "auth-logs": ["Lịch sử đăng nhập", "Theo dõi đăng nhập, đăng xuất và các thay đổi tài khoản."],
+    transactions: ["Lịch sử giao dịch", "Tra cứu tạo đơn, thanh toán, hủy đơn và cập nhật trạng thái."],
+};
+
+export function AdminUsersSection({ section = "roles" }) {
     const { message } = App.useApp();
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
@@ -32,7 +39,7 @@ export default function AdminUsersPage() {
     const fetchLogs = useCallback(async (searchValue = "") => {
         try {
             setLoadingLogs(true);
-            const res = await api.get(`/users/logs${searchValue ? `?search=${searchValue}` : ""}`);
+            const res = await api.get(`/users/logs${searchValue ? `?search=${encodeURIComponent(searchValue)}` : ""}`);
             setLogs(res.data);
         } catch {
             message.error("Không thể lấy nhật ký hệ thống");
@@ -96,54 +103,47 @@ export default function AdminUsersPage() {
         }
     };
 
-    const tabItems = [
-        {
-            key: "1",
-            label: "Phân quyền",
-            children: (
-                <RoleManagementTab
-                    users={users}
-                    loading={loading}
-                    onRefresh={fetchUsers}
-                    onChangeRole={handleChangeRole}
-                    onUpdatePhone={handleUpdatePhone}
-                />
-            ),
-        },
-        {
-            key: "2",
-            label: "Trạng thái",
-            children: (
-                <StatusControlTab
-                    users={users}
-                    loading={loading}
-                    onRefresh={fetchUsers}
-                    onToggleBan={handleToggleBan}
-                    onDelete={handleDelete}
-                    onRestore={handleRestore}
-                />
-            ),
-        },
-        {
-            key: "3",
-            label: "Lịch sử đăng nhập",
-            children: <AuthLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />,
-        },
-        {
-            key: "4",
-            label: "Lịch sử giao dịch",
-            children: (
-                <TransactionLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />
-            ),
-        },
-    ];
+    const content = {
+        roles: (
+            <RoleManagementTab
+                users={users}
+                loading={loading}
+                onRefresh={fetchUsers}
+                onChangeRole={handleChangeRole}
+                onUpdatePhone={handleUpdatePhone}
+            />
+        ),
+        status: (
+            <StatusControlTab
+                users={users}
+                loading={loading}
+                onRefresh={fetchUsers}
+                onToggleBan={handleToggleBan}
+                onDelete={handleDelete}
+                onRestore={handleRestore}
+            />
+        ),
+        "auth-logs": <AuthLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />,
+        transactions: (
+            <TransactionLogTab logs={logs} loadingLogs={loadingLogs} onFetchLogs={fetchLogs} />
+        ),
+    };
+    const activeSection = SECTION_TITLES[section] ? section : "roles";
+    const [title, description] = SECTION_TITLES[activeSection];
 
     return (
         <>
-            <Title level={3} style={{ marginTop: 0, marginBottom: 20 }}>
-                Quản lý người dùng & hoạt động
-            </Title>
-            <Tabs defaultActiveKey="1" items={tabItems} />
+            <div style={{ marginBottom: 20 }}>
+                <Title level={3} style={{ margin: 0 }}>
+                    {title}
+                </Title>
+                <Typography.Text type="secondary">{description}</Typography.Text>
+            </div>
+            {content[activeSection]}
         </>
     );
+}
+
+export default function AdminUsersPage() {
+    return <AdminUsersSection section="roles" />;
 }

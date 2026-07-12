@@ -22,21 +22,18 @@ import {
     Switch,
     Tag,
     Typography,
-    Upload,
 } from "antd";
 import {
     AppstoreAddOutlined,
     CalendarOutlined,
     CheckCircleOutlined,
     CustomerServiceOutlined,
-    DownloadOutlined,
     EditOutlined,
     FileTextOutlined,
     RobotOutlined,
     SafetyCertificateOutlined,
     StopOutlined,
     ThunderboltOutlined,
-    UploadOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
@@ -195,55 +192,6 @@ export function AdminAiCenterSection({ section = "blog" }) {
             message.success(response.data?.message || `Đã lưu ${products.length} sản phẩm.`);
         } catch (error) {
             message.error(error.response?.data?.message || "Không thể lưu danh sách sản phẩm đã duyệt");
-        } finally {
-            setProductLoading(false);
-        }
-    };
-
-    const handleImportProductJson = async (file) => {
-        try {
-            setProductLoading(true);
-            const text = await file.text();
-            const parsed = JSON.parse(text);
-            const products = Array.isArray(parsed) ? parsed : parsed.products;
-
-            if (!Array.isArray(products) || !products.length) {
-                message.error("File JSON cần là mảng sản phẩm hoặc object có trường products.");
-                return Upload.LIST_IGNORE;
-            }
-
-            const response = await api.post("/ai/product-json-import", {
-                products,
-                useFreeResources: true,
-            });
-            const importedProducts = response.data?.products || [];
-            setPendingProducts(importedProducts);
-            setCreatedProducts([]);
-            setBrokenProductImages({});
-            message.success(response.data?.message || `Đã nạp ${importedProducts.length} sản phẩm từ JSON.`);
-        } catch (error) {
-            message.error(error.response?.data?.message || error.message || "Không thể import file JSON sản phẩm.");
-        } finally {
-            setProductLoading(false);
-        }
-
-        return Upload.LIST_IGNORE;
-    };
-
-    const handleDownloadProductJsonSample = async () => {
-        try {
-            setProductLoading(true);
-            const response = await api.get("/ai/product-json-sample", { responseType: "blob" });
-            const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/json" }));
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "sample-kitchen-products.json";
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            message.error(error.response?.data?.message || "Không thể tải file JSON mẫu. Vui lòng kiểm tra quyền admin.");
         } finally {
             setProductLoading(false);
         }
@@ -700,26 +648,6 @@ export function AdminAiCenterSection({ section = "blog" }) {
                         <Button type="primary" htmlType="submit" loading={productLoading} icon={<AppstoreAddOutlined />}>
                             Tạo sản phẩm bằng AI
                         </Button>
-                        <Divider />
-                        <Space wrap>
-                            <Upload
-                                accept="application/json,.json"
-                                showUploadList={false}
-                                beforeUpload={handleImportProductJson}
-                                disabled={productLoading}
-                            >
-                                <Button icon={<UploadOutlined />} loading={productLoading}>
-                                    Import JSON
-                                </Button>
-                            </Upload>
-                            <Button
-                                icon={<DownloadOutlined />}
-                                onClick={handleDownloadProductJsonSample}
-                                loading={productLoading}
-                            >
-                                Tải file mẫu
-                            </Button>
-                        </Space>
                     </Form>
                 </Card>
             </Col>

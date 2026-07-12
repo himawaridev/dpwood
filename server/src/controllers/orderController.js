@@ -186,7 +186,7 @@ const checkout = async (req, res) => {
 
             const product = await Product.findByPk(item.productId, { transaction: t });
 
-            if (!product) {
+            if (!product || product.isActive === false) {
                 throw new Error(`Sản phẩm với ID ${item.productId} không tồn tại`);
             }
 

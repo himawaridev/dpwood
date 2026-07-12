@@ -11,16 +11,18 @@ const normalizeAccountPhone = (value = "") => {
 
 export default function RoleManagementTab({ users, loading, onRefresh, onChangeRole, onUpdatePhone }) {
     const [searchText, setSearchText] = useState("");
+    const [roleFilter, setRoleFilter] = useState("all");
     const [phoneDrafts, setPhoneDrafts] = useState({});
 
     const filteredUsers = users.filter((user) => {
         const keyword = searchText.toLowerCase();
-        return (
+        const matchesRole = roleFilter === "all" || user.role === roleFilter;
+        const matchesSearch =
             (user.name || "").toLowerCase().includes(keyword) ||
             (user.email || "").toLowerCase().includes(keyword) ||
             (user.username || "").toLowerCase().includes(keyword) ||
-            (user.phone || "").toLowerCase().includes(keyword)
-        );
+            (user.phone || "").toLowerCase().includes(keyword);
+        return matchesRole && matchesSearch;
     });
 
     const columns = [
@@ -93,15 +95,30 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
     return (
         <>
             <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
-                <Input.Search
-                    placeholder="Tìm theo tên, email, username, số điện thoại..."
-                    allowClear
-                    enterButton="Tìm kiếm"
-                    size="large"
-                    onSearch={(value) => setSearchText(value)}
-                    onChange={(event) => setSearchText(event.target.value)}
-                    style={{ maxWidth: 440 }}
-                />
+                <Space wrap>
+                    <Input.Search
+                        placeholder="Tìm theo tên, email, username, số điện thoại..."
+                        allowClear
+                        enterButton="Tìm kiếm"
+                        size="large"
+                        onSearch={(value) => setSearchText(value)}
+                        onChange={(event) => setSearchText(event.target.value)}
+                        style={{ width: 400, maxWidth: "100%" }}
+                    />
+                    <Select
+                        size="large"
+                        value={roleFilter}
+                        onChange={setRoleFilter}
+                        style={{ minWidth: 150 }}
+                        options={[
+                            { value: "all", label: "Tất cả quyền" },
+                            { value: "root", label: "Root" },
+                            { value: "admin", label: "Admin" },
+                            { value: "seller", label: "Seller" },
+                            { value: "user", label: "User" },
+                        ]}
+                    />
+                </Space>
                 <Button size="large" onClick={onRefresh} loading={loading}>
                     Làm mới danh sách
                 </Button>
