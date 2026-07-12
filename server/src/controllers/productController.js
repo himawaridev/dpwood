@@ -1,5 +1,70 @@
 const Product = require("../models/product");
 const ProductRating = require("../models/productRating");
+const Wishlist = require("../models/wishlist");
+const { Op } = require("sequelize");
+
+const normalizeText = (value = "") =>
+    String(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[đĐ]/g, "d")
+        .toLowerCase();
+
+const parseNumber = (value, fallback = null) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+};
+
+const productSearchText = (product) =>
+    normalizeText(
+        [
+            product.name,
+            product.description,
+            product.category,
+            product.material,
+            product.color,
+            product.brand,
+            product.capacity,
+            product.warranty,
+            product.origin,
+        ].join(" "),
+    );
+
+const productMatchesQuery = (product, query) => {
+    const terms = normalizeText(query).split(/\s+/).filter(Boolean);
+    if (!terms.length) return true;
+    const text = productSearchText(product);
+    return terms.every((term) => text.includes(term));
+};
+
+const productMatchesList = (value, selected) => {
+    if (!selected?.length) return true;
+    return selected.includes(String(value || ""));
+};
+
+const normalizeListParam = (value) =>
+    String(value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+const buildProductFacets = (products) => {
+    const facetValues = (key) =>
+        [...new Set(products.map((product) => product[key]).filter(Boolean))]
+            .sort((a, b) => String(a).localeCompare(String(b), "vi"));
+
+    return {
+        categories: facetValues("category"),
+        materials: facetValues("material"),
+        colors: facetValues("color"),
+        brands: facetValues("brand"),
+        capacities: facetValues("capacity"),
+        price: {
+            min: products.length ? Math.min(...products.map((product) => Number(product.price || 0))) : 0,
+            max: products.length ? Math.max(...products.map((product) => Number(product.price || 0))) : 0,
+        },
+    };
+};
 
 const normalizeRating = (rating) => {
     const ratingValue = Number(rating);
@@ -28,11 +93,141 @@ const refreshProductRatingSummary = async (product) => {
 
 const getAllProducts = async (req, res) => {
     try {
-        const products = await Product.findAll({ order: [["createdAt", "DESC"]] });
+        const allProducts = await Product.findAll({ order: [["createdAt", "DESC"]] });
+        const query = req.query.search || req.query.q || "";
+        const categories = normalizeListParam(req.query.category);
+        const colors = normalizeListParam(req.query.color);
+        const materials = normalizeListParam(req.query.material);
+        const brands = normalizeListParam(req.query.brand);
+        const minPrice = parseNumber(req.query.minPrice);
+        const maxPrice = parseNumber(req.query.maxPrice);
+        const minRating = parseNumber(req.query.minRating);
+        const onlyInStock = String(req.query.inStock || "").toLowerCase() === "true";
+        const sortBy = String(req.query.sort || req.query.sortBy || "newest");
+
+        let products = allProducts.filter((product) => {
+            const price = Number(product.price || 0);
+            const rating = Number(product.rating || 0);
+            return (
+                productMatchesQuery(product, query) &&
+                productMatchesList(product.category, categories) &&
+                productMatchesList(product.color, colors) &&
+                productMatchesList(product.material, materials) &&
+                productMatchesList(product.brand, brands) &&
+                (minPrice === null || price >= minPrice) &&
+                (maxPrice === null || price <= maxPrice) &&
+                (minRating === null || rating >= minRating) &&
+                (!onlyInStock || Number(product.stock || 0) > 0)
+            );
+        });
+
+        products = products.sort((a, b) => {
+            if (sortBy === "priceAsc") return Number(a.price || 0) - Number(b.price || 0);
+            if (sortBy === "priceDesc") return Number(b.price || 0) - Number(a.price || 0);
+            if (sortBy === "sold") return Number(b.sold || 0) - Number(a.sold || 0);
+            if (sortBy === "rating") return Number(b.rating || 0) - Number(a.rating || 0);
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+
+        if (String(req.query.withFacets || "").toLowerCase() === "true") {
+            return res.status(200).json({
+                products,
+                facets: buildProductFacets(allProducts),
+            });
+        }
+
         res.status(200).json(products);
     } catch (error) {
         console.error("getAllProducts error:", error);
         res.status(500).json({ message: "Khong the lay danh sach san pham", error: error.message });
+    }
+};
+
+const getRelatedProducts = async (req, res) => {
+    try {
+        const currentProduct = await Product.findByPk(req.params.id);
+        if (!currentProduct) return res.status(404).json({ message: "San pham khong ton tai" });
+
+        const products = await Product.findAll({
+            where: { id: { [Op.ne]: currentProduct.id } },
+            limit: 80,
+        });
+        const currentText = productSearchText(currentProduct);
+        const currentTokens = new Set(currentText.split(/\s+/).filter((token) => token.length >= 3));
+
+        const scored = products
+            .map((product) => {
+                const text = productSearchText(product);
+                const overlapScore = [...currentTokens].filter((token) => text.includes(token)).length;
+                const categoryScore = product.category && product.category === currentProduct.category ? 80 : 0;
+                const materialScore = product.material && product.material === currentProduct.material ? 35 : 0;
+                const brandScore = product.brand && product.brand === currentProduct.brand ? 20 : 0;
+                const ratingScore = Number(product.rating || 0) * 4;
+                const soldScore = Math.min(30, Number(product.sold || 0));
+                return {
+                    product,
+                    score: categoryScore + materialScore + brandScore + overlapScore + ratingScore + soldScore,
+                };
+            })
+            .sort((a, b) => b.score - a.score || new Date(b.product.createdAt || 0) - new Date(a.product.createdAt || 0))
+            .slice(0, 8)
+            .map((item) => item.product);
+
+        res.status(200).json(scored);
+    } catch (error) {
+        console.error("getRelatedProducts error:", error);
+        res.status(500).json({ message: "Khong the lay san pham lien quan", error: error.message });
+    }
+};
+
+const getMyWishlist = async (req, res) => {
+    try {
+        const wishlistItems = await Wishlist.findAll({
+            where: { userId: req.user.id },
+            include: [{ model: Product }],
+            order: [["createdAt", "DESC"]],
+        });
+
+        res.status(200).json(
+            wishlistItems.map((item) => ({
+                id: item.id,
+                productId: item.productId,
+                createdAt: item.createdAt,
+                Product: item.Product,
+            })),
+        );
+    } catch (error) {
+        console.error("getMyWishlist error:", error);
+        res.status(500).json({ message: "Khong the lay wishlist", error: error.message });
+    }
+};
+
+const toggleWishlist = async (req, res) => {
+    try {
+        const product = await Product.findByPk(req.params.id);
+        if (!product) return res.status(404).json({ message: "San pham khong ton tai" });
+
+        const existing = await Wishlist.findOne({
+            where: {
+                userId: req.user.id,
+                productId: product.id,
+            },
+        });
+
+        if (existing) {
+            await existing.destroy();
+            return res.status(200).json({ wished: false, productId: product.id });
+        }
+
+        await Wishlist.create({
+            userId: req.user.id,
+            productId: product.id,
+        });
+
+        res.status(201).json({ wished: true, productId: product.id });
+    } catch (error) {
+        console.error("toggleWishlist error:", error);
+        res.status(500).json({ message: "Khong the cap nhat wishlist", error: error.message });
     }
 };
 
@@ -175,6 +370,9 @@ const deleteProduct = async (req, res) => {
 module.exports = {
     getAllProducts,
     getProductById,
+    getRelatedProducts,
+    getMyWishlist,
+    toggleWishlist,
     getMyProductRating,
     rateProduct,
     createProduct,

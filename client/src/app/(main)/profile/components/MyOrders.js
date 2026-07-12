@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { App, Table, Tag, Button, Typography, Modal, Empty, Alert, Descriptions, Image, Tooltip } from "antd";
+import { App, Table, Tag, Button, Typography, Modal, Empty, Alert, Descriptions, Image, Steps, Tooltip } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
@@ -173,6 +173,27 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                                 <Text strong>{selectedOrder.paymentMethod === "QR" ? "QR PayOS" : "COD"}</Text>
                             </div>
                         </div>
+
+                        {selectedOrder.timeline?.length > 0 && (
+                            <div className="dp-order-timeline">
+                                <Title level={5}>Tiến trình đơn hàng</Title>
+                                <Steps
+                                    responsive
+                                    items={selectedOrder.timeline.map((item) => ({
+                                        title: item.title,
+                                        status: item.status,
+                                        description: (
+                                            <span>
+                                                {item.description}
+                                                {item.date && (
+                                                    <small>{new Date(item.date).toLocaleString("vi-VN")}</small>
+                                                )}
+                                            </span>
+                                        ),
+                                    }))}
+                                />
+                            </div>
+                        )}
 
                         <Descriptions
                             title="Thông tin giao hàng"

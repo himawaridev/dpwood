@@ -23,5 +23,6 @@ router.post(
     aiController.autoResolveSupportTickets,
 );
 router.post("/support-chat", supportChatLimiter, aiController.createSupportChatReply);
+router.post("/product-advisor", supportChatLimiter, aiController.createProductAdvisorReply);
 
 module.exports = router;

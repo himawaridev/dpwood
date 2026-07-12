@@ -2160,6 +2160,77 @@ a {
   border-radius: 0 !important;
 }
 
+.webcake-product-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #f7f7f7;
+}
+
+.webcake-product-wishlist {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 4;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.94);
+  color: #222;
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.webcake-product-wishlist:hover,
+.webcake-product-wishlist.is-wished {
+  color: var(--dp-coral);
+  border-color: var(--dp-coral);
+  background: #fff;
+}
+
+.webcake-product-wishlist:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.dp-product-advanced-filters {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--dp-soft-border);
+}
+
+.dp-product-filter-toggle {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.dp-product-filter-toggle .anticon {
+  color: var(--dp-coral);
+}
+
+.dp-order-timeline {
+  padding: 18px 0 22px;
+  border-bottom: 1px solid var(--dp-soft-border);
+}
+
+.dp-order-timeline .ant-steps-item-description span,
+.dp-order-timeline .ant-steps-item-description small {
+  display: block;
+}
+
+.dp-order-timeline .ant-steps-item-description small {
+  margin-top: 4px;
+  color: #999;
+}
+
 .webcake-product-image img {
   width: 100%;
   height: 100%;
@@ -2504,6 +2575,64 @@ a {
 .dp-ai-chat-row.is-user .dp-ai-chat-bubble {
   background: #fff5f3;
   border-color: rgba(240, 155, 144, 0.35);
+}
+
+.dp-ai-product-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.dp-ai-product-card {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 7px;
+  border: 1px solid var(--dp-soft-border);
+  border-radius: 0;
+  background: #fff;
+  color: #222;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dp-ai-product-card:hover {
+  border-color: var(--dp-coral);
+}
+
+.dp-ai-product-card img,
+.dp-ai-product-placeholder {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+  background: #f8f8f8;
+}
+
+.dp-ai-product-card > span:last-child {
+  min-width: 0;
+}
+
+.dp-ai-product-card strong,
+.dp-ai-product-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-ai-product-card strong {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.dp-ai-product-card small {
+  margin-top: 3px;
+  color: var(--dp-coral);
 }
 
 .dp-ai-chat-quick,

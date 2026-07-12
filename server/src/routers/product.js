@@ -9,6 +9,9 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 // [PUBLIC] ROUTES - Xem sản phẩm
 // ==========================================
 router.get("/", productController.getAllProducts);
+router.get("/wishlist/me", authMiddleware, productController.getMyWishlist);
+router.post("/:id/wishlist", authMiddleware, productController.toggleWishlist);
+router.get("/:id/related", productController.getRelatedProducts);
 router.get("/:id", productController.getProductById);
 router.get("/:id/rating", authMiddleware, productController.getMyProductRating);
 router.post("/:id/rating", authMiddleware, productController.rateProduct);

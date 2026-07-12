@@ -2,7 +2,15 @@ import React from "react";
 import { Row, Col, Spin } from "antd";
 import ProductCard from "./ProductCard";
 
-export default function ProductGrid({ loading, products, onBuyNow, onClickDetail }) {
+export default function ProductGrid({
+    loading,
+    products,
+    onBuyNow,
+    onClickDetail,
+    wishlistIds = new Set(),
+    wishlistLoadingId,
+    onToggleWishlist,
+}) {
     if (loading) {
         return (
             <div style={{ textAlign: "center", marginTop: 100 }}>
@@ -19,6 +27,9 @@ export default function ProductGrid({ loading, products, onBuyNow, onClickDetail
                         product={product}
                         onBuyNow={onBuyNow}
                         onClickDetail={() => onClickDetail(product.id)}
+                        wished={wishlistIds.has(String(product.id))}
+                        wishlistLoading={wishlistLoadingId === String(product.id)}
+                        onToggleWishlist={onToggleWishlist}
                     />
                 </Col>
             ))}

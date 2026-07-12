@@ -1564,6 +1564,135 @@ const productImagePlaceholder = (req, res) => {
 
 const sampleProductImage = productImagePlaceholder;
 
+const rankProductsForAdvice = (products, prompt) => {
+    const terms = normalizeVietnamese(prompt)
+        .split(/\s+/)
+        .filter((term) => term.length >= 2);
+
+    return products
+        .map((item) => {
+            const product = item?.toJSON ? item.toJSON() : item;
+            const searchText = normalizeVietnamese(
+                [
+                    product.name,
+                    product.description,
+                    product.category,
+                    product.material,
+                    product.color,
+                    product.brand,
+                    product.capacity,
+                ].join(" "),
+            );
+            const termScore = terms.reduce(
+                (score, term) => score + (searchText.includes(term) ? (product.name && normalizeVietnamese(product.name).includes(term) ? 18 : 7) : 0),
+                0,
+            );
+            const popularityScore = Math.min(25, Number(product.sold || 0) / 4);
+            const ratingScore = Number(product.rating || 0) * 5;
+
+            return { product, score: termScore + popularityScore + ratingScore };
+        })
+        .sort((a, b) => b.score - a.score || Number(b.product.sold || 0) - Number(a.product.sold || 0));
+};
+
+const createProductAdvisorReply = async (req, res) => {
+    try {
+        const messages = sanitizeChatMessages(req.body.messages);
+        const prompt = ensurePrompt(req.body.prompt || messages[messages.length - 1]?.content);
+        const products = await Product.findAll({
+            order: [
+                ["sold", "DESC"],
+                ["rating", "DESC"],
+                ["createdAt", "DESC"],
+            ],
+            limit: 80,
+        });
+        const availableProducts = products.filter((product) => Number(product.stock || 0) > 0);
+
+        if (!availableProducts.length) {
+            return res.status(200).json({
+                answer: "Hiện cửa hàng chưa có sản phẩm còn hàng phù hợp. Bạn có thể quay lại sau hoặc liên hệ DPWOOD để được hỗ trợ.",
+                suggestions: ["Xem sản phẩm mới", "Tìm sản phẩm còn hàng"],
+                products: [],
+            });
+        }
+
+        const ranked = rankProductsForAdvice(availableProducts, prompt).slice(0, 12);
+        const candidates = ranked.map(({ product }) => product);
+        const catalog = candidates
+            .map(
+                (product, index) =>
+                    `${index + 1}. id=${product.id}; ten=${product.name}; gia=${Number(product.price || 0)} VND; ton=${product.stock}; danh_muc=${product.category || "khong ro"}; chat_lieu=${product.material || "khong ro"}; mau=${product.color || "khong ro"}; kich_thuoc=${product.capacity || "khong ro"}; danh_gia=${Number(product.rating || 0)}/5; da_ban=${Number(product.sold || 0)}`,
+            )
+            .join("\n");
+
+        let answer = "Mình đã chọn một số sản phẩm còn hàng phù hợp từ DPWOOD để bạn tham khảo.";
+        let suggestions = ["So sánh các sản phẩm này", "Gợi ý theo ngân sách", "Sản phẩm nào bán chạy nhất?"];
+        let selectedIds = candidates.slice(0, 4).map((product) => String(product.id));
+
+        try {
+            const draft = await generateJson({
+                systemInstruction:
+                    "You are a Vietnamese ecommerce product advisor for DPWOOD. Recommend only products present in the supplied live database catalog. Never invent a product, price, stock, rating, feature, discount, or product ID. Return only valid JSON.",
+                prompt: `
+Nhu cau khach hang: ${prompt}
+
+Danh sach san pham dang con hang trong database:
+${catalog}
+
+Hay tu van ngan gon, neu ro ly do phu hop va chi chon toi da 4 san pham trong danh sach tren.
+Tra ve JSON:
+{
+  "answer": "Cau tra loi bang tieng Viet co dau",
+  "productIds": ["id co trong danh sach"],
+  "suggestions": ["toi da 3 cau hoi tiep theo"]
+}
+Khong chen markdown va khong giai thich ngoai JSON.
+                `,
+                temperature: 0.25,
+            });
+
+            answer = cleanText(draft.answer, answer);
+            const validIds = new Set(candidates.map((product) => String(product.id)));
+            const requestedIds = Array.isArray(draft.productIds)
+                ? draft.productIds.map(String).filter((id) => validIds.has(id)).slice(0, 4)
+                : [];
+            if (requestedIds.length) selectedIds = requestedIds;
+            if (Array.isArray(draft.suggestions)) {
+                suggestions = draft.suggestions
+                    .map((item) => cleanText(item).slice(0, 90))
+                    .filter(Boolean)
+                    .slice(0, 3);
+            }
+        } catch (error) {
+            console.warn("Product advisor Gemini fallback:", error.message);
+        }
+
+        const selectedSet = new Set(selectedIds);
+        const selectedProducts = candidates
+            .filter((product) => selectedSet.has(String(product.id)))
+            .slice(0, 4)
+            .map((product) => ({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                stock: product.stock,
+                imageUrl: product.imageUrl || (Array.isArray(product.images) ? product.images[0] : null),
+                category: product.category,
+                material: product.material,
+                rating: product.rating,
+                ratingCount: product.ratingCount,
+            }));
+
+        res.status(200).json({ answer, suggestions, products: selectedProducts });
+    } catch (error) {
+        console.error("createProductAdvisorReply error:", error.message);
+        res.status(error.statusCode || 500).json({
+            message: error.message || "Khong the tu van san pham luc nay",
+        });
+    }
+};
+
 const createSupportChatReply = async (req, res) => {
     try {
         const messages = sanitizeChatMessages(req.body.messages);
@@ -1737,6 +1866,7 @@ module.exports = {
     proxyImage,
     productImagePlaceholder,
     sampleProductImage,
+    createProductAdvisorReply,
     createSupportChatReply,
     autoResolveSupportTickets,
 };

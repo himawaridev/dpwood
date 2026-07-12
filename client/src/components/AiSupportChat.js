@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useMemo, useRef, useState } from "react";
@@ -8,10 +9,23 @@ import api from "@/utils/axios";
 const { Text } = Typography;
 
 const QUICK_PROMPTS = [
+    "Gợi ý sản phẩm phù hợp cho gia đình 4 người",
     "Làm sao dùng mã giảm giá?",
     "Tôi muốn kiểm tra giỏ hàng",
     "Thanh toán PayOS hoạt động thế nào?",
 ];
+
+const isProductAdviceRequest = (value) => {
+    const normalized = String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[đĐ]/g, "d")
+        .toLowerCase();
+    return /\b(san pham|goi y|tu van|nen mua|so sanh|noi|chao|dao|thot|bat|dia|bep|am|may|chat lieu|dung tich|thuong hieu)\b/.test(normalized);
+};
+
+const formatCurrency = (value) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 
 const welcomeMessage = {
     role: "assistant",
@@ -39,7 +53,8 @@ export default function AiSupportChat({ onOpenChange }) {
 
         try {
             setLoading(true);
-            const res = await api.post("/ai/support-chat", {
+            const endpoint = isProductAdviceRequest(prompt) ? "/ai/product-advisor" : "/ai/support-chat";
+            const res = await api.post(endpoint, {
                 prompt,
                 messages: nextMessages.slice(-8),
             });
@@ -50,6 +65,7 @@ export default function AiSupportChat({ onOpenChange }) {
                     role: "assistant",
                     content: res.data?.answer || "Mình chưa thể trả lời ngay. Bạn thử hỏi lại ngắn gọn hơn nhé.",
                     suggestions: res.data?.suggestions || [],
+                    products: res.data?.products || [],
                 },
             ]);
         } catch (error) {
@@ -125,6 +141,28 @@ export default function AiSupportChat({ onOpenChange }) {
                                     />
                                     <div className="dp-ai-chat-bubble">
                                         <Text>{item.content}</Text>
+                                        {!isUser && item.products?.length > 0 && (
+                                            <div className="dp-ai-product-list">
+                                                {item.products.map((product) => (
+                                                    <button
+                                                        type="button"
+                                                        key={product.id}
+                                                        className="dp-ai-product-card"
+                                                        onClick={() => { window.location.href = `/products/${product.id}`; }}
+                                                    >
+                                                        {product.imageUrl ? (
+                                                            <img src={product.imageUrl} alt={product.name} />
+                                                        ) : (
+                                                            <span className="dp-ai-product-placeholder">DP</span>
+                                                        )}
+                                                        <span>
+                                                            <strong>{product.name}</strong>
+                                                            <small>{formatCurrency(product.price)}</small>
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                         {!isUser && item.suggestions?.length > 0 && (
                                             <Flex gap={8} wrap="wrap" style={{ marginTop: 10 }}>
                                                 {item.suggestions.map((suggestion) => (

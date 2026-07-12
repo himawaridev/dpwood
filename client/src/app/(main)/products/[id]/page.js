@@ -33,9 +33,9 @@ export default function ProductDetailPage() {
         const fetchProductDetailAndRelated = async () => {
             try {
                 setLoading(true);
-                const [productRes, allProductsRes] = await Promise.all([
+                const [productRes, relatedProductsRes] = await Promise.all([
                     api.get(`/products/${id}`),
-                    api.get("/products"),
+                    api.get(`/products/${id}/related`),
                 ]);
 
                 const data = productRes.data;
@@ -62,16 +62,7 @@ export default function ProductDetailPage() {
                 setImageList(fetchedImages);
                 setActiveImage(fetchedImages[0]);
 
-                const products = (allProductsRes.data || []).filter((item) => item.id !== id);
-                const sorted = products
-                    .sort((a, b) => {
-                        const sameCategoryA = a.category && a.category === data.category ? 1 : 0;
-                        const sameCategoryB = b.category && b.category === data.category ? 1 : 0;
-                        if (sameCategoryA !== sameCategoryB) return sameCategoryB - sameCategoryA;
-                        return Number(b.sold || 0) - Number(a.sold || 0);
-                    })
-                    .slice(0, 4);
-                setRelatedProducts(sorted);
+                setRelatedProducts((relatedProductsRes.data || []).slice(0, 4));
             } catch (error) {
                 const errorMsg = error.response?.data?.message || error.response?.data?.error || "Lỗi server";
                 message.error(`Không thể tải sản phẩm: ${errorMsg}`);

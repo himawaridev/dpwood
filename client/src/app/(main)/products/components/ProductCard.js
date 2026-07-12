@@ -1,7 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 import React from "react";
 import { Card, Flex, Tooltip, Typography } from "antd";
-import { EyeOutlined, FireOutlined, ShoppingCartOutlined, StarFilled, StopOutlined } from "@ant-design/icons";
+import {
+    EyeOutlined,
+    FireOutlined,
+    HeartFilled,
+    HeartOutlined,
+    ShoppingCartOutlined,
+    StarFilled,
+    StopOutlined,
+} from "@ant-design/icons";
 import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
 
@@ -35,7 +43,14 @@ function DisplayRatingStars({ value }) {
     );
 }
 
-export default function ProductCard({ product, badge, onClickDetail }) {
+export default function ProductCard({
+    product,
+    badge,
+    onClickDetail,
+    wished = false,
+    onToggleWishlist,
+    wishlistLoading = false,
+}) {
     const inStock = Number(product.stock || 0) > 0;
     const salesStats = getProductSalesStats(product);
     const hotBadge = salesStats.isHot ? badge || "icon-only" : "";
@@ -57,40 +72,51 @@ export default function ProductCard({ product, badge, onClickDetail }) {
                 },
             }}
             cover={
-                <button type="button" className="webcake-product-image" onClick={onClickDetail}>
-                    {image ? (
-                        <img alt={product.name || "DPWOOD Kitchen product"} src={image} />
-                    ) : (
-                        <span className="webcake-product-image-placeholder">DPWOOD</span>
+                <div className="webcake-product-media">
+                    <button type="button" className="webcake-product-image" onClick={onClickDetail}>
+                        {image ? (
+                            <img alt={product.name || "DPWOOD Kitchen product"} src={image} />
+                        ) : (
+                            <span className="webcake-product-image-placeholder">DPWOOD</span>
+                        )}
+                        {(hotBadge || !inStock) && (
+                            <span className="webcake-product-status-row">
+                                {hotBadge && (
+                                    <Tooltip title={`Đã bán ${salesStats.sold}/${salesStats.total} sản phẩm`}>
+                                        <span className="webcake-product-hot-badge">
+                                            <FireOutlined />
+                                            {hotBadge !== "icon-only" && hotBadge}
+                                        </span>
+                                    </Tooltip>
+                                )}
+                                {!inStock && (
+                                    <Tooltip title="Hết hàng">
+                                        <span className="webcake-product-stock-badge" aria-label="Hết hàng">
+                                            <StopOutlined />
+                                        </span>
+                                    </Tooltip>
+                                )}
+                            </span>
+                        )}
+                        <span className="webcake-product-actions" aria-hidden="true">
+                            <span><EyeOutlined /></span>
+                            <span><ShoppingCartOutlined /></span>
+                        </span>
+                    </button>
+                    {onToggleWishlist && (
+                        <Tooltip title={wished ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}>
+                            <button
+                                type="button"
+                                className={`webcake-product-wishlist ${wished ? "is-wished" : ""}`}
+                                onClick={() => onToggleWishlist(product)}
+                                disabled={wishlistLoading}
+                                aria-label={wished ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}
+                            >
+                                {wished ? <HeartFilled /> : <HeartOutlined />}
+                            </button>
+                        </Tooltip>
                     )}
-                    {(hotBadge || !inStock) && (
-                        <span className="webcake-product-status-row">
-                            {hotBadge && (
-                                <Tooltip title={`Đã bán ${salesStats.sold}/${salesStats.total} sản phẩm`}>
-                                    <span className="webcake-product-hot-badge">
-                                        <FireOutlined />
-                                        {hotBadge !== "icon-only" && hotBadge}
-                                    </span>
-                                </Tooltip>
-                            )}
-                            {!inStock && (
-                                <Tooltip title="Hết hàng">
-                                    <span className="webcake-product-stock-badge" aria-label="Hết hàng">
-                                        <StopOutlined />
-                                    </span>
-                                </Tooltip>
-                            )}
-                        </span>
-                    )}
-                    <span className="webcake-product-actions" aria-hidden="true">
-                        <span>
-                            <EyeOutlined />
-                        </span>
-                        <span>
-                            <ShoppingCartOutlined />
-                        </span>
-                    </span>
-                </button>
+                </div>
             }
         >
             <Flex vertical align="center" gap={8}>

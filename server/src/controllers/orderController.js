@@ -32,6 +32,64 @@ const findProductVariant = (product, variantId) =>
 const normalizePayosStatus = (paymentInfo) =>
     String(paymentInfo?.status || paymentInfo?.data?.status || "").toUpperCase();
 
+const ORDER_PROGRESS = ["PENDING", "PAID", "SHIPPING", "COMPLETED"];
+
+const buildOrderTimeline = (order) => {
+    const status = String(order.status || "PENDING").toUpperCase();
+    const createdAt = order.createdAt || new Date();
+    const updatedAt = order.updatedAt || createdAt;
+
+    if (status === "CANCELED" || status === "CANCELLED") {
+        return [
+            {
+                key: "PENDING",
+                title: "Đã đặt hàng",
+                description: "Đơn hàng đã được hệ thống ghi nhận.",
+                status: "finish",
+                date: createdAt,
+            },
+            {
+                key: "CANCELED",
+                title: "Đã hủy",
+                description: "Đơn hàng đã được hủy và tồn kho đã được hoàn lại.",
+                status: "error",
+                date: updatedAt,
+            },
+        ];
+    }
+
+    const currentIndex = Math.max(0, ORDER_PROGRESS.indexOf(status));
+    const labels = {
+        PENDING: ["Đã đặt hàng", "Đơn hàng đã được hệ thống ghi nhận."],
+        PAID: [
+            "Đã xác nhận",
+            order.paymentMethod === "QR"
+                ? "Thanh toán PayOS đã được xác nhận."
+                : "Đơn hàng đã được xác nhận để xử lý.",
+        ],
+        SHIPPING: ["Đang giao hàng", "Đơn hàng đang trên đường giao đến bạn."],
+        COMPLETED: ["Hoàn tất", "Đơn hàng đã được giao và hoàn tất."],
+    };
+
+    return ORDER_PROGRESS.map((key, index) => ({
+        key,
+        title: labels[key][0],
+        description: labels[key][1],
+        status:
+            index < currentIndex || status === "COMPLETED"
+                ? "finish"
+                : index === currentIndex
+                  ? "process"
+                  : "wait",
+        date: index === 0 ? createdAt : index <= currentIndex ? updatedAt : null,
+    }));
+};
+
+const serializeOrder = (order) => {
+    const value = order?.toJSON ? order.toJSON() : order;
+    return { ...value, timeline: buildOrderTimeline(value) };
+};
+
 const markOrderAsPaid = async (order, paymentInfo = {}) => {
     if (!order || order.status !== "PENDING") return order;
 
@@ -397,6 +455,7 @@ const getOrderStatus = async (req, res) => {
             status: order.status,
             paymentStatus,
             orderCode: order.orderCode,
+            timeline: buildOrderTimeline(order),
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -463,7 +522,7 @@ const getAllOrdersAdmin = async (req, res) => {
                 { model: OrderItem, include: [{ model: Product }] }, // Lấy chi tiết sản phẩm và Hình ảnh
             ],
         });
-        res.status(200).json(orders);
+        res.status(200).json(orders.map(serializeOrder));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -493,7 +552,7 @@ const getMyOrders = async (req, res) => {
             order: [["createdAt", "DESC"]],
             include: [{ model: OrderItem, include: [{ model: Product }] }],
         });
-        res.status(200).json(orders);
+        res.status(200).json(orders.map(serializeOrder));
     } catch (error) {
         console.error("🔥 LỖI CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG:", error);
         res.status(500).json({ message: error.message });

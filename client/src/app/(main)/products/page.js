@@ -1,8 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, App, Button, Col, Empty, Input, Row, Select, Skeleton, Space, Switch, Typography } from "antd";
-import { AppstoreOutlined, ReloadOutlined, SearchOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { Alert, App, Button, Col, Empty, Input, InputNumber, Row, Select, Skeleton, Space, Switch, Typography } from "antd";
+import {
+    AppstoreOutlined,
+    ClearOutlined,
+    HeartFilled,
+    ReloadOutlined,
+    SearchOutlined,
+    ShoppingCartOutlined,
+} from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
 import { buildKitchenSearchText, KITCHEN_CATEGORY_OPTIONS, KITCHEN_COLOR_OPTIONS } from "@/utils/kitchenProduct";
@@ -27,15 +34,25 @@ export default function ProductsPage() {
     const [sortBy, setSortBy] = useState("newest");
     const [category, setCategory] = useState("all");
     const [color, setColor] = useState("all");
+    const [material, setMaterial] = useState("all");
+    const [brand, setBrand] = useState("all");
+    const [minPrice, setMinPrice] = useState(null);
+    const [maxPrice, setMaxPrice] = useState(null);
+    const [minRating, setMinRating] = useState(0);
     const [onlyInStock, setOnlyInStock] = useState(false);
+    const [onlyWishlist, setOnlyWishlist] = useState(false);
+    const [facets, setFacets] = useState({ categories: [], materials: [], colors: [], brands: [] });
+    const [wishlistIds, setWishlistIds] = useState(new Set());
+    const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
     const router = useRouter();
 
     const fetchProducts = useCallback(async () => {
         try {
             setLoading(true);
             setErrorMessage("");
-            const res = await api.get("/products");
-            setProducts(res.data || []);
+            const res = await api.get("/products", { params: { withFacets: true } });
+            setProducts(res.data?.products || []);
+            setFacets(res.data?.facets || { categories: [], materials: [], colors: [], brands: [] });
         } catch (error) {
             setProducts([]);
             setErrorMessage(error.response?.data?.message || error.message || "Không thể tải sản phẩm.");
@@ -47,6 +64,16 @@ export default function ProductsPage() {
     useEffect(() => {
         fetchProducts();
     }, [fetchProducts]);
+
+    useEffect(() => {
+        if (!localStorage.getItem("token")) return;
+
+        api.get("/products/wishlist/me")
+            .then((res) => {
+                setWishlistIds(new Set((res.data || []).map((item) => String(item.productId))));
+            })
+            .catch(() => setWishlistIds(new Set()));
+    }, []);
 
     useEffect(() => {
         const nextSearch = new URLSearchParams(window.location.search).get("search");
@@ -84,6 +111,53 @@ export default function ProductsPage() {
         router.push("/cart");
     };
 
+    const handleToggleWishlist = async (product) => {
+        if (!localStorage.getItem("token")) {
+            message.warning("Vui lòng đăng nhập để lưu sản phẩm yêu thích.");
+            router.push("/login");
+            return;
+        }
+
+        try {
+            setWishlistLoadingId(String(product.id));
+            const res = await api.post(`/products/${product.id}/wishlist`);
+            setWishlistIds((current) => {
+                const next = new Set(current);
+                if (res.data?.wished) next.add(String(product.id));
+                else next.delete(String(product.id));
+                return next;
+            });
+            message.success(res.data?.wished ? "Đã thêm vào danh sách yêu thích." : "Đã bỏ khỏi danh sách yêu thích.");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể cập nhật danh sách yêu thích.");
+        } finally {
+            setWishlistLoadingId(null);
+        }
+    };
+
+    const resetFilters = () => {
+        setQuery("");
+        setSortBy("newest");
+        setCategory("all");
+        setColor("all");
+        setMaterial("all");
+        setBrand("all");
+        setMinPrice(null);
+        setMaxPrice(null);
+        setMinRating(0);
+        setOnlyInStock(false);
+        setOnlyWishlist(false);
+    };
+
+    const handleWishlistFilterChange = (checked) => {
+        if (checked && !localStorage.getItem("token")) {
+            message.warning("Vui lòng đăng nhập để xem danh sách yêu thích.");
+            router.push("/login");
+            return;
+        }
+        setOnlyWishlist(checked);
+    };
+
     const filteredProducts = useMemo(() => {
         const normalizedQuery = normalizeText(query.trim());
         const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
@@ -96,16 +170,23 @@ export default function ProductsPage() {
                     : queryTerms.some((term) => searchableText.includes(term));
                 const matchesCategory = category === "all" ? true : product.category === category;
                 const matchesColor = color === "all" ? true : product.color === color;
+                const matchesMaterial = material === "all" ? true : product.material === material;
+                const matchesBrand = brand === "all" ? true : product.brand === brand;
+                const price = Number(product.price || 0);
+                const matchesPrice = (minPrice === null || price >= minPrice) && (maxPrice === null || price <= maxPrice);
+                const matchesRating = Number(product.rating || 0) >= minRating;
                 const matchesStock = onlyInStock ? Number(product.stock || 0) > 0 : true;
-                return matchesQuery && matchesCategory && matchesColor && matchesStock;
+                const matchesWishlist = onlyWishlist ? wishlistIds.has(String(product.id)) : true;
+                return matchesQuery && matchesCategory && matchesColor && matchesMaterial && matchesBrand && matchesPrice && matchesRating && matchesStock && matchesWishlist;
             })
             .sort((a, b) => {
                 if (sortBy === "priceAsc") return Number(a.price || 0) - Number(b.price || 0);
                 if (sortBy === "priceDesc") return Number(b.price || 0) - Number(a.price || 0);
                 if (sortBy === "sold") return Number(b.sold || 0) - Number(a.sold || 0);
+                if (sortBy === "rating") return Number(b.rating || 0) - Number(a.rating || 0);
                 return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
             });
-    }, [products, query, sortBy, category, color, onlyInStock]);
+    }, [products, query, sortBy, category, color, material, brand, minPrice, maxPrice, minRating, onlyInStock, onlyWishlist, wishlistIds]);
 
     const emptyDescription = products.length
         ? "Không tìm thấy sản phẩm đồ bếp phù hợp với bộ lọc hiện tại."
@@ -162,7 +243,7 @@ export default function ProductsPage() {
                                         style={{ width: "100%" }}
                                         options={[
                                             { value: "all", label: "Tất cả màu" },
-                                            ...KITCHEN_COLOR_OPTIONS.map((item) => ({ value: item, label: item })),
+                                            ...[...new Set([...KITCHEN_COLOR_OPTIONS, ...(facets.colors || [])])].map((item) => ({ value: item, label: item })),
                                         ]}
                                     />
                                 </Col>
@@ -175,6 +256,7 @@ export default function ProductsPage() {
                                         options={[
                                             { value: "newest", label: "Mới nhất" },
                                             { value: "sold", label: "Bán chạy" },
+                                            { value: "rating", label: "Đánh giá cao" },
                                             { value: "priceAsc", label: "Giá thấp đến cao" },
                                             { value: "priceDesc", label: "Giá cao đến thấp" },
                                         ]}
@@ -197,6 +279,66 @@ export default function ProductsPage() {
                             </Row>
                         </Col>
                     </Row>
+
+                    <div className="dp-product-advanced-filters">
+                        <Row gutter={[12, 12]} align="middle">
+                            <Col xs={24} sm={12} lg={4}>
+                                <Select
+                                    size="large"
+                                    value={material}
+                                    onChange={setMaterial}
+                                    style={{ width: "100%" }}
+                                    options={[
+                                        { value: "all", label: "Tất cả chất liệu" },
+                                        ...(facets.materials || []).map((item) => ({ value: item, label: item })),
+                                    ]}
+                                />
+                            </Col>
+                            <Col xs={24} sm={12} lg={4}>
+                                <Select
+                                    size="large"
+                                    value={brand}
+                                    onChange={setBrand}
+                                    style={{ width: "100%" }}
+                                    options={[
+                                        { value: "all", label: "Tất cả thương hiệu" },
+                                        ...(facets.brands || []).map((item) => ({ value: item, label: item })),
+                                    ]}
+                                />
+                            </Col>
+                            <Col xs={12} sm={6} lg={3}>
+                                <InputNumber size="large" min={0} value={minPrice} onChange={setMinPrice} placeholder="Giá từ" controls={false} style={{ width: "100%" }} />
+                            </Col>
+                            <Col xs={12} sm={6} lg={3}>
+                                <InputNumber size="large" min={0} value={maxPrice} onChange={setMaxPrice} placeholder="Giá đến" controls={false} style={{ width: "100%" }} />
+                            </Col>
+                            <Col xs={12} sm={6} lg={3}>
+                                <Select
+                                    size="large"
+                                    value={minRating}
+                                    onChange={setMinRating}
+                                    style={{ width: "100%" }}
+                                    options={[
+                                        { value: 0, label: "Mọi đánh giá" },
+                                        { value: 4, label: "Từ 4 sao" },
+                                        { value: 3, label: "Từ 3 sao" },
+                                        { value: 2, label: "Từ 2 sao" },
+                                    ]}
+                                />
+                            </Col>
+                            <Col xs={12} sm={6} lg={3}>
+                                <div className="dp-product-filter-toggle">
+                                    <Switch checked={onlyWishlist} onChange={handleWishlistFilterChange} />
+                                    <Text strong><HeartFilled /> Yêu thích</Text>
+                                </div>
+                            </Col>
+                            <Col xs={24} lg={4}>
+                                <Button block size="large" icon={<ClearOutlined />} onClick={resetFilters}>
+                                    Xóa bộ lọc
+                                </Button>
+                            </Col>
+                        </Row>
+                    </div>
                 </section>
 
                 <div
@@ -255,6 +397,9 @@ export default function ProductsPage() {
                         products={filteredProducts}
                         onBuyNow={handleBuyNow}
                         onClickDetail={(productId) => router.push(`/products/${productId}`)}
+                        wishlistIds={wishlistIds}
+                        wishlistLoadingId={wishlistLoadingId}
+                        onToggleWishlist={handleToggleWishlist}
                     />
                 ) : (
                     <div className="dp-panel" style={{ padding: 44 }}>

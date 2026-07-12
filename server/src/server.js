@@ -21,6 +21,7 @@ const Blog = require("./models/blog");
 const Coupon = require("./models/coupon");
 const UserCoupon = require("./models/userCoupon");
 const ProductRating = require("./models/productRating");
+const Wishlist = require("./models/wishlist");
 
 // Routers
 const authRoutes = require("./routers/auth");
@@ -89,6 +90,13 @@ const setupDatabaseAssociations = () => {
 
     Product.hasMany(ProductRating, { foreignKey: "productId" });
     ProductRating.belongsTo(Product, { foreignKey: "productId" });
+
+    // Quan hệ User - Wishlist - Product
+    User.hasMany(Wishlist, { foreignKey: "userId", onDelete: "CASCADE" });
+    Wishlist.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
+
+    Product.hasMany(Wishlist, { foreignKey: "productId", onDelete: "CASCADE" });
+    Wishlist.belongsTo(Product, { foreignKey: "productId", onDelete: "CASCADE" });
 };
 
 // ==========================================
