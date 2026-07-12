@@ -547,7 +547,7 @@ export default function AdminDashboard() {
             </Row>
 
             <Row gutter={[16, 16]} className="dp-admin-dashboard-row">
-                <Col xs={24} xl={14}>
+                <Col xs={24}>
                     <Card
                         title="Đơn hàng gần đây"
                         extra={<Button type="link" onClick={() => router.push("/admin/orders")}>Xem tất cả</Button>}
@@ -564,7 +564,7 @@ export default function AdminDashboard() {
                     </Card>
                 </Col>
 
-                <Col xs={24} xl={10}>
+                <Col xs={24}>
                     <Card
                         title="Cảnh báo tồn kho"
                         extra={<Button type="link" onClick={() => router.push("/admin/products")}>Nhập thêm</Button>}

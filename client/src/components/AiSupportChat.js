@@ -124,6 +124,7 @@ export default function AiSupportChat({ onOpenChange }) {
                 onClose={closeChat}
                 size={420}
                 className="dp-ai-chat-drawer"
+                rootClassName="dp-ai-chat-drawer-root"
             >
                 <Flex vertical className="dp-ai-chat-panel">
                     <div className="dp-ai-chat-messages">

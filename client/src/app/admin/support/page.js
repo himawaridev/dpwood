@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { App, Table, Tag, Select, Typography, Flex, Button } from "antd";
+import { App, Table, Tag, Select, Typography, Flex, Button, Tooltip } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
@@ -113,13 +113,14 @@ export default function AdminSupportPage() {
             title: "Hành động",
             key: "action",
             render: (_, record) => (
-                <Button
-                    type="primary"
-                    icon={<EyeOutlined />}
-                    onClick={() => handleViewDetail(record)}
-                >
-                    Xem
-                </Button>
+                <Tooltip title="Xem chi tiết ticket">
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        aria-label="Xem chi tiết ticket"
+                        onClick={() => handleViewDetail(record)}
+                    />
+                </Tooltip>
             ),
         },
     ];

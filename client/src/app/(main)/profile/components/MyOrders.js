@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { App, Table, Tag, Button, Typography, Modal, Empty, Alert, Descriptions, Image, Steps, Tooltip } from "antd";
-import { EyeOutlined } from "@ant-design/icons";
+import { CloseCircleOutlined, EyeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 
 const { Text, Title } = Typography;
@@ -105,9 +105,16 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                         />
                     </Tooltip>
                     {record.status === "PENDING" && (
-                        <Button danger size="small" onClick={() => handleCancelOrder(record.orderCode)}>
-                            Hủy đơn
-                        </Button>
+                        <Tooltip title="Hủy đơn hàng">
+                            <Button
+                                danger
+                                type="text"
+                                size="small"
+                                icon={<CloseCircleOutlined />}
+                                aria-label="Hủy đơn hàng"
+                                onClick={() => handleCancelOrder(record.orderCode)}
+                            />
+                        </Tooltip>
                     )}
                 </div>
             ),
@@ -145,9 +152,15 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                 onCancel={() => setSelectedOrder(null)}
                 footer={[
                     selectedOrder?.status === "PENDING" ? (
-                        <Button key="cancel-order" danger onClick={() => handleCancelOrder(selectedOrder.orderCode)}>
-                            Hủy đơn
-                        </Button>
+                        <Tooltip key="cancel-order" title="Hủy đơn hàng">
+                            <Button
+                                danger
+                                type="text"
+                                icon={<CloseCircleOutlined />}
+                                aria-label="Hủy đơn hàng"
+                                onClick={() => handleCancelOrder(selectedOrder.orderCode)}
+                            />
+                        </Tooltip>
                     ) : null,
                     <Button key="close" type="primary" onClick={() => setSelectedOrder(null)}>
                         Đóng

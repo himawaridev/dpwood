@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { App, Button, Col, Empty, Form, Input, Row, Select, Space, Table, Tag, Typography } from "antd";
+import { App, Button, Col, Empty, Form, Input, Row, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { CustomerServiceOutlined, EyeOutlined, SendOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 import TicketDetailDrawer from "./components/TicketDetailDrawer";
@@ -82,17 +82,19 @@ export default function SupportPage() {
             {
                 title: "",
                 key: "action",
-                width: 150,
+                width: 72,
                 render: (_, record) => (
-                    <Button
-                        icon={<EyeOutlined />}
-                        onClick={() => {
-                            setSelectedTicket(record);
-                            setIsDrawerVisible(true);
-                        }}
-                    >
-                        Xem chi tiết
-                    </Button>
+                    <Tooltip title="Xem chi tiết ticket">
+                        <Button
+                            type="text"
+                            icon={<EyeOutlined />}
+                            aria-label="Xem chi tiết ticket"
+                            onClick={() => {
+                                setSelectedTicket(record);
+                                setIsDrawerVisible(true);
+                            }}
+                        />
+                    </Tooltip>
                 ),
             },
         ],
@@ -115,7 +117,7 @@ export default function SupportPage() {
                 </section>
 
                 <Row gutter={[20, 20]} align="stretch">
-                    <Col xs={24} lg={10}>
+                    <Col xs={24}>
                         <section className="dp-panel" style={{ padding: 24, height: "100%" }}>
                             <Title level={3} style={{ marginTop: 0 }}>
                                 Gửi yêu cầu mới
@@ -172,7 +174,7 @@ export default function SupportPage() {
                         </section>
                     </Col>
 
-                    <Col xs={24} lg={14}>
+                    <Col xs={24}>
                         <section className="dp-panel" style={{ padding: 24, height: "100%" }}>
                             <Space orientation="vertical" size={4} style={{ width: "100%", marginBottom: 18 }}>
                                 <Title level={3} style={{ margin: 0 }}>

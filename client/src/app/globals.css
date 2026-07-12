@@ -2439,7 +2439,7 @@ a {
   height: 46px;
   padding: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: 50%;
   background: #111;
   color: #fff;
   display: inline-flex;
@@ -2500,6 +2500,20 @@ a {
   transform: translateY(0);
 }
 
+.dp-ticket-drawer-root,
+.dp-ai-chat-drawer-root {
+  top: 96px !important;
+  height: calc(100vh - 96px) !important;
+}
+
+.dp-ticket-drawer-root.is-admin {
+  top: 72px !important;
+  height: calc(100vh - 72px) !important;
+}
+
+.dp-ticket-drawer .ant-drawer-content,
+.dp-ticket-drawer .ant-drawer-header,
+.dp-ticket-drawer .ant-drawer-body,
 .dp-ai-chat-drawer .ant-drawer-content,
 .dp-ai-chat-drawer .ant-drawer-header,
 .dp-ai-chat-drawer .ant-drawer-body {
@@ -2522,7 +2536,7 @@ a {
 
 .dp-ai-chat-panel {
   height: 100%;
-  min-height: 520px;
+  min-height: 0;
   min-width: 0;
   overflow: hidden;
 }
@@ -2684,6 +2698,21 @@ a {
 
 .dp-ai-chat-input .ant-btn {
   flex: 0 0 42px;
+}
+
+@media (max-width: 991px) {
+  .dp-ticket-drawer-root.is-admin {
+    top: 64px !important;
+    height: calc(100vh - 64px) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .dp-ticket-drawer-root:not(.is-admin),
+  .dp-ai-chat-drawer-root {
+    top: 76px !important;
+    height: calc(100vh - 76px) !important;
+  }
 }
 
 @media (max-width: 640px) {

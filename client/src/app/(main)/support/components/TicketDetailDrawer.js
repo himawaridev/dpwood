@@ -44,6 +44,8 @@ export default function TicketDetailDrawer({ isVisible, onClose, selectedTicket,
             open={isVisible}
             onClose={onClose}
             destroyOnHidden
+            className="dp-ticket-drawer"
+            rootClassName={`dp-ticket-drawer-root ${isAdmin ? "is-admin" : ""}`}
         >
             <Descriptions
                 bordered

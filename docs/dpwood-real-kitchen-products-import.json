@@ -1,0 +1,2055 @@
+{
+  "note": "File import 50 sản phẩm mẫu cho DPWOOD. Chỉ dùng trong trang Admin > AI Center > Sản phẩm AI > Import JSON.",
+  "products": [
+    {
+      "name": "Bộ nồi inox 304 đáy từ 5 món",
+      "description": "Bộ nồi inox 304 đáy từ 5 món thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 1890000,
+      "stock": 80,
+      "imageUrl": "https://static.independent.co.uk/s3fs-public/thumbnails/image/2014/11/20/20/v2Paul_Robeson2.jpg",
+      "images": [
+        "https://static.independent.co.uk/s3fs-public/thumbnails/image/2014/11/20/20/v2Paul_Robeson2.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo noi inox 304 day tu 5 mon product photo white background",
+        "inox 304 noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Inox 304",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "Bộ 5 món",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "Bộ 5 món",
+          "price": 1890000,
+          "stock": 44,
+          "imageUrl": "https://static.independent.co.uk/s3fs-public/thumbnails/image/2014/11/20/20/v2Paul_Robeson2.jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "Bộ 5 món",
+          "price": 2041000,
+          "stock": 36,
+          "imageUrl": "https://static.independent.co.uk/s3fs-public/thumbnails/image/2014/11/20/20/v2Paul_Robeson2.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Chảo gang đúc chống dính tự nhiên 26cm",
+      "description": "Chảo gang đúc chống dính tự nhiên 26cm thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu gang đúc, màu đen, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 720000,
+      "stock": 55,
+      "imageUrl": "https://assets.website-files.com/60034a30748aed2fc7aa274c/63c402d8cd5df85e4106f05e_AdobeStock_127471556-min.jpeg",
+      "images": [
+        "https://assets.website-files.com/60034a30748aed2fc7aa274c/63c402d8cd5df85e4106f05e_AdobeStock_127471556-min.jpeg"
+      ],
+      "imageSearchQueries": [
+        "chao gang duc chong dinh tu nhien 26cm product photo white background",
+        "gang duc noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Gang đúc",
+      "color": "Đen",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "26cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đen",
+          "size": "26cm",
+          "price": 720000,
+          "stock": 30,
+          "imageUrl": "https://assets.website-files.com/60034a30748aed2fc7aa274c/63c402d8cd5df85e4106f05e_AdobeStock_127471556-min.jpeg"
+        },
+        {
+          "color": "Trắng",
+          "size": "28cm",
+          "price": 778000,
+          "stock": 25,
+          "imageUrl": "https://assets.website-files.com/60034a30748aed2fc7aa274c/63c402d8cd5df85e4106f05e_AdobeStock_127471556-min.jpeg"
+        }
+      ]
+    },
+    {
+      "name": "Nồi đất kho cá giữ nhiệt 2L",
+      "description": "Nồi đất kho cá giữ nhiệt 2L thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu đất nung, màu nâu đất, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 480000,
+      "stock": 70,
+      "imageUrl": "https://www.rockgardenpottery.com/wp-content/uploads/2019/04/Pottery-And-Ceramics-1024x683.jpg",
+      "images": [
+        "https://www.rockgardenpottery.com/wp-content/uploads/2019/04/Pottery-And-Ceramics-1024x683.jpg"
+      ],
+      "imageSearchQueries": [
+        "noi dat kho ca giu nhiet 2l product photo white background",
+        "dat nung noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Đất nung",
+      "color": "Nâu đất",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "2L",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Nâu đất",
+          "size": "2L",
+          "price": 480000,
+          "stock": 38,
+          "imageUrl": "https://www.rockgardenpottery.com/wp-content/uploads/2019/04/Pottery-And-Ceramics-1024x683.jpg"
+        },
+        {
+          "color": "Nâu đất",
+          "size": "2L",
+          "price": 518000,
+          "stock": 32,
+          "imageUrl": "https://www.rockgardenpottery.com/wp-content/uploads/2019/04/Pottery-And-Ceramics-1024x683.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Chảo chống dính vân đá đáy từ 28cm",
+      "description": "Chảo chống dính vân đá đáy từ 28cm thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu hợp kim phủ vân đá, màu xám đá, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 390000,
+      "stock": 120,
+      "imageUrl": "https://i.pinimg.com/originals/30/72/a1/3072a15163656e4f573fcf081eea7b8d.jpg",
+      "images": [
+        "https://i.pinimg.com/originals/30/72/a1/3072a15163656e4f573fcf081eea7b8d.jpg"
+      ],
+      "imageSearchQueries": [
+        "chao chong dinh van da day tu 28cm product photo white background",
+        "hop kim phu van da noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Hợp kim phủ vân đá",
+      "color": "Xám đá",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "28cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Xám đá",
+          "size": "28cm",
+          "price": 390000,
+          "stock": 66,
+          "imageUrl": "https://i.pinimg.com/originals/30/72/a1/3072a15163656e4f573fcf081eea7b8d.jpg"
+        },
+        {
+          "color": "Xám đá",
+          "size": "30cm",
+          "price": 421000,
+          "stock": 54,
+          "imageUrl": "https://i.pinimg.com/originals/30/72/a1/3072a15163656e4f573fcf081eea7b8d.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Nồi áp suất inox 5L van an toàn",
+      "description": "Nồi áp suất inox 5L van an toàn thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 1150000,
+      "stock": 45,
+      "imageUrl": "https://pic.nximg.cn/file/20210308/202488_171916927681_2.jpg",
+      "images": [
+        "https://pic.nximg.cn/file/20210308/202488_171916927681_2.jpg"
+      ],
+      "imageSearchQueries": [
+        "noi ap suat inox 5l van an toan product photo white background",
+        "inox 304 noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Inox 304",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "5L",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "5L",
+          "price": 1150000,
+          "stock": 24,
+          "imageUrl": "https://pic.nximg.cn/file/20210308/202488_171916927681_2.jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "5L",
+          "price": 1242000,
+          "stock": 21,
+          "imageUrl": "https://pic.nximg.cn/file/20210308/202488_171916927681_2.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Nồi lẩu inox hai quai 28cm",
+      "description": "Nồi lẩu inox hai quai 28cm thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 201, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 520000,
+      "stock": 90,
+      "imageUrl": "https://c8.alamy.com/comp/DKH84B/paloma-beach-saint-jean-cap-ferrat-provence-alpes-cote-dazur-provence-DKH84B.jpg",
+      "images": [
+        "https://c8.alamy.com/comp/DKH84B/paloma-beach-saint-jean-cap-ferrat-provence-alpes-cote-dazur-provence-DKH84B.jpg"
+      ],
+      "imageSearchQueries": [
+        "noi lau inox hai quai 28cm product photo white background",
+        "inox 201 noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Inox 201",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "28cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "28cm",
+          "price": 520000,
+          "stock": 49,
+          "imageUrl": "https://c8.alamy.com/comp/DKH84B/paloma-beach-saint-jean-cap-ferrat-provence-alpes-cote-dazur-provence-DKH84B.jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "30cm",
+          "price": 562000,
+          "stock": 41,
+          "imageUrl": "https://c8.alamy.com/comp/DKH84B/paloma-beach-saint-jean-cap-ferrat-provence-alpes-cote-dazur-provence-DKH84B.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Quánh bột chống dính 18cm cán gỗ",
+      "description": "Quánh bột chống dính 18cm cán gỗ thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu hợp kim phủ chống dính, màu kem, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 260000,
+      "stock": 100,
+      "imageUrl": "https://media-manager.starsinsider.com/gallery/1080/na_5bfc04a12322b.jpg",
+      "images": [
+        "https://media-manager.starsinsider.com/gallery/1080/na_5bfc04a12322b.jpg"
+      ],
+      "imageSearchQueries": [
+        "quanh bot chong dinh 18cm can go product photo white background",
+        "hop kim phu chong dinh noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Hợp kim phủ chống dính",
+      "color": "Kem",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "18cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Kem",
+          "size": "18cm",
+          "price": 260000,
+          "stock": 55,
+          "imageUrl": "https://media-manager.starsinsider.com/gallery/1080/na_5bfc04a12322b.jpg"
+        },
+        {
+          "color": "Kem",
+          "size": "20cm",
+          "price": 281000,
+          "stock": 45,
+          "imageUrl": "https://media-manager.starsinsider.com/gallery/1080/na_5bfc04a12322b.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Xửng hấp inox 2 tầng đa năng",
+      "description": "Xửng hấp inox 2 tầng đa năng thuộc nhóm Nồi & chảo, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 650000,
+      "stock": 65,
+      "imageUrl": "https://livedoor.blogimg.jp/ippondemoninjin-ketpxywo/imgs/c/1/c1942e6e-s.jpg",
+      "images": [
+        "https://livedoor.blogimg.jp/ippondemoninjin-ketpxywo/imgs/c/1/c1942e6e-s.jpg"
+      ],
+      "imageSearchQueries": [
+        "xung hap inox 2 tang da nang product photo white background",
+        "inox 304 noi chao catalog product photo",
+        "cookware product photo white background",
+        "kitchen pot pan product photo"
+      ],
+      "category": "cookware",
+      "material": "Inox 304",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "2 tầng",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "2 tầng",
+          "price": 650000,
+          "stock": 35,
+          "imageUrl": "https://livedoor.blogimg.jp/ippondemoninjin-ketpxywo/imgs/c/1/c1942e6e-s.jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "2 tầng",
+          "price": 702000,
+          "stock": 30,
+          "imageUrl": "https://livedoor.blogimg.jp/ippondemoninjin-ketpxywo/imgs/c/1/c1942e6e-s.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Nồi chiên không dầu dung tích 6L",
+      "description": "Nồi chiên không dầu dung tích 6L thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa abs, thép không gỉ, màu đen, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 1850000,
+      "stock": 40,
+      "imageUrl": "https://encount.press/wp-content/uploads/2023/04/19211009/b3a7d1cf0004acde2daa7a79243768a0.jpg",
+      "images": [
+        "https://encount.press/wp-content/uploads/2023/04/19211009/b3a7d1cf0004acde2daa7a79243768a0.jpg"
+      ],
+      "imageSearchQueries": [
+        "noi chien khong dau dung tich 6l product photo white background",
+        "nhua abs thep khong gi thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Nhựa ABS, thép không gỉ",
+      "color": "Đen",
+      "brand": "DPWOOD Home",
+      "capacity": "6L",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đen",
+          "size": "6L",
+          "price": 1850000,
+          "stock": 22,
+          "imageUrl": "https://encount.press/wp-content/uploads/2023/04/19211009/b3a7d1cf0004acde2daa7a79243768a0.jpg"
+        },
+        {
+          "color": "Trắng",
+          "size": "6L",
+          "price": 1998000,
+          "stock": 18,
+          "imageUrl": "https://encount.press/wp-content/uploads/2023/04/19211009/b3a7d1cf0004acde2daa7a79243768a0.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bếp điện từ đơn mặt kính ceramic",
+      "description": "Bếp điện từ đơn mặt kính ceramic thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu kính ceramic, màu đen, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 1290000,
+      "stock": 50,
+      "imageUrl": "http://3.bp.blogspot.com/-C-EqAY7AXKg/Vu0j7zLH9nI/AAAAAAAA494/IpW8VXzZ9PgzecW5SjNX6Np1yvfh9D-_Q/s800/hair_mitsuami.png",
+      "images": [
+        "http://3.bp.blogspot.com/-C-EqAY7AXKg/Vu0j7zLH9nI/AAAAAAAA494/IpW8VXzZ9PgzecW5SjNX6Np1yvfh9D-_Q/s800/hair_mitsuami.png"
+      ],
+      "imageSearchQueries": [
+        "bep dien tu don mat kinh ceramic product photo white background",
+        "kinh ceramic thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Kính ceramic",
+      "color": "Đen",
+      "brand": "DPWOOD Home",
+      "capacity": "2000W",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đen",
+          "size": "2000W",
+          "price": 1290000,
+          "stock": 27,
+          "imageUrl": "http://3.bp.blogspot.com/-C-EqAY7AXKg/Vu0j7zLH9nI/AAAAAAAA494/IpW8VXzZ9PgzecW5SjNX6Np1yvfh9D-_Q/s800/hair_mitsuami.png"
+        },
+        {
+          "color": "Trắng",
+          "size": "2000W",
+          "price": 1393000,
+          "stock": 23,
+          "imageUrl": "http://3.bp.blogspot.com/-C-EqAY7AXKg/Vu0j7zLH9nI/AAAAAAAA494/IpW8VXzZ9PgzecW5SjNX6Np1yvfh9D-_Q/s800/hair_mitsuami.png"
+        }
+      ]
+    },
+    {
+      "name": "Bình đun siêu tốc inox 1.8L",
+      "description": "Bình đun siêu tốc inox 1.8L thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu trắng bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 450000,
+      "stock": 120,
+      "imageUrl": "https://www.techeyesonline.com/img/measuring-device/HINCD-00236-ZTS-20N.jpg",
+      "images": [
+        "https://www.techeyesonline.com/img/measuring-device/HINCD-00236-ZTS-20N.jpg"
+      ],
+      "imageSearchQueries": [
+        "binh dun sieu toc inox 1 8l product photo white background",
+        "inox 304 thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Inox 304",
+      "color": "Trắng bạc",
+      "brand": "DPWOOD Home",
+      "capacity": "1.8L",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trắng bạc",
+          "size": "1.8L",
+          "price": 450000,
+          "stock": 66,
+          "imageUrl": "https://www.techeyesonline.com/img/measuring-device/HINCD-00236-ZTS-20N.jpg"
+        },
+        {
+          "color": "Trắng bạc",
+          "size": "1.8L",
+          "price": 486000,
+          "stock": 54,
+          "imageUrl": "https://www.techeyesonline.com/img/measuring-device/HINCD-00236-ZTS-20N.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Máy xay sinh tố thủy tinh 1.5L",
+      "description": "Máy xay sinh tố thủy tinh 1.5L thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thủy tinh, inox, màu trắng, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 890000,
+      "stock": 60,
+      "imageUrl": "https://storables.com/wp-content/uploads/2024/01/what-is-water-glass-1705738901.jpg",
+      "images": [
+        "https://storables.com/wp-content/uploads/2024/01/what-is-water-glass-1705738901.jpg"
+      ],
+      "imageSearchQueries": [
+        "may xay sinh to thuy tinh 1 5l product photo white background",
+        "thuy tinh inox thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Thủy tinh, inox",
+      "color": "Trắng",
+      "brand": "DPWOOD Home",
+      "capacity": "1.5L",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trắng",
+          "size": "1.5L",
+          "price": 890000,
+          "stock": 33,
+          "imageUrl": "https://storables.com/wp-content/uploads/2024/01/what-is-water-glass-1705738901.jpg"
+        },
+        {
+          "color": "Đen",
+          "size": "1.5L",
+          "price": 961000,
+          "stock": 27,
+          "imageUrl": "https://storables.com/wp-content/uploads/2024/01/what-is-water-glass-1705738901.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Máy ép chậm mini cho gia đình",
+      "description": "Máy ép chậm mini cho gia đình thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa tritan, inox, màu xanh pastel, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 1590000,
+      "stock": 35,
+      "imageUrl": "https://mamikita.com/wp-content/uploads/2024/01/Model-rambut-anak-laki-laki.jpg",
+      "images": [
+        "https://mamikita.com/wp-content/uploads/2024/01/Model-rambut-anak-laki-laki.jpg"
+      ],
+      "imageSearchQueries": [
+        "may ep cham mini cho gia dinh product photo white background",
+        "nhua tritan inox thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Nhựa Tritan, inox",
+      "color": "Xanh pastel",
+      "brand": "DPWOOD Home",
+      "capacity": "500ml",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Xanh pastel",
+          "size": "500ml",
+          "price": 1590000,
+          "stock": 19,
+          "imageUrl": "https://mamikita.com/wp-content/uploads/2024/01/Model-rambut-anak-laki-laki.jpg"
+        },
+        {
+          "color": "Xanh pastel",
+          "size": "500ml",
+          "price": 1717000,
+          "stock": 16,
+          "imageUrl": "https://mamikita.com/wp-content/uploads/2024/01/Model-rambut-anak-laki-laki.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Máy pha cà phê mini 650ml",
+      "description": "Máy pha cà phê mini 650ml thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa abs, inox, màu đen, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 1250000,
+      "stock": 32,
+      "imageUrl": "https://www.carbodydesign.com/media/2013/07/01-MINI-Vision-Concept-01.jpg",
+      "images": [
+        "https://www.carbodydesign.com/media/2013/07/01-MINI-Vision-Concept-01.jpg"
+      ],
+      "imageSearchQueries": [
+        "may pha ca phe mini 650ml product photo white background",
+        "nhua abs inox thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Nhựa ABS, inox",
+      "color": "Đen",
+      "brand": "DPWOOD Home",
+      "capacity": "650ml",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đen",
+          "size": "650ml",
+          "price": 1250000,
+          "stock": 17,
+          "imageUrl": "https://www.carbodydesign.com/media/2013/07/01-MINI-Vision-Concept-01.jpg"
+        },
+        {
+          "color": "Trắng",
+          "size": "650ml",
+          "price": 1350000,
+          "stock": 15,
+          "imageUrl": "https://www.carbodydesign.com/media/2013/07/01-MINI-Vision-Concept-01.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Máy hút mùi âm tủ 70cm",
+      "description": "Máy hút mùi âm tủ 70cm thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox, kính, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 2450000,
+      "stock": 25,
+      "imageUrl": "https://getbuilt.com/wp-content/uploads/2023/04/Citi-_-Built.png",
+      "images": [
+        "https://getbuilt.com/wp-content/uploads/2023/04/Citi-_-Built.png"
+      ],
+      "imageSearchQueries": [
+        "may hut mui am tu 70cm product photo white background",
+        "inox kinh thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Inox, kính",
+      "color": "Bạc",
+      "brand": "DPWOOD Home",
+      "capacity": "70cm",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "70cm",
+          "price": 2450000,
+          "stock": 13,
+          "imageUrl": "https://getbuilt.com/wp-content/uploads/2023/04/Citi-_-Built.png"
+        },
+        {
+          "color": "Bạc",
+          "size": "72cm",
+          "price": 2646000,
+          "stock": 12,
+          "imageUrl": "https://getbuilt.com/wp-content/uploads/2023/04/Citi-_-Built.png"
+        }
+      ]
+    },
+    {
+      "name": "Máy rửa bát mini để bàn 6 bộ",
+      "description": "Máy rửa bát mini để bàn 6 bộ thuộc nhóm Thiết bị nhà bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thép sơn tĩnh điện, màu trắng, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 6990000,
+      "stock": 18,
+      "imageUrl": "https://house-food.com.tw/images/2019/03/3.jpg",
+      "images": [
+        "https://house-food.com.tw/images/2019/03/3.jpg"
+      ],
+      "imageSearchQueries": [
+        "may rua bat mini de ban 6 bo product photo white background",
+        "thep son tinh dien thiet bi nha bep catalog product photo",
+        "small kitchen appliance product photo",
+        "modern kitchen appliance catalog photo"
+      ],
+      "category": "appliances",
+      "material": "Thép sơn tĩnh điện",
+      "color": "Trắng",
+      "brand": "DPWOOD Home",
+      "capacity": "6 bộ",
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trắng",
+          "size": "6 bộ",
+          "price": 6990000,
+          "stock": 9,
+          "imageUrl": "https://house-food.com.tw/images/2019/03/3.jpg"
+        },
+        {
+          "color": "Đen",
+          "size": "6 bộ",
+          "price": 7549000,
+          "stock": 9,
+          "imageUrl": "https://house-food.com.tw/images/2019/03/3.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bộ bát đĩa sứ trắng 12 món",
+      "description": "Bộ bát đĩa sứ trắng 12 món thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu sứ cao cấp, màu trắng, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 680000,
+      "stock": 95,
+      "imageUrl": "https://wallpapers.com/images/hd/solid-white-background-au1ygbma6jyibvyf.jpg",
+      "images": [
+        "https://wallpapers.com/images/hd/solid-white-background-au1ygbma6jyibvyf.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo bat dia su trang 12 mon product photo white background",
+        "su cao cap bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Sứ cao cấp",
+      "color": "Trắng",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "12 món",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Trắng",
+          "size": "12 món",
+          "price": 680000,
+          "stock": 52,
+          "imageUrl": "https://wallpapers.com/images/hd/solid-white-background-au1ygbma6jyibvyf.jpg"
+        },
+        {
+          "color": "Đen",
+          "size": "12 món",
+          "price": 734000,
+          "stock": 43,
+          "imageUrl": "https://wallpapers.com/images/hd/solid-white-background-au1ygbma6jyibvyf.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bộ bát đĩa men xanh biển 16 món",
+      "description": "Bộ bát đĩa men xanh biển 16 món thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu sứ men màu, màu xanh biển, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 850000,
+      "stock": 70,
+      "imageUrl": "https://static.vecteezy.com/system/resources/previews/060/390/981/non_2x/snake-charmer-playing-flute-with-cobra-in-flat-illustration-vector.jpg",
+      "images": [
+        "https://static.vecteezy.com/system/resources/previews/060/390/981/non_2x/snake-charmer-playing-flute-with-cobra-in-flat-illustration-vector.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo bat dia men xanh bien 16 mon product photo white background",
+        "su men mau bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Sứ men màu",
+      "color": "Xanh biển",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "16 món",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Xanh biển",
+          "size": "16 món",
+          "price": 850000,
+          "stock": 38,
+          "imageUrl": "https://static.vecteezy.com/system/resources/previews/060/390/981/non_2x/snake-charmer-playing-flute-with-cobra-in-flat-illustration-vector.jpg"
+        },
+        {
+          "color": "Xanh biển",
+          "size": "16 món",
+          "price": 918000,
+          "stock": 32,
+          "imageUrl": "https://static.vecteezy.com/system/resources/previews/060/390/981/non_2x/snake-charmer-playing-flute-with-cobra-in-flat-illustration-vector.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Tô ramen sứ sâu lòng 900ml",
+      "description": "Tô ramen sứ sâu lòng 900ml thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu sứ nung nhiệt cao, màu trắng ngà, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 120000,
+      "stock": 180,
+      "imageUrl": "https://i.pinimg.com/originals/86/af/7e/86af7ef6b2c3f713ca31cd6e726c899e.jpg",
+      "images": [
+        "https://i.pinimg.com/originals/86/af/7e/86af7ef6b2c3f713ca31cd6e726c899e.jpg"
+      ],
+      "imageSearchQueries": [
+        "to ramen su sau long 900ml product photo white background",
+        "su nung nhiet cao bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Sứ nung nhiệt cao",
+      "color": "Trắng ngà",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "900ml",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Trắng ngà",
+          "size": "900ml",
+          "price": 120000,
+          "stock": 99,
+          "imageUrl": "https://i.pinimg.com/originals/86/af/7e/86af7ef6b2c3f713ca31cd6e726c899e.jpg"
+        },
+        {
+          "color": "Trắng ngà",
+          "size": "900ml",
+          "price": 130000,
+          "stock": 81,
+          "imageUrl": "https://i.pinimg.com/originals/86/af/7e/86af7ef6b2c3f713ca31cd6e726c899e.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Đĩa sứ phẳng viền mảnh 25cm",
+      "description": "Đĩa sứ phẳng viền mảnh 25cm thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu sứ cao cấp, màu trắng, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 95000,
+      "stock": 220,
+      "imageUrl": "https://neurolaunch.com/wp-content/uploads/2024/09/white-color-psychology-the-powerful-impact-of-purity-and-simplicity-1024x585.webp",
+      "images": [
+        "https://neurolaunch.com/wp-content/uploads/2024/09/white-color-psychology-the-powerful-impact-of-purity-and-simplicity-1024x585.webp"
+      ],
+      "imageSearchQueries": [
+        "dia su phang vien manh 25cm product photo white background",
+        "su cao cap bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Sứ cao cấp",
+      "color": "Trắng",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "25cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Trắng",
+          "size": "25cm",
+          "price": 95000,
+          "stock": 121,
+          "imageUrl": "https://neurolaunch.com/wp-content/uploads/2024/09/white-color-psychology-the-powerful-impact-of-purity-and-simplicity-1024x585.webp"
+        },
+        {
+          "color": "Đen",
+          "size": "27cm",
+          "price": 103000,
+          "stock": 99,
+          "imageUrl": "https://neurolaunch.com/wp-content/uploads/2024/09/white-color-psychology-the-powerful-impact-of-purity-and-simplicity-1024x585.webp"
+        }
+      ]
+    },
+    {
+      "name": "Bộ ly thủy tinh hai lớp cách nhiệt 4 chiếc",
+      "description": "Bộ ly thủy tinh hai lớp cách nhiệt 4 chiếc thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thủy tinh borosilicate, màu trong suốt, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 420000,
+      "stock": 100,
+      "imageUrl": "https://mathsathome.com/wp-content/uploads/2022/10/double-angle-formulae-list.png",
+      "images": [
+        "https://mathsathome.com/wp-content/uploads/2022/10/double-angle-formulae-list.png"
+      ],
+      "imageSearchQueries": [
+        "bo ly thuy tinh hai lop cach nhiet 4 chiec product photo white background",
+        "thuy tinh borosilicate bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Thủy tinh borosilicate",
+      "color": "Trong suốt",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "350ml",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trong suốt",
+          "size": "350ml",
+          "price": 420000,
+          "stock": 55,
+          "imageUrl": "https://mathsathome.com/wp-content/uploads/2022/10/double-angle-formulae-list.png"
+        },
+        {
+          "color": "Trong suốt",
+          "size": "350ml",
+          "price": 454000,
+          "stock": 45,
+          "imageUrl": "https://mathsathome.com/wp-content/uploads/2022/10/double-angle-formulae-list.png"
+        }
+      ]
+    },
+    {
+      "name": "Bình nước thủy tinh nắp gỗ 1.5L",
+      "description": "Bình nước thủy tinh nắp gỗ 1.5L thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thủy tinh, gỗ tre, màu trong suốt, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 260000,
+      "stock": 130,
+      "imageUrl": "https://www.meandmyglass.co.uk/wp-content/uploads/2022/11/laminated-glass.jpg",
+      "images": [
+        "https://www.meandmyglass.co.uk/wp-content/uploads/2022/11/laminated-glass.jpg"
+      ],
+      "imageSearchQueries": [
+        "binh nuoc thuy tinh nap go 1 5l product photo white background",
+        "thuy tinh go tre bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Thủy tinh, gỗ tre",
+      "color": "Trong suốt",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "1.5L",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trong suốt",
+          "size": "1.5L",
+          "price": 260000,
+          "stock": 71,
+          "imageUrl": "https://www.meandmyglass.co.uk/wp-content/uploads/2022/11/laminated-glass.jpg"
+        },
+        {
+          "color": "Trong suốt",
+          "size": "1.5L",
+          "price": 281000,
+          "stock": 59,
+          "imageUrl": "https://www.meandmyglass.co.uk/wp-content/uploads/2022/11/laminated-glass.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Khay trà gỗ óc chó cao cấp",
+      "description": "Khay trà gỗ óc chó cao cấp thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu gỗ óc chó, màu nâu đậm, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 750000,
+      "stock": 45,
+      "imageUrl": "http://images8.alphacoders.com/450/450463.jpg",
+      "images": [
+        "http://images8.alphacoders.com/450/450463.jpg"
+      ],
+      "imageSearchQueries": [
+        "khay tra go oc cho cao cap product photo white background",
+        "go oc cho bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Gỗ óc chó",
+      "color": "Nâu đậm",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "40x28cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Nâu đậm",
+          "size": "40x28cm",
+          "price": 750000,
+          "stock": 24,
+          "imageUrl": "http://images8.alphacoders.com/450/450463.jpg"
+        },
+        {
+          "color": "Nâu đậm",
+          "size": "42x28cm",
+          "price": 810000,
+          "stock": 21,
+          "imageUrl": "http://images8.alphacoders.com/450/450463.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Khay lót ly gỗ bần bộ 6 miếng",
+      "description": "Khay lót ly gỗ bần bộ 6 miếng thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu gỗ bần, màu nâu tự nhiên, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 120000,
+      "stock": 170,
+      "imageUrl": "https://s.widget-club.com/images/YyiR86zpwIMIfrCZoSs4ulVD9RF3/b22255dfedf940672ef872c05ad70291/79ef45e19b236976509428a9a807bcc7.jpg?q=50&w=720",
+      "images": [
+        "https://s.widget-club.com/images/YyiR86zpwIMIfrCZoSs4ulVD9RF3/b22255dfedf940672ef872c05ad70291/79ef45e19b236976509428a9a807bcc7.jpg?q=50&w=720"
+      ],
+      "imageSearchQueries": [
+        "khay lot ly go ban bo 6 mieng product photo white background",
+        "go ban bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Gỗ bần",
+      "color": "Nâu tự nhiên",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "6 miếng",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Nâu tự nhiên",
+          "size": "6 miếng",
+          "price": 120000,
+          "stock": 93,
+          "imageUrl": "https://s.widget-club.com/images/YyiR86zpwIMIfrCZoSs4ulVD9RF3/b22255dfedf940672ef872c05ad70291/79ef45e19b236976509428a9a807bcc7.jpg?q=50&w=720"
+        },
+        {
+          "color": "Nâu tự nhiên",
+          "size": "6 miếng",
+          "price": 130000,
+          "stock": 77,
+          "imageUrl": "https://s.widget-club.com/images/YyiR86zpwIMIfrCZoSs4ulVD9RF3/b22255dfedf940672ef872c05ad70291/79ef45e19b236976509428a9a807bcc7.jpg?q=50&w=720"
+        }
+      ]
+    },
+    {
+      "name": "Bộ muỗng nĩa inox 24 món",
+      "description": "Bộ muỗng nĩa inox 24 món thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 520000,
+      "stock": 90,
+      "imageUrl": "https://suamisihat.com.my/wp-content/uploads/2025/12/punca-penceraian-di-malaysia-2.jpg",
+      "images": [
+        "https://suamisihat.com.my/wp-content/uploads/2025/12/punca-penceraian-di-malaysia-2.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo muong nia inox 24 mon product photo white background",
+        "inox 304 bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Inox 304",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "24 món",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "24 món",
+          "price": 520000,
+          "stock": 49,
+          "imageUrl": "https://suamisihat.com.my/wp-content/uploads/2025/12/punca-penceraian-di-malaysia-2.jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "24 món",
+          "price": 562000,
+          "stock": 41,
+          "imageUrl": "https://suamisihat.com.my/wp-content/uploads/2025/12/punca-penceraian-di-malaysia-2.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bộ thìa dĩa inox mạ vàng 16 món",
+      "description": "Bộ thìa dĩa inox mạ vàng 16 món thuộc nhóm Bát đĩa & bàn ăn, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox mạ pvd, màu vàng champagne, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 690000,
+      "stock": 55,
+      "imageUrl": "https://cdn.imweb.me/upload/S20221019493ad8f8a8786/46a810e3aa56c.jpg",
+      "images": [
+        "https://cdn.imweb.me/upload/S20221019493ad8f8a8786/46a810e3aa56c.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo thia dia inox ma vang 16 mon product photo white background",
+        "inox ma pvd bat dia ban an catalog product photo",
+        "tableware product photo white background",
+        "ceramic dinnerware product photo"
+      ],
+      "category": "tableware",
+      "material": "Inox mạ PVD",
+      "color": "Vàng champagne",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "16 món",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Vàng champagne",
+          "size": "16 món",
+          "price": 690000,
+          "stock": 30,
+          "imageUrl": "https://cdn.imweb.me/upload/S20221019493ad8f8a8786/46a810e3aa56c.jpg"
+        },
+        {
+          "color": "Vàng champagne",
+          "size": "16 món",
+          "price": 745000,
+          "stock": 25,
+          "imageUrl": "https://cdn.imweb.me/upload/S20221019493ad8f8a8786/46a810e3aa56c.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Dao chef thép Đức 20cm cán gỗ",
+      "description": "Dao chef thép Đức 20cm cán gỗ thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thép không gỉ, gỗ, màu bạc nâu, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 520000,
+      "stock": 80,
+      "imageUrl": "https://img.freepik.com/premium-photo/professional-chef-working-kitchen_849906-13773.jpg",
+      "images": [
+        "https://img.freepik.com/premium-photo/professional-chef-working-kitchen_849906-13773.jpg"
+      ],
+      "imageSearchQueries": [
+        "dao chef thep duc 20cm can go product photo white background",
+        "thep khong gi go dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Thép không gỉ, gỗ",
+      "color": "Bạc nâu",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "20cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc nâu",
+          "size": "20cm",
+          "price": 520000,
+          "stock": 44,
+          "imageUrl": "https://img.freepik.com/premium-photo/professional-chef-working-kitchen_849906-13773.jpg"
+        },
+        {
+          "color": "Bạc nâu",
+          "size": "22cm",
+          "price": 562000,
+          "stock": 36,
+          "imageUrl": "https://img.freepik.com/premium-photo/professional-chef-working-kitchen_849906-13773.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bộ dao kéo nhà bếp 7 món kèm kệ",
+      "description": "Bộ dao kéo nhà bếp 7 món kèm kệ thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thép không gỉ, màu đen bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 980000,
+      "stock": 50,
+      "imageUrl": "https://p1.pxfuel.com/preview/71/599/650/kitchen-real-estate-design-residential.jpg",
+      "images": [
+        "https://p1.pxfuel.com/preview/71/599/650/kitchen-real-estate-design-residential.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo dao keo nha bep 7 mon kem ke product photo white background",
+        "thep khong gi dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Thép không gỉ",
+      "color": "Đen bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "7 món",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đen bạc",
+          "size": "7 món",
+          "price": 980000,
+          "stock": 27,
+          "imageUrl": "https://p1.pxfuel.com/preview/71/599/650/kitchen-real-estate-design-residential.jpg"
+        },
+        {
+          "color": "Đen bạc",
+          "size": "7 món",
+          "price": 1058000,
+          "stock": 23,
+          "imageUrl": "https://p1.pxfuel.com/preview/71/599/650/kitchen-real-estate-design-residential.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Thớt gỗ teak ghép đầu cây kháng khuẩn",
+      "description": "Thớt gỗ teak ghép đầu cây kháng khuẩn thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu gỗ teak, màu nâu gỗ, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 450000,
+      "stock": 150,
+      "imageUrl": "https://static.vecteezy.com/system/resources/previews/010/380/187/large_2x/beautiful-texture-of-natural-european-walnut-wood-planks-with-a-horizontal-grain-pattern-photo.jpg",
+      "images": [
+        "https://static.vecteezy.com/system/resources/previews/010/380/187/large_2x/beautiful-texture-of-natural-european-walnut-wood-planks-with-a-horizontal-grain-pattern-photo.jpg"
+      ],
+      "imageSearchQueries": [
+        "thot go teak ghep dau cay khang khuan product photo white background",
+        "go teak dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Gỗ teak",
+      "color": "Nâu gỗ",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "38x28cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Nâu gỗ",
+          "size": "38x28cm",
+          "price": 450000,
+          "stock": 82,
+          "imageUrl": "https://static.vecteezy.com/system/resources/previews/010/380/187/large_2x/beautiful-texture-of-natural-european-walnut-wood-planks-with-a-horizontal-grain-pattern-photo.jpg"
+        },
+        {
+          "color": "Nâu gỗ",
+          "size": "40x28cm",
+          "price": 486000,
+          "stock": 68,
+          "imageUrl": "https://static.vecteezy.com/system/resources/previews/010/380/187/large_2x/beautiful-texture-of-natural-european-walnut-wood-planks-with-a-horizontal-grain-pattern-photo.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Thớt nhựa phân màu bộ 3 tấm",
+      "description": "Thớt nhựa phân màu bộ 3 tấm thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa pp, màu đa màu, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 210000,
+      "stock": 160,
+      "imageUrl": "https://i0.wp.com/artistrybylisamarie.com/wp-content/uploads/2021/05/Color-Wheel.jpg?w=1266&ssl=1",
+      "images": [
+        "https://i0.wp.com/artistrybylisamarie.com/wp-content/uploads/2021/05/Color-Wheel.jpg?w=1266&ssl=1"
+      ],
+      "imageSearchQueries": [
+        "thot nhua phan mau bo 3 tam product photo white background",
+        "nhua pp dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Nhựa PP",
+      "color": "Đa màu",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "3 tấm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đa màu",
+          "size": "3 tấm",
+          "price": 210000,
+          "stock": 88,
+          "imageUrl": "https://i0.wp.com/artistrybylisamarie.com/wp-content/uploads/2021/05/Color-Wheel.jpg?w=1266&ssl=1"
+        },
+        {
+          "color": "Đa màu",
+          "size": "3 tấm",
+          "price": 227000,
+          "stock": 72,
+          "imageUrl": "https://i0.wp.com/artistrybylisamarie.com/wp-content/uploads/2021/05/Color-Wheel.jpg?w=1266&ssl=1"
+        }
+      ]
+    },
+    {
+      "name": "Bộ dụng cụ nấu ăn silicone cán gỗ 11 món",
+      "description": "Bộ dụng cụ nấu ăn silicone cán gỗ 11 món thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu silicone, gỗ sồi, màu đen nâu, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 320000,
+      "stock": 120,
+      "imageUrl": "https://avtube.org/wp-content/uploads/2025/03/AI-Image-to-Video-Generator.jpg",
+      "images": [
+        "https://avtube.org/wp-content/uploads/2025/03/AI-Image-to-Video-Generator.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo dung cu nau an silicone can go 11 mon product photo white background",
+        "silicone go soi dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Silicone, gỗ sồi",
+      "color": "Đen nâu",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "11 món",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đen nâu",
+          "size": "11 món",
+          "price": 320000,
+          "stock": 66,
+          "imageUrl": "https://avtube.org/wp-content/uploads/2025/03/AI-Image-to-Video-Generator.jpg"
+        },
+        {
+          "color": "Đen nâu",
+          "size": "11 món",
+          "price": 346000,
+          "stock": 54,
+          "imageUrl": "https://avtube.org/wp-content/uploads/2025/03/AI-Image-to-Video-Generator.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Kẹp gắp thực phẩm inox 30cm",
+      "description": "Kẹp gắp thực phẩm inox 30cm thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 85000,
+      "stock": 260,
+      "imageUrl": "https://peakvisor.com/img/news/North-York-Moors-National-Park.jpg",
+      "images": [
+        "https://peakvisor.com/img/news/North-York-Moors-National-Park.jpg"
+      ],
+      "imageSearchQueries": [
+        "kep gap thuc pham inox 30cm product photo white background",
+        "inox 304 dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Inox 304",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "30cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "30cm",
+          "price": 85000,
+          "stock": 143,
+          "imageUrl": "https://peakvisor.com/img/news/North-York-Moors-National-Park.jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "32cm",
+          "price": 92000,
+          "stock": 117,
+          "imageUrl": "https://peakvisor.com/img/news/North-York-Moors-National-Park.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Rây lọc inox cán dài 18cm",
+      "description": "Rây lọc inox cán dài 18cm thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 95000,
+      "stock": 190,
+      "imageUrl": "https://images.pexels.com/photos/19024664/pexels-photo-19024664.jpeg?cs=srgb&dl=pexels-csibeman-19024664.jpg&fm=jpg",
+      "images": [
+        "https://images.pexels.com/photos/19024664/pexels-photo-19024664.jpeg?cs=srgb&dl=pexels-csibeman-19024664.jpg&fm=jpg"
+      ],
+      "imageSearchQueries": [
+        "ray loc inox can dai 18cm product photo white background",
+        "inox 304 dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Inox 304",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "18cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "18cm",
+          "price": 95000,
+          "stock": 104,
+          "imageUrl": "https://images.pexels.com/photos/19024664/pexels-photo-19024664.jpeg?cs=srgb&dl=pexels-csibeman-19024664.jpg&fm=jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "20cm",
+          "price": 103000,
+          "stock": 86,
+          "imageUrl": "https://images.pexels.com/photos/19024664/pexels-photo-19024664.jpeg?cs=srgb&dl=pexels-csibeman-19024664.jpg&fm=jpg"
+        }
+      ]
+    },
+    {
+      "name": "Cân điện tử nhà bếp 5kg",
+      "description": "Cân điện tử nhà bếp 5kg thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa abs, mặt kính, màu trắng, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 190000,
+      "stock": 120,
+      "imageUrl": "https://static.vecteezy.com/system/resources/previews/057/333/035/large_2x/abstract-representation-of-digital-data-with-binary-code-creating-an-immersive-and-futuristic-atmosphere-tech-and-innovation-visualized-free-photo.jpg",
+      "images": [
+        "https://static.vecteezy.com/system/resources/previews/057/333/035/large_2x/abstract-representation-of-digital-data-with-binary-code-creating-an-immersive-and-futuristic-atmosphere-tech-and-innovation-visualized-free-photo.jpg"
+      ],
+      "imageSearchQueries": [
+        "can dien tu nha bep 5kg product photo white background",
+        "nhua abs mat kinh dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Nhựa ABS, mặt kính",
+      "color": "Trắng",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "5kg",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trắng",
+          "size": "5kg",
+          "price": 190000,
+          "stock": 66,
+          "imageUrl": "https://static.vecteezy.com/system/resources/previews/057/333/035/large_2x/abstract-representation-of-digital-data-with-binary-code-creating-an-immersive-and-futuristic-atmosphere-tech-and-innovation-visualized-free-photo.jpg"
+        },
+        {
+          "color": "Đen",
+          "size": "5kg",
+          "price": 205000,
+          "stock": 54,
+          "imageUrl": "https://static.vecteezy.com/system/resources/previews/057/333/035/large_2x/abstract-representation-of-digital-data-with-binary-code-creating-an-immersive-and-futuristic-atmosphere-tech-and-innovation-visualized-free-photo.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bộ khuôn làm bánh silicone 6 khuôn",
+      "description": "Bộ khuôn làm bánh silicone 6 khuôn thuộc nhóm Dụng cụ bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu silicone chịu nhiệt, màu hồng pastel, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 210000,
+      "stock": 100,
+      "imageUrl": "https://cdn.mos.cms.futurecdn.net/58wgSsrJGd4pmKrt9orY35.jpg",
+      "images": [
+        "https://cdn.mos.cms.futurecdn.net/58wgSsrJGd4pmKrt9orY35.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo khuon lam banh silicone 6 khuon product photo white background",
+        "silicone chiu nhiet dung cu bep catalog product photo",
+        "kitchen utensils product photo white background",
+        "cooking tools product photo"
+      ],
+      "category": "utensils",
+      "material": "Silicone chịu nhiệt",
+      "color": "Hồng pastel",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "6 khuôn",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Hồng pastel",
+          "size": "6 khuôn",
+          "price": 210000,
+          "stock": 55,
+          "imageUrl": "https://cdn.mos.cms.futurecdn.net/58wgSsrJGd4pmKrt9orY35.jpg"
+        },
+        {
+          "color": "Hồng pastel",
+          "size": "6 khuôn",
+          "price": 227000,
+          "stock": 45,
+          "imageUrl": "https://cdn.mos.cms.futurecdn.net/58wgSsrJGd4pmKrt9orY35.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Chổi cọ xoong nồi xơ dừa cán gỗ",
+      "description": "Chổi cọ xoong nồi xơ dừa cán gỗ thuộc nhóm Vệ sinh bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu xơ dừa, gỗ, màu nâu tự nhiên, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 45000,
+      "stock": 400,
+      "imageUrl": "https://pic2.zhimg.com/v2-80c2486c331fca60d1f5807dd75e26f1_r.jpg",
+      "images": [
+        "https://pic2.zhimg.com/v2-80c2486c331fca60d1f5807dd75e26f1_r.jpg"
+      ],
+      "imageSearchQueries": [
+        "choi co xoong noi xo dua can go product photo white background",
+        "xo dua go ve sinh bep catalog product photo",
+        "kitchen cleaning product photo",
+        "dish brush cleaning supply product photo"
+      ],
+      "category": "cleaning",
+      "material": "Xơ dừa, gỗ",
+      "color": "Nâu tự nhiên",
+      "brand": "DPWOOD Home",
+      "capacity": "25cm",
+      "warranty": "3 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Nâu tự nhiên",
+          "size": "25cm",
+          "price": 45000,
+          "stock": 220,
+          "imageUrl": "https://pic2.zhimg.com/v2-80c2486c331fca60d1f5807dd75e26f1_r.jpg"
+        },
+        {
+          "color": "Nâu tự nhiên",
+          "size": "27cm",
+          "price": 49000,
+          "stock": 180,
+          "imageUrl": "https://pic2.zhimg.com/v2-80c2486c331fca60d1f5807dd75e26f1_r.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Cọ rửa bát đĩa cán gỗ đầu sisal",
+      "description": "Cọ rửa bát đĩa cán gỗ đầu sisal thuộc nhóm Vệ sinh bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu gỗ, sợi sisal, màu nâu, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 65000,
+      "stock": 300,
+      "imageUrl": "https://as1.ftcdn.net/v2/jpg/06/06/66/72/1000_F_606667297_LHyMAQkU49R3Gp7xV37uB9m04SlnONJG.jpg",
+      "images": [
+        "https://as1.ftcdn.net/v2/jpg/06/06/66/72/1000_F_606667297_LHyMAQkU49R3Gp7xV37uB9m04SlnONJG.jpg"
+      ],
+      "imageSearchQueries": [
+        "co rua bat dia can go dau sisal product photo white background",
+        "go soi sisal ve sinh bep catalog product photo",
+        "kitchen cleaning product photo",
+        "dish brush cleaning supply product photo"
+      ],
+      "category": "cleaning",
+      "material": "Gỗ, sợi sisal",
+      "color": "Nâu",
+      "brand": "DPWOOD Home",
+      "capacity": "23cm",
+      "warranty": "3 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Nâu",
+          "size": "23cm",
+          "price": 65000,
+          "stock": 165,
+          "imageUrl": "https://as1.ftcdn.net/v2/jpg/06/06/66/72/1000_F_606667297_LHyMAQkU49R3Gp7xV37uB9m04SlnONJG.jpg"
+        },
+        {
+          "color": "Nâu",
+          "size": "25cm",
+          "price": 70000,
+          "stock": 135,
+          "imageUrl": "https://as1.ftcdn.net/v2/jpg/06/06/66/72/1000_F_606667297_LHyMAQkU49R3Gp7xV37uB9m04SlnONJG.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Nước rửa chén hữu cơ hương chanh sả 1L",
+      "description": "Nước rửa chén hữu cơ hương chanh sả 1L thuộc nhóm Vệ sinh bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu chiết xuất thực vật, màu vàng nhạt, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 75000,
+      "stock": 500,
+      "imageUrl": "https://i.pinimg.com/originals/7e/d3/5b/7ed35b4e0e467f24a2fd345445f52b3a.jpg",
+      "images": [
+        "https://i.pinimg.com/originals/7e/d3/5b/7ed35b4e0e467f24a2fd345445f52b3a.jpg"
+      ],
+      "imageSearchQueries": [
+        "nuoc rua chen huu co huong chanh sa 1l product photo white background",
+        "chiet xuat thuc vat ve sinh bep catalog product photo",
+        "kitchen cleaning product photo",
+        "dish brush cleaning supply product photo"
+      ],
+      "category": "cleaning",
+      "material": "Chiết xuất thực vật",
+      "color": "Vàng nhạt",
+      "brand": "DPWOOD Home",
+      "capacity": "1L",
+      "warranty": "3 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Vàng nhạt",
+          "size": "1L",
+          "price": 75000,
+          "stock": 275,
+          "imageUrl": "https://i.pinimg.com/originals/7e/d3/5b/7ed35b4e0e467f24a2fd345445f52b3a.jpg"
+        },
+        {
+          "color": "Vàng nhạt",
+          "size": "1L",
+          "price": 81000,
+          "stock": 225,
+          "imageUrl": "https://i.pinimg.com/originals/7e/d3/5b/7ed35b4e0e467f24a2fd345445f52b3a.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Khăn lau bếp microfiber siêu thấm bộ 5 chiếc",
+      "description": "Khăn lau bếp microfiber siêu thấm bộ 5 chiếc thuộc nhóm Vệ sinh bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu microfiber, màu đa màu, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 99000,
+      "stock": 250,
+      "imageUrl": "https://images.pexels.com/videos/8147337/pexels-photo-8147337.jpeg?cs=srgb&dl=pexels-iloveswitzerland-8147337.jpg&fm=jpg",
+      "images": [
+        "https://images.pexels.com/videos/8147337/pexels-photo-8147337.jpeg?cs=srgb&dl=pexels-iloveswitzerland-8147337.jpg&fm=jpg"
+      ],
+      "imageSearchQueries": [
+        "khan lau bep microfiber sieu tham bo 5 chiec product photo white background",
+        "microfiber ve sinh bep catalog product photo",
+        "kitchen cleaning product photo",
+        "dish brush cleaning supply product photo"
+      ],
+      "category": "cleaning",
+      "material": "Microfiber",
+      "color": "Đa màu",
+      "brand": "DPWOOD Home",
+      "capacity": "30x30cm",
+      "warranty": "3 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Đa màu",
+          "size": "30x30cm",
+          "price": 99000,
+          "stock": 137,
+          "imageUrl": "https://images.pexels.com/videos/8147337/pexels-photo-8147337.jpeg?cs=srgb&dl=pexels-iloveswitzerland-8147337.jpg&fm=jpg"
+        },
+        {
+          "color": "Đa màu",
+          "size": "32x30cm",
+          "price": 107000,
+          "stock": 113,
+          "imageUrl": "https://images.pexels.com/videos/8147337/pexels-photo-8147337.jpeg?cs=srgb&dl=pexels-iloveswitzerland-8147337.jpg&fm=jpg"
+        }
+      ]
+    },
+    {
+      "name": "Thùng rác bếp nắp nhấn 12L",
+      "description": "Thùng rác bếp nắp nhấn 12L thuộc nhóm Vệ sinh bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa pp, màu trắng xám, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 260000,
+      "stock": 70,
+      "imageUrl": "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcHgxMjczNjAwLWltYWdlLWt3dnkwbHlkLmpwZw.jpg",
+      "images": [
+        "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcHgxMjczNjAwLWltYWdlLWt3dnkwbHlkLmpwZw.jpg"
+      ],
+      "imageSearchQueries": [
+        "thung rac bep nap nhan 12l product photo white background",
+        "nhua pp ve sinh bep catalog product photo",
+        "kitchen cleaning product photo",
+        "dish brush cleaning supply product photo"
+      ],
+      "category": "cleaning",
+      "material": "Nhựa PP",
+      "color": "Trắng xám",
+      "brand": "DPWOOD Home",
+      "capacity": "12L",
+      "warranty": "3 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trắng xám",
+          "size": "12L",
+          "price": 260000,
+          "stock": 38,
+          "imageUrl": "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcHgxMjczNjAwLWltYWdlLWt3dnkwbHlkLmpwZw.jpg"
+        },
+        {
+          "color": "Trắng xám",
+          "size": "12L",
+          "price": 281000,
+          "stock": 32,
+          "imageUrl": "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcHgxMjczNjAwLWltYWdlLWt3dnkwbHlkLmpwZw.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bộ chổi quét và hót rác mini nhà bếp",
+      "description": "Bộ chổi quét và hót rác mini nhà bếp thuộc nhóm Vệ sinh bếp, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa pp, sợi pet, màu xám, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 125000,
+      "stock": 160,
+      "imageUrl": "https://www.carbodydesign.com/media/2012/03/02-MINI-Design-wedge-shape.jpg",
+      "images": [
+        "https://www.carbodydesign.com/media/2012/03/02-MINI-Design-wedge-shape.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo choi quet va hot rac mini nha bep product photo white background",
+        "nhua pp soi pet ve sinh bep catalog product photo",
+        "kitchen cleaning product photo",
+        "dish brush cleaning supply product photo"
+      ],
+      "category": "cleaning",
+      "material": "Nhựa PP, sợi PET",
+      "color": "Xám",
+      "brand": "DPWOOD Home",
+      "capacity": "Bộ 2 món",
+      "warranty": "3 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Xám",
+          "size": "Bộ 2 món",
+          "price": 125000,
+          "stock": 88,
+          "imageUrl": "https://www.carbodydesign.com/media/2012/03/02-MINI-Design-wedge-shape.jpg"
+        },
+        {
+          "color": "Xám",
+          "size": "Bộ 2 món",
+          "price": 135000,
+          "stock": 72,
+          "imageUrl": "https://www.carbodydesign.com/media/2012/03/02-MINI-Design-wedge-shape.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Móc treo khăn lau bếp inox dán tường",
+      "description": "Móc treo khăn lau bếp inox dán tường thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu inox 304, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 120000,
+      "stock": 220,
+      "imageUrl": "https://lotusarise.com/wp-content/uploads/2023/09/India-Outline-Map-with-State-Boundaries-1765x2048.png",
+      "images": [
+        "https://lotusarise.com/wp-content/uploads/2023/09/India-Outline-Map-with-State-Boundaries-1765x2048.png"
+      ],
+      "imageSearchQueries": [
+        "moc treo khan lau bep inox dan tuong product photo white background",
+        "inox 304 bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Inox 304",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "4 móc",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "4 móc",
+          "price": 120000,
+          "stock": 121,
+          "imageUrl": "https://lotusarise.com/wp-content/uploads/2023/09/India-Outline-Map-with-State-Boundaries-1765x2048.png"
+        },
+        {
+          "color": "Bạc",
+          "size": "4 móc",
+          "price": 130000,
+          "stock": 99,
+          "imageUrl": "https://lotusarise.com/wp-content/uploads/2023/09/India-Outline-Map-with-State-Boundaries-1765x2048.png"
+        }
+      ]
+    },
+    {
+      "name": "Hộp thủy tinh bảo quản thực phẩm nắp gỗ 800ml",
+      "description": "Hộp thủy tinh bảo quản thực phẩm nắp gỗ 800ml thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thủy tinh, gỗ tre, màu trong suốt, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 180000,
+      "stock": 250,
+      "imageUrl": "https://whiskyglass.com/wp-content/uploads/2019/07/shutterstock_1733638781-sq-scaled-2-2048x2048.jpg",
+      "images": [
+        "https://whiskyglass.com/wp-content/uploads/2019/07/shutterstock_1733638781-sq-scaled-2-2048x2048.jpg"
+      ],
+      "imageSearchQueries": [
+        "hop thuy tinh bao quan thuc pham nap go 800ml product photo white background",
+        "thuy tinh go tre bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Thủy tinh, gỗ tre",
+      "color": "Trong suốt",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "800ml",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Trong suốt",
+          "size": "800ml",
+          "price": 180000,
+          "stock": 137,
+          "imageUrl": "https://whiskyglass.com/wp-content/uploads/2019/07/shutterstock_1733638781-sq-scaled-2-2048x2048.jpg"
+        },
+        {
+          "color": "Trong suốt",
+          "size": "800ml",
+          "price": 194000,
+          "stock": 113,
+          "imageUrl": "https://whiskyglass.com/wp-content/uploads/2019/07/shutterstock_1733638781-sq-scaled-2-2048x2048.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Bộ hộp cơm thủy tinh chia ngăn 3 hộp",
+      "description": "Bộ hộp cơm thủy tinh chia ngăn 3 hộp thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thủy tinh borosilicate, màu trong suốt, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 520000,
+      "stock": 85,
+      "imageUrl": "https://buyglassonline.com.au/wp-content/uploads/2022/06/Clear-glass-by-Buy-Glass-Online.jpg",
+      "images": [
+        "https://buyglassonline.com.au/wp-content/uploads/2022/06/Clear-glass-by-Buy-Glass-Online.jpg"
+      ],
+      "imageSearchQueries": [
+        "bo hop com thuy tinh chia ngan 3 hop product photo white background",
+        "thuy tinh borosilicate bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Thủy tinh borosilicate",
+      "color": "Trong suốt",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "3 hộp",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Trong suốt",
+          "size": "3 hộp",
+          "price": 520000,
+          "stock": 46,
+          "imageUrl": "https://buyglassonline.com.au/wp-content/uploads/2022/06/Clear-glass-by-Buy-Glass-Online.jpg"
+        },
+        {
+          "color": "Trong suốt",
+          "size": "3 hộp",
+          "price": 562000,
+          "stock": 39,
+          "imageUrl": "https://buyglassonline.com.au/wp-content/uploads/2022/06/Clear-glass-by-Buy-Glass-Online.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Hũ gia vị thủy tinh nắp gỗ bộ 12 hũ",
+      "description": "Hũ gia vị thủy tinh nắp gỗ bộ 12 hũ thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thủy tinh, gỗ tre, màu trong suốt, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 420000,
+      "stock": 110,
+      "imageUrl": "https://images.pexels.com/photos/7078690/pexels-photo-7078690.jpeg",
+      "images": [
+        "https://images.pexels.com/photos/7078690/pexels-photo-7078690.jpeg"
+      ],
+      "imageSearchQueries": [
+        "hu gia vi thuy tinh nap go bo 12 hu product photo white background",
+        "thuy tinh go tre bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Thủy tinh, gỗ tre",
+      "color": "Trong suốt",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "12 hũ",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trong suốt",
+          "size": "12 hũ",
+          "price": 420000,
+          "stock": 60,
+          "imageUrl": "https://images.pexels.com/photos/7078690/pexels-photo-7078690.jpeg"
+        },
+        {
+          "color": "Trong suốt",
+          "size": "12 hũ",
+          "price": 454000,
+          "stock": 50,
+          "imageUrl": "https://images.pexels.com/photos/7078690/pexels-photo-7078690.jpeg"
+        }
+      ]
+    },
+    {
+      "name": "Kệ gia vị xoay 360 độ 16 hũ",
+      "description": "Kệ gia vị xoay 360 độ 16 hũ thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thủy tinh, inox, màu bạc, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 680000,
+      "stock": 60,
+      "imageUrl": "https://www.cinemacafe.net/imgs/zoom/611643.jpg",
+      "images": [
+        "https://www.cinemacafe.net/imgs/zoom/611643.jpg"
+      ],
+      "imageSearchQueries": [
+        "ke gia vi xoay 360 do 16 hu product photo white background",
+        "thuy tinh inox bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Thủy tinh, inox",
+      "color": "Bạc",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "16 hũ",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Bạc",
+          "size": "16 hũ",
+          "price": 680000,
+          "stock": 33,
+          "imageUrl": "https://www.cinemacafe.net/imgs/zoom/611643.jpg"
+        },
+        {
+          "color": "Bạc",
+          "size": "16 hũ",
+          "price": 734000,
+          "stock": 27,
+          "imageUrl": "https://www.cinemacafe.net/imgs/zoom/611643.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Giỏ đựng rau củ xếp tầng 3 ngăn",
+      "description": "Giỏ đựng rau củ xếp tầng 3 ngăn thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu thép sơn tĩnh điện, màu trắng, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 390000,
+      "stock": 90,
+      "imageUrl": "https://www.secom.vn/wp-content/uploads/2024/06/nguyen-ly-hoat-dong-cua-bai-do-xe-thong-minh.jpg",
+      "images": [
+        "https://www.secom.vn/wp-content/uploads/2024/06/nguyen-ly-hoat-dong-cua-bai-do-xe-thong-minh.jpg"
+      ],
+      "imageSearchQueries": [
+        "gio dung rau cu xep tang 3 ngan product photo white background",
+        "thep son tinh dien bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Thép sơn tĩnh điện",
+      "color": "Trắng",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "3 tầng",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trắng",
+          "size": "3 tầng",
+          "price": 390000,
+          "stock": 49,
+          "imageUrl": "https://www.secom.vn/wp-content/uploads/2024/06/nguyen-ly-hoat-dong-cua-bai-do-xe-thong-minh.jpg"
+        },
+        {
+          "color": "Đen",
+          "size": "3 tầng",
+          "price": 421000,
+          "stock": 41,
+          "imageUrl": "https://www.secom.vn/wp-content/uploads/2024/06/nguyen-ly-hoat-dong-cua-bai-do-xe-thong-minh.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Khay chia ngăn tủ lạnh trong suốt",
+      "description": "Khay chia ngăn tủ lạnh trong suốt thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa pet, màu trong suốt, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 145000,
+      "stock": 180,
+      "imageUrl": "https://wheyprotein.com.mx/wp-content/uploads/2025/06/photoroom_005_20250623_171930-1-1.jpg",
+      "images": [
+        "https://wheyprotein.com.mx/wp-content/uploads/2025/06/photoroom_005_20250623_171930-1-1.jpg"
+      ],
+      "imageSearchQueries": [
+        "khay chia ngan tu lanh trong suot product photo white background",
+        "nhua pet bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Nhựa PET",
+      "color": "Trong suốt",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "30x20cm",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trong suốt",
+          "size": "30x20cm",
+          "price": 145000,
+          "stock": 99,
+          "imageUrl": "https://wheyprotein.com.mx/wp-content/uploads/2025/06/photoroom_005_20250623_171930-1-1.jpg"
+        },
+        {
+          "color": "Trong suốt",
+          "size": "32x20cm",
+          "price": 157000,
+          "stock": 81,
+          "imageUrl": "https://wheyprotein.com.mx/wp-content/uploads/2025/06/photoroom_005_20250623_171930-1-1.jpg"
+        }
+      ]
+    },
+    {
+      "name": "Túi zip silicone tái sử dụng bộ 6 túi",
+      "description": "Túi zip silicone tái sử dụng bộ 6 túi thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu silicone thực phẩm, màu trong mờ, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 280000,
+      "stock": 140,
+      "imageUrl": "https://down-ph.img.susercontent.com/file/5ae49da46cd9d6d09bc88cf62fc8ff3f_tn.webp",
+      "images": [
+        "https://down-ph.img.susercontent.com/file/5ae49da46cd9d6d09bc88cf62fc8ff3f_tn.webp"
+      ],
+      "imageSearchQueries": [
+        "tui zip silicone tai su dung bo 6 tui product photo white background",
+        "silicone thuc pham bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Silicone thực phẩm",
+      "color": "Trong mờ",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "6 túi",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": true,
+      "microwaveSafe": true,
+      "variants": [
+        {
+          "color": "Trong mờ",
+          "size": "6 túi",
+          "price": 280000,
+          "stock": 77,
+          "imageUrl": "https://down-ph.img.susercontent.com/file/5ae49da46cd9d6d09bc88cf62fc8ff3f_tn.webp"
+        },
+        {
+          "color": "Trong mờ",
+          "size": "6 túi",
+          "price": 302000,
+          "stock": 63,
+          "imageUrl": "https://down-ph.img.susercontent.com/file/5ae49da46cd9d6d09bc88cf62fc8ff3f_tn.webp"
+        }
+      ]
+    },
+    {
+      "name": "Bình lọc nước uống để bàn 3.5L",
+      "description": "Bình lọc nước uống để bàn 3.5L thuộc nhóm Bảo quản thực phẩm, phù hợp cho gian bếp gia đình hiện đại. Sản phẩm sử dụng chất liệu nhựa abs, lõi lọc than hoạt tính, màu trắng xanh, thiết kế bền đẹp, dễ vệ sinh và tối ưu cho nhu cầu nấu nướng, bảo quản hoặc sử dụng hằng ngày. Đây là lựa chọn phù hợp cho khách hàng muốn nâng cấp căn bếp với sản phẩm an toàn, thẩm mỹ và có độ hoàn thiện cao.",
+      "price": 650000,
+      "stock": 70,
+      "imageUrl": "https://www.lions-wing.net/lessons/How-does/computers-2/computer_architecture.jpg",
+      "images": [
+        "https://www.lions-wing.net/lessons/How-does/computers-2/computer_architecture.jpg"
+      ],
+      "imageSearchQueries": [
+        "binh loc nuoc uong de ban 3 5l product photo white background",
+        "nhua abs loi loc than hoat tinh bao quan thuc pham catalog product photo",
+        "food storage container product photo",
+        "kitchen storage product photo white background"
+      ],
+      "category": "storage",
+      "material": "Nhựa ABS, lõi lọc than hoạt tính",
+      "color": "Trắng xanh",
+      "brand": "DPWOOD Kitchen",
+      "capacity": "3.5L",
+      "warranty": "6 tháng",
+      "origin": "Việt Nam",
+      "dishwasherSafe": false,
+      "microwaveSafe": false,
+      "variants": [
+        {
+          "color": "Trắng xanh",
+          "size": "3.5L",
+          "price": 650000,
+          "stock": 38,
+          "imageUrl": "https://www.lions-wing.net/lessons/How-does/computers-2/computer_architecture.jpg"
+        },
+        {
+          "color": "Trắng xanh",
+          "size": "3.5L",
+          "price": 702000,
+          "stock": 32,
+          "imageUrl": "https://www.lions-wing.net/lessons/How-does/computers-2/computer_architecture.jpg"
+        }
+      ]
+    }
+  ]
+}
