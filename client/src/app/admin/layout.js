@@ -48,6 +48,7 @@ export default function AdminLayout({ children }) {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [adminName, setAdminName] = useState("");
+    const [adminRole, setAdminRole] = useState("");
     const [avatarUrl, setAvatarUrl] = useState("");
     const [selectedMenuKey, setSelectedMenuKey] = useState("/admin/dashboard");
     const [openMenuKeys, setOpenMenuKeys] = useState([]);
@@ -55,7 +56,16 @@ export default function AdminLayout({ children }) {
     useEffect(() => {
         setAdminName(localStorage.getItem("userName") || "Admin");
         setAvatarUrl(localStorage.getItem("avatarUrl") || "");
+        setAdminRole(localStorage.getItem("userRole") || "");
     }, []);
+
+    useEffect(() => {
+        if (adminRole !== "staff") return;
+        const staffRoutes = ["/admin/orders", "/admin/notifications", "/admin/support"];
+        if (!staffRoutes.some((route) => pathname.startsWith(route))) {
+            router.replace("/admin/orders");
+        }
+    }, [adminRole, pathname, router]);
 
     useEffect(() => {
         if (pathname.startsWith("/admin/ai")) {
@@ -87,7 +97,7 @@ export default function AdminLayout({ children }) {
         }
     };
 
-    const menuItems = [
+    const administratorMenuItems = [
         { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Tong quan" },
         {
             key: "/admin/users",
@@ -117,8 +127,16 @@ export default function AdminLayout({ children }) {
                 { key: "/admin/ai/rules", label: "Quy tac AI" },
             ],
         },
+    ];
+    const staffMenuItems = [
+        { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
+        { key: "/admin/notifications", icon: <BellOutlined />, label: "Thông báo" },
+        { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ khách hàng" },
+    ];
+    const menuItems = [
+        ...(adminRole === "staff" ? staffMenuItems : administratorMenuItems),
         { type: "divider" },
-        { key: "/", icon: <HomeOutlined />, label: "Ve cua hang" },
+        { key: "/", icon: <HomeOutlined />, label: "Về cửa hàng" },
     ];
 
     const userMenuItems = [

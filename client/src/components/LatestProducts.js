@@ -159,6 +159,8 @@ export default function LatestProducts() {
     const [coupons, setCoupons] = useState([]);
     const [claimedCouponIds, setClaimedCouponIds] = useState(new Set());
     const [claimingCouponId, setClaimingCouponId] = useState("");
+    const [wishlistIds, setWishlistIds] = useState(new Set());
+    const [wishlistLoadingId, setWishlistLoadingId] = useState("");
     const [loading, setLoading] = useState(true);
 
     const fetchHomepageData = useCallback(async () => {
@@ -179,15 +181,20 @@ export default function LatestProducts() {
             setCoupons(couponResponse.status === "fulfilled" ? couponResponse.value.data || [] : []);
 
             if (token) {
-                const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
+                const [myCouponResponse, wishlistResponse] = await Promise.all([
+                    api.get("/coupons/my").catch(() => ({ data: [] })),
+                    api.get("/products/wishlist/me").catch(() => ({ data: [] })),
+                ]);
                 const nextClaimedCoupons = new Set([
                     ...storedClaimedCoupons,
                     ...getClaimedKeysFromWallet(myCouponResponse.data || []),
                 ]);
                 setClaimedCouponIds(nextClaimedCoupons);
                 writeStoredClaimedCoupons(nextClaimedCoupons);
+                setWishlistIds(new Set((wishlistResponse.data || []).map((item) => String(item.productId))));
             } else {
                 setClaimedCouponIds(storedClaimedCoupons);
+                setWishlistIds(new Set());
             }
         } finally {
             setLoading(false);
@@ -260,6 +267,30 @@ export default function LatestProducts() {
     const goToProduct = (product) => {
         if (!product?.id) return;
         router.push(`/products/${product.id}`);
+    };
+
+    const handleToggleWishlist = async (product) => {
+        if (!localStorage.getItem("token")) {
+            message.warning("Vui lòng đăng nhập để lưu sản phẩm yêu thích.");
+            router.push("/login");
+            return;
+        }
+
+        try {
+            setWishlistLoadingId(String(product.id));
+            const response = await api.post(`/products/${product.id}/wishlist`);
+            setWishlistIds((current) => {
+                const next = new Set(current);
+                if (response.data?.wished) next.add(String(product.id));
+                else next.delete(String(product.id));
+                return next;
+            });
+            message.success(response.data?.wished ? "Đã thêm vào yêu thích." : "Đã bỏ khỏi yêu thích.");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể cập nhật yêu thích.");
+        } finally {
+            setWishlistLoadingId("");
+        }
     };
 
     const goToCategory = (categoryValue) => {
@@ -508,6 +539,9 @@ export default function LatestProducts() {
                                         badge="icon-only"
                                         onBuyNow={() => goToProduct(product)}
                                         onClickDetail={() => goToProduct(product)}
+                                        wished={wishlistIds.has(String(product.id))}
+                                        wishlistLoading={wishlistLoadingId === String(product.id)}
+                                        onToggleWishlist={handleToggleWishlist}
                                     />
                                 </Col>
                             ))}
@@ -567,6 +601,9 @@ export default function LatestProducts() {
                                         product={product}
                                         onBuyNow={() => goToProduct(product)}
                                         onClickDetail={() => goToProduct(product)}
+                                        wished={wishlistIds.has(String(product.id))}
+                                        wishlistLoading={wishlistLoadingId === String(product.id)}
+                                        onToggleWishlist={handleToggleWishlist}
                                     />
                                 </Col>
                             ))}

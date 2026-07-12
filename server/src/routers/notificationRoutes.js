@@ -16,25 +16,25 @@ router.get("/active", notificationController.getActiveNotifications);
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("admin", "root"),
+    roleMiddleware("admin", "root", "staff"),
     notificationController.getAllNotifications,
 );
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("admin", "root"),
+    roleMiddleware("admin", "root", "staff"),
     notificationController.createNotification,
 );
 router.put(
     "/:id",
     authMiddleware,
-    roleMiddleware("admin", "root"),
+    roleMiddleware("admin", "root", "staff"),
     notificationController.updateNotification,
 );
 router.delete(
     "/:id",
     authMiddleware,
-    roleMiddleware("admin", "root"),
+    roleMiddleware("admin", "root", "staff"),
     notificationController.deleteNotification,
 );
 

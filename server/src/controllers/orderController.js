@@ -432,7 +432,7 @@ const getOrderStatus = async (req, res) => {
         if (!order) return res.status(404).json({ message: "Khong tim thay don hang" });
 
         const isOwner = String(order.userId) === String(req.user.id);
-        const isPrivileged = ["admin", "root"].includes(req.user.role);
+        const isPrivileged = ["admin", "root", "staff"].includes(req.user.role);
         if (!isOwner && !isPrivileged) {
             return res.status(403).json({ message: "Forbidden" });
         }
@@ -521,6 +521,7 @@ const getAllOrdersAdmin = async (req, res) => {
                 { model: User, attributes: ["name", "email"] },
                 { model: OrderItem, include: [{ model: Product }] }, // Lấy chi tiết sản phẩm và Hình ảnh
             ],
+            limit: 500,
         });
         res.status(200).json(orders.map(serializeOrder));
     } catch (error) {
@@ -551,6 +552,7 @@ const getMyOrders = async (req, res) => {
             where: { userId: req.user.id },
             order: [["createdAt", "DESC"]],
             include: [{ model: OrderItem, include: [{ model: Product }] }],
+            limit: 100,
         });
         res.status(200).json(orders.map(serializeOrder));
     } catch (error) {

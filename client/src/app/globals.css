@@ -3062,7 +3062,7 @@ a {
 }
 
 .webcake-blog-card {
-  text-align: center;
+  text-align: left;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -3099,7 +3099,7 @@ a {
 }
 
 .webcake-blog-card h4.ant-typography {
-  margin: 12px auto;
+  margin: 12px 0;
   color: #222;
   font-size: 20px;
   font-weight: 600;
@@ -3124,6 +3124,8 @@ a {
 
 .webcake-blog-card .ant-btn-link {
   margin-top: auto;
+  align-self: flex-start;
+  padding-left: 0;
   color: #222;
   font-weight: 700;
 }

@@ -25,13 +25,13 @@ router.put("/:orderCode/cancel", authMiddleware, orderController.cancelOrder);
 router.get(
     "/admin",
     authMiddleware,
-    roleMiddleware("root", "admin"),
+    roleMiddleware("root", "admin", "staff"),
     orderController.getAllOrdersAdmin,
 );
 router.put(
     "/admin/:id/status",
     authMiddleware,
-    roleMiddleware("root", "admin"),
+    roleMiddleware("root", "admin", "staff"),
     orderController.updateOrderStatusAdmin,
 );
 

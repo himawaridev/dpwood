@@ -1,31 +1,7 @@
 const SupportTicket = require("../models/supportTicket");
-const TicketMessage = require("../models/ticketMessage");
 const User = require("../models/user");
 
-const AI_SUPPORT_SIGNATURE = "Phan hoi tu AI Support DPWOOD";
-
-const getSupportHandlerInfo = async (ticketId) => {
-    const lastAdminMessage = await TicketMessage.findOne({
-        where: { ticketId, isAdmin: true },
-        order: [["createdAt", "DESC"]],
-    });
-
-    if (!lastAdminMessage) {
-        return {
-            handlerType: "NONE",
-            handlerLabel: "Chưa xử lý",
-            lastHandledAt: null,
-        };
-    }
-
-    const isAiHandled = String(lastAdminMessage.message || "").includes(AI_SUPPORT_SIGNATURE);
-
-    return {
-        handlerType: isAiHandled ? "AI" : "ADMIN",
-        handlerLabel: isAiHandled ? "AI xử lý" : "Admin xử lý",
-        lastHandledAt: lastAdminMessage.createdAt,
-    };
-};
+const TICKET_STATUSES = new Set(["PENDING", "PROCESSING", "RESOLVED", "CLOSED"]);
 
 // ==========================================
 // [CLIENT] YÊU CẦU HỖ TRỢ
@@ -41,9 +17,8 @@ const createTicket = async (req, res) => {
             topic,
             title,
             orderCode: orderCode || null,
+            description: String(message || "").trim(),
         });
-
-        await TicketMessage.create({ ticketId: ticket.id, senderId: req.user.id, message });
         res.status(201).json(ticket);
     } catch (error) {
         console.error("🔥 LỖI TẠO TICKET:", error);
@@ -56,6 +31,7 @@ const getMyTickets = async (req, res) => {
         const tickets = await SupportTicket.findAll({
             where: { userId: req.user.id },
             order: [["updatedAt", "DESC"]],
+            limit: 100,
         });
         res.status(200).json(tickets);
     } catch (error) {
@@ -72,14 +48,9 @@ const getAllTickets = async (req, res) => {
         const tickets = await SupportTicket.findAll({
             include: [{ model: User, attributes: ["name", "email"] }],
             order: [["createdAt", "DESC"]],
+            limit: 200,
         });
-        const enrichedTickets = await Promise.all(
-            tickets.map(async (ticket) => ({
-                ...ticket.toJSON(),
-                ...(await getSupportHandlerInfo(ticket.id)),
-            })),
-        );
-        res.status(200).json(enrichedTickets);
+        res.status(200).json(tickets);
     } catch (error) {
         console.error("Lỗi getAllTickets:", error);
         res.status(500).json({ message: "Lỗi tải dữ liệu", error: error.message });
@@ -88,7 +59,11 @@ const getAllTickets = async (req, res) => {
 
 const updateStatus = async (req, res) => {
     try {
-        await SupportTicket.update({ status: req.body.status }, { where: { id: req.params.id } });
+        const status = String(req.body.status || "").toUpperCase();
+        if (!TICKET_STATUSES.has(status)) {
+            return res.status(400).json({ message: "Trang thai ticket khong hop le" });
+        }
+        await SupportTicket.update({ status }, { where: { id: req.params.id } });
         res.status(200).json({ message: "Cập nhật thành công" });
     } catch (error) {
         console.error("Lỗi updateStatus:", error);
@@ -96,52 +71,21 @@ const updateStatus = async (req, res) => {
     }
 };
 
-// ==========================================
-// [CHUNG] TIN NHẮN REAL-TIME
-// ==========================================
-const getTicketMessages = async (req, res) => {
+const updateResolution = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
-        const offset = (page - 1) * limit;
-
-        const messages = await TicketMessage.findAll({
-            where: { ticketId: req.params.id },
-            order: [["createdAt", "DESC"]],
-            limit,
-            offset,
+        const ticket = await SupportTicket.findByPk(req.params.id);
+        if (!ticket) return res.status(404).json({ message: "Khong tim thay ticket" });
+        const resolutionNote = String(req.body.resolutionNote || "").trim().slice(0, 5000);
+        await ticket.update({
+            resolutionNote: resolutionNote || null,
+            handlerType: resolutionNote ? "ADMIN" : "NONE",
+            lastHandledAt: resolutionNote ? new Date() : null,
+            status: resolutionNote && ticket.status === "PENDING" ? "PROCESSING" : ticket.status,
         });
-        res.status(200).json(messages.reverse());
+        res.status(200).json({ message: "Da luu ghi chu xu ly", ticket });
     } catch (error) {
-        console.error("Lỗi getTicketMessages:", error);
-        res.status(500).json({ message: "Lỗi tải tin nhắn", error: error.message });
-    }
-};
-
-const replyTicket = async (req, res) => {
-    try {
-        const { message } = req.body;
-        const ticketId = req.params.id;
-        const isAdmin = req.user.role === "admin" || req.user.role === "root";
-
-        const newMessage = await TicketMessage.create({
-            ticketId,
-            senderId: req.user.id,
-            isAdmin,
-            message,
-        });
-
-        if (isAdmin) {
-            await SupportTicket.update({ status: "PROCESSING" }, { where: { id: ticketId } });
-        }
-
-        const io = req.app.get("io");
-        if (io) io.emit("receive_message", newMessage);
-
-        res.status(201).json(newMessage);
-    } catch (error) {
-        console.error("Lỗi replyTicket:", error);
-        res.status(500).json({ message: "Lỗi gửi tin nhắn", error: error.message });
+        console.error("Loi updateResolution:", error);
+        res.status(500).json({ message: "Khong the luu ghi chu xu ly", error: error.message });
     }
 };
 
@@ -150,6 +94,5 @@ module.exports = {
     getMyTickets,
     getAllTickets,
     updateStatus,
-    getTicketMessages,
-    replyTicket,
+    updateResolution,
 };

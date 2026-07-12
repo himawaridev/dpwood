@@ -91,7 +91,7 @@ export default function SupportPage() {
                             setIsDrawerVisible(true);
                         }}
                     >
-                        Xem phản hồi
+                        Xem chi tiết
                     </Button>
                 ),
             },
@@ -179,7 +179,7 @@ export default function SupportPage() {
                                     Lịch sử hỗ trợ
                                 </Title>
                                 <Text className="dp-muted">
-                                    Theo dõi trạng thái và trao đổi tiếp với đội ngũ DPWOOD.
+                                    Theo dõi trạng thái và xem kết quả xử lý từ đội ngũ DPWOOD.
                                 </Text>
                             </Space>
                             <Table

@@ -102,11 +102,11 @@ export default function Navbar() {
             label: "Profile",
             onClick: () => goTo("/profile"),
         },
-        (authState.userRole === "admin" || authState.userRole === "root") && {
+        ["admin", "root", "staff"].includes(authState.userRole) && {
             key: "admin",
             icon: <TeamOutlined />,
             label: "Admin",
-            onClick: () => goTo("/admin/dashboard"),
+            onClick: () => goTo(authState.userRole === "staff" ? "/admin/orders" : "/admin/dashboard"),
         },
         { type: "divider" },
         {

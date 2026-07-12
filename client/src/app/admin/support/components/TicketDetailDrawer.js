@@ -1,3 +1,7 @@
 "use client";
 
-export { default } from "@/app/(main)/support/components/TicketDetailDrawer";
+import TicketDetailDrawer from "@/app/(main)/support/components/TicketDetailDrawer";
+
+export default function AdminTicketDetailDrawer(props) {
+    return <TicketDetailDrawer {...props} isAdmin />;
+}

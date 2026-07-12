@@ -9,7 +9,7 @@ const normalizeAccountPhone = (value = "") => {
 };
 
 const isValidAccountPhone = (phone) => /^0\d{9,10}$/.test(phone);
-const ALLOWED_ROLES = new Set(["root", "admin", "user", "seller"]);
+const ALLOWED_ROLES = new Set(["root", "admin", "user", "staff"]);
 
 // Lấy danh sách tất cả người dùng
 const getAllUsers = async (req, res) => {
@@ -17,6 +17,8 @@ const getAllUsers = async (req, res) => {
         const users = await User.findAll({
             attributes: { exclude: ["password", "refreshToken"] },
             paranoid: false,
+            order: [["createdAt", "DESC"]],
+            limit: 500,
         });
         res.json(users);
     } catch (error) {
@@ -141,6 +143,8 @@ const toggleBanUser = async (req, res) => {
 const getSystemLogs = async (req, res) => {
     try {
         const { search, me } = req.query;
+        const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 200);
+        const offset = Math.max(Number(req.query.offset) || 0, 0);
 
         // Khởi tạo cấu hình truy vấn cơ bản
         const queryOptions = {
@@ -155,7 +159,8 @@ const getSystemLogs = async (req, res) => {
                 },
             ],
             order: [["createdAt", "DESC"]],
-            limit: 200,
+            limit,
+            offset,
         };
 
         if (me === "true") {

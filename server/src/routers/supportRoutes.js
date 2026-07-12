@@ -10,8 +10,6 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 // ==========================================
 router.post("/", authMiddleware, supportController.createTicket);
 router.get("/my-tickets", authMiddleware, supportController.getMyTickets);
-router.get("/:id/messages", authMiddleware, supportController.getTicketMessages);
-router.post("/:id/reply", authMiddleware, supportController.replyTicket);
 
 // ==========================================
 // [ADMIN] ROUTES - Xử lý yêu cầu hỗ trợ
@@ -19,14 +17,20 @@ router.post("/:id/reply", authMiddleware, supportController.replyTicket);
 router.get(
     "/admin/all",
     authMiddleware,
-    roleMiddleware("admin", "root"),
+    roleMiddleware("admin", "root", "staff"),
     supportController.getAllTickets,
 );
 router.put(
     "/admin/:id/status",
     authMiddleware,
-    roleMiddleware("admin", "root"),
+    roleMiddleware("admin", "root", "staff"),
     supportController.updateStatus,
+);
+router.put(
+    "/admin/:id/resolution",
+    authMiddleware,
+    roleMiddleware("admin", "root", "staff"),
+    supportController.updateResolution,
 );
 
 module.exports = router;

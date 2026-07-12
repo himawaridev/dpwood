@@ -4,7 +4,6 @@ const { generateJson } = require("../services/geminiService");
 const Product = require("../models/product");
 const Blog = require("../models/blog");
 const SupportTicket = require("../models/supportTicket");
-const TicketMessage = require("../models/ticketMessage");
 const User = require("../models/user");
 const { fetchSafeImage } = require("../utils/safeImageFetch");
 
@@ -1757,11 +1756,7 @@ const autoResolveSupportTickets = async (req, res) => {
         const skipped = [];
 
         for (const ticket of tickets) {
-            const messages = await TicketMessage.findAll({
-                where: { ticketId: ticket.id },
-                order: [["createdAt", "ASC"]],
-                limit: 8,
-            });
+            const messages = [{ isAdmin: false, message: ticket.description || ticket.title }];
 
             if (isSensitiveSupportTicket(ticket, messages)) {
                 skipped.push({
@@ -1785,7 +1780,7 @@ Ticket: ${ticket.ticketCode}
 Chu de: ${ticket.topic}
 Tieu de: ${ticket.title}
 Ma don hang neu co: ${ticket.orderCode || "khong co"}
-Hoi thoai:
+Noi dung yeu cau:
 ${conversation}
 
 Neu ticket an toan, viet cau tra loi ngan gon, lich su, bang tieng Viet co dau, huong dan tung buoc khi can.
@@ -1823,17 +1818,12 @@ Khong giai thich ngoai JSON.
                 continue;
             }
 
-            const aiMessage = await TicketMessage.create({
-                ticketId: ticket.id,
-                senderId: req.user.id,
-                isAdmin: true,
-                message: `${answer}\n\n--\nPhan hoi tu AI Support DPWOOD. Neu van can ho tro, ban co the phan hoi lai ticket nay de admin tiep tuc xu ly.`,
+            await ticket.update({
+                status: closeResolved ? "CLOSED" : "RESOLVED",
+                resolutionNote: answer,
+                handlerType: "AI",
+                lastHandledAt: new Date(),
             });
-
-            await ticket.update({ status: closeResolved ? "CLOSED" : "RESOLVED" });
-
-            const io = req.app.get("io");
-            if (io) io.emit("receive_message", aiMessage);
 
             handled.push({
                 id: ticket.id,

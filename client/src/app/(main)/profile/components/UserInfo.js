@@ -26,10 +26,10 @@ export default function UserInfo({ user, onOpenEdit }) {
                         ADMIN
                     </Tag>
                 );
-            case "seller":
+            case "staff":
                 return (
                     <Tag color="green" icon={<UserOutlined />}>
-                        SELLER
+                        STAFF VẬN HÀNH
                     </Tag>
                 );
             default:

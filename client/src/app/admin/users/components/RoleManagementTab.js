@@ -84,7 +84,7 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                     disabled={record.role === "root"}
                     options={[
                         { value: "user", label: "User" },
-                        { value: "seller", label: "Seller" },
+                        { value: "staff", label: "Staff vận hành" },
                         { value: "admin", label: "Admin" },
                     ]}
                 />
@@ -114,7 +114,7 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                             { value: "all", label: "Tất cả quyền" },
                             { value: "root", label: "Root" },
                             { value: "admin", label: "Admin" },
-                            { value: "seller", label: "Seller" },
+                            { value: "staff", label: "Staff vận hành" },
                             { value: "user", label: "User" },
                         ]}
                     />

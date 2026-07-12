@@ -6,6 +6,8 @@ require("dotenv").config();
 
 const { connectDB, sequelize } = require("./config/connectSequelize");
 const { securityHeaders, generalLimiter } = require("./middlewares/securityMiddleware");
+const { optimizeDatabase } = require("./services/databaseOptimizationService");
+const { scheduleDataRetention } = require("./services/dataRetentionService");
 
 // Tách riêng file nạp Models để server.js sạch sẽ hơn
 const User = require("./models/user");
@@ -16,7 +18,6 @@ const OrderItem = require("./models/orderItem");
 const Address = require("./models/address");
 const Notification = require("./models/notification");
 const SupportTicket = require("./models/supportTicket");
-const TicketMessage = require("./models/ticketMessage");
 const Blog = require("./models/blog");
 const Coupon = require("./models/coupon");
 const UserCoupon = require("./models/userCoupon");
@@ -73,9 +74,6 @@ const setupDatabaseAssociations = () => {
     // Quan hệ User - SupportTicket - TicketMessage
     User.hasMany(SupportTicket, { foreignKey: "userId" });
     SupportTicket.belongsTo(User, { foreignKey: "userId" });
-
-    SupportTicket.hasMany(TicketMessage, { foreignKey: "ticketId" });
-    TicketMessage.belongsTo(SupportTicket, { foreignKey: "ticketId" });
 
     // Quan hệ User - UserCoupon - Coupon
     User.hasMany(UserCoupon, { foreignKey: "userId" });
@@ -160,11 +158,27 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 setupDatabaseAssociations();
 setupSocketIO();
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
     const payload = {
         ok: true,
         timestamp: new Date().toISOString(),
     };
+
+    if (req.query.deep === "true") {
+        if (!dbState.ready) {
+            payload.ok = false;
+            payload.database = dbState.status;
+            return res.status(503).json(payload);
+        }
+        try {
+            await sequelize.query("SELECT 1");
+            payload.database = "ready";
+        } catch (error) {
+            payload.ok = false;
+            payload.database = "unavailable";
+            return res.status(503).json(payload);
+        }
+    }
 
     if (process.env.NODE_ENV !== "production") {
         payload.service = "dpwood-api";
@@ -435,9 +449,12 @@ const initializeDatabase = async () => {
             console.log("QueryInterface Coupons check skipped:", e.message);
         }
 
+        await optimizeDatabase(sequelize);
+
         dbState.ready = true;
         dbState.status = "ready";
         dbState.lastCheckedAt = new Date().toISOString();
+        scheduleDataRetention();
         console.log("✅ Database is ready");
     } catch (error) {
         dbState.ready = false;
