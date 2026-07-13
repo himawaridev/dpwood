@@ -47,6 +47,11 @@ const dbState = {
     lastCheckedAt: null,
 };
 const DB_RETRY_DELAY_MS = Number(process.env.DB_RETRY_DELAY_MS || 60000);
+const DB_REQUEST_WAIT_MS = Number(process.env.DB_REQUEST_WAIT_MS || 15000);
+let resolveDatabaseReady;
+const databaseReadyPromise = new Promise((resolve) => {
+    resolveDatabaseReady = resolve;
+});
 app.set("trust proxy", 1);
 
 const normalizeOrigin = (value = "") => String(value).trim().replace(/\/$/, "");
@@ -200,7 +205,7 @@ app.get("/api/health", async (req, res) => {
     res.status(200).json(payload);
 });
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
     const dbIndependentPaths = [
         "/api/health",
         "/api/ai/image-proxy",
@@ -210,6 +215,13 @@ app.use((req, res, next) => {
     ];
 
     if (dbIndependentPaths.includes(req.path) || dbState.ready) return next();
+
+    await Promise.race([
+        databaseReadyPromise,
+        new Promise((resolve) => setTimeout(resolve, DB_REQUEST_WAIT_MS)),
+    ]);
+
+    if (dbState.ready) return next();
 
     return res.status(503).json({
         ok: false,
@@ -465,6 +477,7 @@ const initializeDatabase = async () => {
         dbState.ready = true;
         dbState.status = "ready";
         dbState.lastCheckedAt = new Date().toISOString();
+        resolveDatabaseReady();
         scheduleDataRetention();
         console.log("✅ Database is ready");
     } catch (error) {

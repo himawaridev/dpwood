@@ -43,7 +43,8 @@ services:
       - "3000:3000"
     environment:
       # URL để gọi API (Dùng cho Client Component thì vẫn gọi qua localhost)
-      - NEXT_PUBLIC_API_URL=http://localhost:5000/api 
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+      - BACKEND_API_URL=http://server:5000/api
     depends_on:
       - server
 

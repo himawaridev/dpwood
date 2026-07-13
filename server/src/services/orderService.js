@@ -7,7 +7,7 @@ const User = require("../models/user");
 const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
 const paymentService = require("./paymentService");
-const sendEmail = require("../utils/sendEmail");
+const sendEmailInBackground = require("../utils/sendEmailInBackground");
 const { generateOrderHtml } = require("../templates/emailTemplates");
 const process = require("process");
 
@@ -169,10 +169,11 @@ class OrderService {
                     shippingAddress: order.shippingAddress,
                     totalAmount: order.totalAmount,
                 };
-                sendEmail(
+                sendEmailInBackground(
                     userEmail,
                     `[DPWOOD] Xác nhận đặt hàng #${orderCode}`,
                     generateOrderHtml(orderInfo, emailItemsInfo, false),
+                    `order confirmation #${orderCode}`,
                 );
             }
 

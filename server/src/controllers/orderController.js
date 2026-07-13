@@ -8,7 +8,7 @@ const User = require("../models/user");
 const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
 const { syncLegacyDiscountsToCoupons } = require("../services/couponSyncService");
-const sendEmail = require("../utils/sendEmail");
+const sendEmailInBackground = require("../utils/sendEmailInBackground");
 const { generateOrderHtml: buildOrderEmail } = require("../templates/emailTemplates");
 const paymentService = require("../services/paymentService");
 
@@ -129,10 +129,11 @@ const markOrderAsPaid = async (order, paymentInfo = {}) => {
             shippingAddress: order.shippingAddress,
             totalAmount: order.totalAmount,
         };
-        sendEmail(
+        sendEmailInBackground(
             order.User.email,
             `[DPWOOD] Da thanh toan don #${order.orderCode}`,
             buildOrderEmail(orderInfo, emailItemsInfo, true),
+            `paid order #${order.orderCode}`,
         );
     }
 
@@ -378,7 +379,12 @@ const checkout = async (req, res) => {
             totalAmount: order.totalAmount,
         };
         const emailHtml = buildOrderEmail(orderInfo, orderItemsData, normalizedPaymentMethod === "QR");
-        sendEmail(user.email, `[DPWOOD] Xac nhan don hang #${orderCodeNum}`, emailHtml);
+        sendEmailInBackground(
+            user?.email,
+            `[DPWOOD] Xac nhan don hang #${orderCodeNum}`,
+            emailHtml,
+            `order confirmation #${orderCodeNum}`,
+        );
 
         res.status(201).json({
             message: "Đặt hàng thành công",
@@ -475,6 +481,12 @@ const cancelOrder = async (req, res) => {
         if (String(existingOrder.userId) !== String(req.user.id)) {
             return res.status(403).json({ message: "Bạn không có quyền hủy đơn hàng này." });
         }
+        if (existingOrder.status === "CANCELED") {
+            return res.json({
+                message: "Đơn hàng đã được hủy trước đó. Giỏ hàng của bạn được giữ nguyên.",
+                alreadyCanceled: true,
+            });
+        }
         if (existingOrder.status !== "PENDING") {
             return res.status(409).json({ message: "Chỉ có thể hủy đơn hàng đang chờ thanh toán." });
         }
@@ -512,7 +524,18 @@ const cancelOrder = async (req, res) => {
                 transaction: t,
                 lock: t.LOCK.UPDATE,
             });
-            if (!order || order.status !== "PENDING") {
+            if (!order) {
+                await t.rollback();
+                return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
+            }
+            if (order.status === "CANCELED") {
+                await t.rollback();
+                return res.json({
+                    message: "Đơn hàng đã được hủy trước đó. Giỏ hàng của bạn được giữ nguyên.",
+                    alreadyCanceled: true,
+                });
+            }
+            if (order.status !== "PENDING") {
                 await t.rollback();
                 return res.status(409).json({ message: "Trạng thái đơn hàng vừa thay đổi. Vui lòng tải lại." });
             }
