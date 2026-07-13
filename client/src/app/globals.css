@@ -2434,6 +2434,48 @@ a {
   box-shadow: inset 0 0 0 1px rgba(240, 155, 144, 0.12);
 }
 
+.webcake-coupon-card-unavailable {
+  border-color: #e5e5e5;
+  box-shadow: none;
+}
+
+.webcake-coupon-card-unavailable .webcake-coupon-value {
+  background: #f4f4f4;
+  color: #8c8c8c;
+}
+
+.dp-coupon-delete-button.ant-btn {
+  width: 34px;
+  min-width: 34px;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  color: #f09b90;
+}
+
+.dp-coupon-delete-button.ant-btn:hover,
+.dp-coupon-delete-button.ant-btn:focus-visible {
+  border: 0 !important;
+  background: #fff5f3 !important;
+  color: #e77f73 !important;
+}
+
+.dp-coupon-wallet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dp-coupon-wallet-actions .dp-coupon-delete-button.ant-btn {
+  flex: 0 0 34px;
+  margin-top: 0;
+}
+
+.dp-coupon-status-label {
+  color: #8c8c8c;
+  font-weight: 700;
+}
+
 .webcake-coupon-value {
   position: relative;
   padding: 22px 14px;
@@ -2891,6 +2933,16 @@ a {
 .dp-cart-voucher-code {
   max-width: 100%;
   word-break: break-word;
+}
+
+.dp-cart-voucher-actions {
+  flex: 0 0 auto;
+}
+
+.dp-cart-voucher-actions .dp-coupon-delete-button.ant-btn {
+  width: 36px;
+  min-width: 36px;
+  margin: 0;
 }
 
 .dp-gift-code-page {
@@ -4104,6 +4156,11 @@ a {
     min-width: 0;
   }
 
+  .webcake-coupon-content .dp-coupon-delete-button.ant-btn {
+    width: 40px;
+    min-width: 40px;
+  }
+
 
   .dp-cart-discount-box {
     max-width: none;
@@ -4129,6 +4186,20 @@ a {
 
   .dp-cart-voucher-card .ant-btn {
     width: 100%;
+  }
+
+  .dp-cart-voucher-actions {
+    width: 100%;
+  }
+
+  .dp-cart-voucher-actions .ant-btn:first-child {
+    flex: 1;
+  }
+
+  .dp-cart-voucher-actions .dp-coupon-delete-button.ant-btn {
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
   }
 
   .dp-gift-code-hero {

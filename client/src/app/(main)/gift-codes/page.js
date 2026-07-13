@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { App, Button, Col, Empty, Row, Skeleton, Typography } from "antd";
-import { CheckCircleOutlined, ClockCircleOutlined, GiftOutlined } from "@ant-design/icons";
+import { App, Button, Col, Empty, Popconfirm, Row, Skeleton, Tooltip, Typography } from "antd";
+import {
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+    DeleteOutlined,
+    GiftOutlined,
+} from "@ant-design/icons";
 import api from "@/utils/axios";
 
 const { Title, Text, Paragraph } = Typography;
@@ -50,31 +55,57 @@ const getClaimedKeysFromWallet = (walletItems = []) => {
     return keys;
 };
 
+const getCouponStatus = (coupon, walletItem) => {
+    if (!walletItem) return "available";
+    if (walletItem.isUsed) return "used";
+
+    const now = Date.now();
+    const usageLimitReached =
+        coupon.usageLimit !== null &&
+        coupon.usageLimit !== undefined &&
+        Number(coupon.usedCount) >= Number(coupon.usageLimit);
+
+    if (!coupon.isActive || new Date(coupon.expiryDate).getTime() <= now || usageLimitReached) {
+        return "expired";
+    }
+    if (new Date(coupon.startDate).getTime() > now) return "upcoming";
+    return "claimed";
+};
+
 export default function GiftCodesPage() {
     const { message } = App.useApp();
     const [coupons, setCoupons] = useState([]);
+    const [walletItems, setWalletItems] = useState([]);
     const [claimedCouponIds, setClaimedCouponIds] = useState(new Set());
     const [claimingCouponId, setClaimingCouponId] = useState("");
+    const [deletingWalletId, setDeletingWalletId] = useState("");
     const [loading, setLoading] = useState(true);
 
     const fetchCoupons = useCallback(async () => {
         try {
             setLoading(true);
             const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-            const storedClaimedCoupons = readStoredClaimedCoupons();
             const couponResponse = await api.get("/coupons/active", { timeout: 12000 });
-            setCoupons(couponResponse.data || []);
+            const activeCoupons = couponResponse.data || [];
 
             if (token) {
                 const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
-                const nextClaimedCoupons = new Set([
-                    ...storedClaimedCoupons,
-                    ...getClaimedKeysFromWallet(myCouponResponse.data || []),
-                ]);
+                const nextWalletItems = (myCouponResponse.data || []).filter((item) => item.Coupon);
+                const nextClaimedCoupons = getClaimedKeysFromWallet(nextWalletItems);
+                const mergedCoupons = new Map(activeCoupons.map((coupon) => [String(coupon.id), coupon]));
+
+                nextWalletItems.forEach((item) => {
+                    mergedCoupons.set(String(item.Coupon.id), item.Coupon);
+                });
+
+                setCoupons([...mergedCoupons.values()]);
+                setWalletItems(nextWalletItems);
                 setClaimedCouponIds(nextClaimedCoupons);
                 writeStoredClaimedCoupons(nextClaimedCoupons);
             } else {
-                setClaimedCouponIds(storedClaimedCoupons);
+                setCoupons(activeCoupons);
+                setWalletItems([]);
+                setClaimedCouponIds(readStoredClaimedCoupons());
             }
         } catch {
             setCoupons([]);
@@ -94,6 +125,11 @@ export default function GiftCodesPage() {
                 (a, b) => new Date(b.createdAt || b.startDate || 0) - new Date(a.createdAt || a.startDate || 0),
             ),
         [coupons],
+    );
+
+    const walletItemsByCouponId = useMemo(
+        () => new Map(walletItems.map((item) => [String(item.couponId || item.Coupon?.id), item])),
+        [walletItems],
     );
 
     const handleCouponAction = async (coupon) => {
@@ -121,6 +157,8 @@ export default function GiftCodesPage() {
         try {
             setClaimingCouponId(coupon.id);
             await api.post("/coupons/claim", { couponId: coupon.id });
+            const myCouponResponse = await api.get("/coupons/my");
+            setWalletItems((myCouponResponse.data || []).filter((item) => item.Coupon));
             setClaimedCouponIds((prev) => {
                 const next = new Set([...prev, ...couponClaimKeys]);
                 writeStoredClaimedCoupons(next);
@@ -141,11 +179,58 @@ export default function GiftCodesPage() {
         }
     };
 
+    const handleDeleteCoupon = async (coupon, walletItem) => {
+        if (!walletItem?.id) return;
+
+        try {
+            setDeletingWalletId(walletItem.id);
+            await api.delete(`/coupons/my/${walletItem.id}`);
+
+            const couponKeys = new Set(getCouponClaimKeys(coupon));
+            setWalletItems((current) => current.filter((item) => item.id !== walletItem.id));
+            setClaimedCouponIds((current) => {
+                const next = new Set([...current].filter((key) => !couponKeys.has(String(key))));
+                writeStoredClaimedCoupons(next);
+                return next;
+            });
+
+            const isStillAvailable =
+                coupon.isActive &&
+                new Date(coupon.startDate).getTime() <= Date.now() &&
+                new Date(coupon.expiryDate).getTime() > Date.now() &&
+                (coupon.usageLimit === null ||
+                    coupon.usageLimit === undefined ||
+                    Number(coupon.usedCount) < Number(coupon.usageLimit));
+
+            if (!isStillAvailable) {
+                setCoupons((current) => current.filter((item) => item.id !== coupon.id));
+            }
+
+            message.success(`Đã xóa mã ${coupon.code} khỏi kho.`);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xóa mã giảm giá.");
+        } finally {
+            setDeletingWalletId("");
+        }
+    };
+
     const renderCouponCard = (coupon) => {
-        const isCouponClaimed = getCouponClaimKeys(coupon).some((key) => claimedCouponIds.has(key));
+        const walletItem = walletItemsByCouponId.get(String(coupon.id));
+        const couponStatus = getCouponStatus(coupon, walletItem);
+        const isCouponClaimed = couponStatus !== "available";
+        const statusLabel = {
+            claimed: "Đã lấy mã",
+            expired: "Đã hết hạn",
+            upcoming: "Chưa hiệu lực",
+            used: "Đã sử dụng",
+        }[couponStatus];
 
         return (
-            <article className={`webcake-coupon-card ${isCouponClaimed ? "webcake-coupon-card-claimed" : ""}`}>
+            <article
+                className={`webcake-coupon-card ${isCouponClaimed ? "webcake-coupon-card-claimed" : ""} ${
+                    ["expired", "used"].includes(couponStatus) ? "webcake-coupon-card-unavailable" : ""
+                }`}
+            >
                 <div className="webcake-coupon-value">
                     <GiftOutlined />
                     <strong>{getCouponValue(coupon)}</strong>
@@ -161,21 +246,47 @@ export default function GiftCodesPage() {
                         <span>
                             <ClockCircleOutlined /> Còn {getDaysLeft(coupon.expiryDate)} ngày
                         </span>
+                        {walletItem && couponStatus !== "claimed" && (
+                            <span className="dp-coupon-status-label">{statusLabel}</span>
+                        )}
                         {coupon.maxDiscountAmount && (
                             <span>
                                 <CheckCircleOutlined /> Tối đa {formatCompactCurrency(coupon.maxDiscountAmount)}đ
                             </span>
                         )}
                     </div>
-                    <Button
-                        type={isCouponClaimed ? "default" : "primary"}
-                        icon={isCouponClaimed ? <CheckCircleOutlined /> : null}
-                        disabled={isCouponClaimed}
-                        loading={claimingCouponId === coupon.id}
-                        onClick={() => handleCouponAction(coupon)}
-                    >
-                        {isCouponClaimed ? "Đã lấy mã" : "Lưu mã"}
-                    </Button>
+                    <div className="dp-coupon-wallet-actions">
+                        <Button
+                            type={isCouponClaimed ? "default" : "primary"}
+                            icon={isCouponClaimed ? <CheckCircleOutlined /> : null}
+                            disabled={isCouponClaimed}
+                            loading={claimingCouponId === coupon.id}
+                            onClick={() => handleCouponAction(coupon)}
+                        >
+                            {statusLabel || "Lưu mã"}
+                        </Button>
+                        {walletItem && (
+                            <Popconfirm
+                                title={`Xóa mã ${coupon.code}?`}
+                                description="Mã sẽ được xóa khỏi kho cá nhân của bạn."
+                                okText="Xóa"
+                                cancelText="Giữ lại"
+                                okButtonProps={{ danger: true }}
+                                onConfirm={() => handleDeleteCoupon(coupon, walletItem)}
+                            >
+                                <Tooltip title="Xóa mã khỏi kho">
+                                    <Button
+                                        type="text"
+                                        danger
+                                        aria-label={`Xóa mã ${coupon.code} khỏi kho`}
+                                        icon={<DeleteOutlined />}
+                                        loading={deletingWalletId === walletItem.id}
+                                        className="dp-coupon-delete-button"
+                                    />
+                                </Tooltip>
+                            </Popconfirm>
+                        )}
+                    </div>
                 </div>
             </article>
         );

@@ -2,6 +2,7 @@ const { Op } = require("sequelize");
 const { sequelize } = require("../config/connectSequelize");
 const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
+const Order = require("../models/order");
 const { syncLegacyDiscountsToCoupons } = require("../services/couponSyncService");
 
 // ==========================================
@@ -178,6 +179,18 @@ const claimCoupon = async (req, res) => {
         });
         if (existing) {
             return res.status(400).json({ message: "Bạn đã nhận mã này rồi" });
+        }
+
+        const previousOrder = await Order.findOne({
+            where: {
+                userId,
+                [Op.or]: [{ couponCode: coupon.code }, { discountCode: coupon.code }],
+                status: { [Op.ne]: "CANCELED" },
+            },
+            attributes: ["id"],
+        });
+        if (previousOrder) {
+            return res.status(400).json({ message: "Bạn đã sử dụng mã giảm giá này rồi" });
         }
 
         await UserCoupon.create({ userId, couponId });

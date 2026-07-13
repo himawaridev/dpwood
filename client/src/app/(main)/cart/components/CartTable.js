@@ -17,6 +17,7 @@ import {
     Tag,
     Empty,
     Modal,
+    Tooltip,
 } from "antd";
 import {
     DeleteOutlined,
@@ -39,6 +40,37 @@ const formatCouponValue = (coupon) => {
     return `-${formatCurrency(coupon.discountValue)}`;
 };
 
+const isCouponUsable = (coupon) => {
+    const now = Date.now();
+    const usageLimitReached =
+        coupon.usageLimit !== null &&
+        coupon.usageLimit !== undefined &&
+        Number(coupon.usedCount) >= Number(coupon.usageLimit);
+
+    return (
+        coupon.isActive &&
+        new Date(coupon.startDate).getTime() <= now &&
+        new Date(coupon.expiryDate).getTime() > now &&
+        !usageLimitReached
+    );
+};
+
+const removeStoredCouponKeys = (coupon) => {
+    if (typeof window === "undefined") return;
+
+    try {
+        const storageKey = "dpwoodClaimedCouponKeys";
+        const couponKeys = new Set([coupon.id, coupon.code].filter(Boolean).map(String));
+        const storedKeys = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        localStorage.setItem(
+            storageKey,
+            JSON.stringify(storedKeys.map(String).filter((key) => !couponKeys.has(key))),
+        );
+    } catch {
+        // The server remains the source of truth if local storage is unavailable.
+    }
+};
+
 export default function CartTable({
     cartItems,
     handleQuantityChange,
@@ -57,6 +89,7 @@ export default function CartTable({
     const [savedCoupons, setSavedCoupons] = useState([]);
     const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
     const [isVoucherLoading, setIsVoucherLoading] = useState(false);
+    const [deletingVoucherId, setDeletingVoucherId] = useState("");
 
     useEffect(() => {
         const fetchSavedCoupons = async () => {
@@ -114,6 +147,30 @@ export default function CartTable({
     const handleSelectVoucher = async (voucher) => {
         await handleApplyDiscount(voucher.code);
         setIsVoucherModalOpen(false);
+    };
+
+    const handleDeleteVoucher = async (voucher) => {
+        if (!voucher.userCouponId) return;
+
+        try {
+            setDeletingVoucherId(voucher.userCouponId);
+            await api.delete(`/coupons/my/${voucher.userCouponId}`);
+            setSavedCoupons((current) =>
+                current.filter((item) => item.userCouponId !== voucher.userCouponId),
+            );
+            removeStoredCouponKeys(voucher);
+
+            if (discountCode === voucher.code) {
+                setDiscountCode("");
+                setDiscountData({ amount: 0 });
+            }
+
+            message.success(`Đã xóa mã ${voucher.code} khỏi kho.`);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xóa mã giảm giá.");
+        } finally {
+            setDeletingVoucherId("");
+        }
     };
 
     const finalPrice = Math.max(0, totalPrice - (discountData?.amount || 0));
@@ -355,6 +412,9 @@ export default function CartTable({
                                                 {discountCode === voucher.code && (
                                                     <Tag color="success">Đang áp dụng</Tag>
                                                 )}
+                                                {!isCouponUsable(voucher) && (
+                                                    <Tag>Không còn hiệu lực</Tag>
+                                                )}
                                             </Flex>
                                             <Text type="secondary">
                                                 {voucher.description ||
@@ -368,12 +428,34 @@ export default function CartTable({
                                             </Text>
                                         </Flex>
                                     </Flex>
-                                    <Button
-                                        type={discountCode === voucher.code ? "primary" : "default"}
-                                        onClick={() => handleSelectVoucher(voucher)}
-                                    >
-                                        {discountCode === voucher.code ? "Đang dùng" : "Chọn mã"}
-                                    </Button>
+                                    <Flex gap={8} align="center" className="dp-cart-voucher-actions">
+                                        <Button
+                                            type={discountCode === voucher.code ? "primary" : "default"}
+                                            disabled={!isCouponUsable(voucher)}
+                                            onClick={() => handleSelectVoucher(voucher)}
+                                        >
+                                            {discountCode === voucher.code ? "Đang dùng" : "Chọn mã"}
+                                        </Button>
+                                        <Popconfirm
+                                            title={`Xóa mã ${voucher.code}?`}
+                                            description="Mã sẽ được xóa khỏi kho ưu đãi của bạn."
+                                            okText="Xóa"
+                                            cancelText="Giữ lại"
+                                            okButtonProps={{ danger: true }}
+                                            onConfirm={() => handleDeleteVoucher(voucher)}
+                                        >
+                                            <Tooltip title="Xóa mã khỏi kho">
+                                                <Button
+                                                    type="text"
+                                                    danger
+                                                    aria-label={`Xóa mã ${voucher.code} khỏi kho`}
+                                                    icon={<DeleteOutlined />}
+                                                    loading={deletingVoucherId === voucher.userCouponId}
+                                                    className="dp-coupon-delete-button"
+                                                />
+                                            </Tooltip>
+                                        </Popconfirm>
+                                    </Flex>
                                 </Flex>
                             </Card>
                         ))}
