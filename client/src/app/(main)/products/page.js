@@ -25,6 +25,13 @@ const normalizeText = (value = "") =>
         .replace(/Đ/g, "D")
         .toLowerCase();
 
+const formatPriceInput = (value) => {
+    if (value === null || value === undefined || value === "") return "";
+    return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+const parsePriceInput = (value = "") => value.replace(/\./g, "").replace(/[^\d]/g, "");
+
 export default function ProductsPage() {
     const { message } = App.useApp();
     const [products, setProducts] = useState([]);
@@ -307,10 +314,34 @@ export default function ProductsPage() {
                                 />
                             </Col>
                             <Col xs={12} sm={6} lg={3}>
-                                <InputNumber size="large" min={0} value={minPrice} onChange={setMinPrice} placeholder="Giá từ" controls={false} style={{ width: "100%" }} />
+                                <InputNumber
+                                    size="large"
+                                    min={0}
+                                    precision={0}
+                                    value={minPrice}
+                                    onChange={setMinPrice}
+                                    placeholder="Giá từ"
+                                    controls={false}
+                                    formatter={formatPriceInput}
+                                    parser={parsePriceInput}
+                                    addonAfter="₫"
+                                    style={{ width: "100%" }}
+                                />
                             </Col>
                             <Col xs={12} sm={6} lg={3}>
-                                <InputNumber size="large" min={0} value={maxPrice} onChange={setMaxPrice} placeholder="Giá đến" controls={false} style={{ width: "100%" }} />
+                                <InputNumber
+                                    size="large"
+                                    min={0}
+                                    precision={0}
+                                    value={maxPrice}
+                                    onChange={setMaxPrice}
+                                    placeholder="Giá đến"
+                                    controls={false}
+                                    formatter={formatPriceInput}
+                                    parser={parsePriceInput}
+                                    addonAfter="₫"
+                                    style={{ width: "100%" }}
+                                />
                             </Col>
                             <Col xs={12} sm={6} lg={3}>
                                 <Select

@@ -1,15 +1,42 @@
 import React from "react";
+import NextLink from "next/link";
 import { Button, Col, Input, Layout, Row, Space, Typography } from "antd";
 import { EnvironmentOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
 
 const { Footer } = Layout;
 const { Title, Text, Link } = Typography;
 
-const footerLinks = {
-    Products: ["Contact Us", "Shipping", "Sitemap", "FAQs", "Stores"],
-    "Quick Links": ["Delivery Information", "About Us", "Privacy Policy", "Terms and Conditions", "Search"],
-    "Our Company": ["Terms Conditions", "Policy for Sellers", "Policy for Buyers", "Shipping & Refund"],
-};
+const footerGroups = [
+    {
+        title: "Sản phẩm & hỗ trợ",
+        links: [
+            { label: "Liên hệ hỗ trợ", href: "/support" },
+            { label: "Tất cả sản phẩm", href: "/products" },
+            { label: "Mã giảm giá", href: "/gift-codes" },
+            { label: "Cẩm nang nhà bếp", href: "/blogs" },
+            { label: "Theo dõi đơn hàng", href: "/profile" },
+        ],
+    },
+    {
+        title: "Điều khoản & chính sách",
+        links: [
+            { label: "Điều khoản sử dụng", href: "/policies/terms-of-service" },
+            { label: "Chính sách bảo mật", href: "/policies/privacy-policy" },
+            { label: "Chính sách giao hàng", href: "/policies/shipping-policy" },
+            { label: "Đổi trả & hoàn tiền", href: "/policies/returns-refunds" },
+            { label: "Chính sách thanh toán", href: "/policies/payment-policy" },
+        ],
+    },
+    {
+        title: "DPWOOD",
+        links: [
+            { label: "Về DPWOOD", href: "/about" },
+            { label: "Cửa hàng", href: "/products" },
+            { label: "Bài viết mới", href: "/blogs" },
+            { label: "Trung tâm hỗ trợ", href: "/support" },
+        ],
+    },
+];
 
 export default function AppFooter() {
     return (
@@ -28,25 +55,27 @@ export default function AppFooter() {
                         <Title level={5}>Store information</Title>
                         <Space orientation="vertical" size={12}>
                             <Text>
-                                <EnvironmentOutlined /> 59 Ho Xuan Huong, Phu Ly, Ha Nam
+                                <EnvironmentOutlined /> 128 Hàng Trống, Hoàn Kiếm, Hà Nội
                             </Text>
-                            <Text>
+                            <Link href="mailto:itokazukiqygnn@gmail.com">
                                 <MailOutlined /> itokazukiqygnn@gmail.com
-                            </Text>
-                            <Text>
+                            </Link>
+                            <Link href="tel:0522535155">
                                 <PhoneOutlined /> 0522535155
-                            </Text>
+                            </Link>
                         </Space>
                     </Col>
 
-                    {Object.entries(footerLinks).map(([title, links]) => (
-                        <Col xs={24} sm={8} lg={5} key={title}>
-                            <Title level={5}>{title}</Title>
+                    {footerGroups.map((group) => (
+                        <Col xs={24} sm={8} lg={5} key={group.title}>
+                            <Title level={5} className="webcake-footer-group-title">
+                                {group.title}
+                            </Title>
                             <Space orientation="vertical" size={10}>
-                                {links.map((item) => (
-                                    <Link href="#" key={item}>
-                                        {item}
-                                    </Link>
+                                {group.links.map((item) => (
+                                    <NextLink href={item.href} key={item.href}>
+                                        {item.label}
+                                    </NextLink>
                                 ))}
                             </Space>
                         </Col>
