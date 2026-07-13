@@ -53,7 +53,7 @@ export default function LoginPage() {
             localStorage.removeItem("avatarUrl");
         }
 
-        message.success("Dang nhap thanh cong.");
+        message.success("Đăng nhập thành công.");
         router.push("/");
     };
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
             });
             handleLoginSuccess(response.data);
         } catch (error) {
-            const errorMessage = error.response?.data?.message || "Dang nhap that bai. Vui long thu lai.";
+            const errorMessage = error.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại.";
             if (error.response?.status === 403 && /verified|activate|xac minh|kích hoạt/i.test(errorMessage)) {
                 setUnverifiedLogin(values.login);
             }
@@ -82,11 +82,11 @@ export default function LoginPage() {
             setResendingVerification(true);
             const response = await api.post("/auth/resend-verification", { login: unverifiedLogin });
             setResendCooldown(Number(response.data?.retryAfter || 60));
-            message.success(response.data?.message || "Da gui lai email xac minh.");
+            message.success(response.data?.message || "Đã gửi lại email xác minh.");
         } catch (error) {
             const retryAfter = Number(error.response?.data?.retryAfter || 0);
             if (retryAfter > 0) setResendCooldown(retryAfter);
-            message.error(error.response?.data?.message || "Khong the gui lai email xac minh.");
+            message.error(error.response?.data?.message || "Không thể gửi lại email xác minh.");
         } finally {
             setResendingVerification(false);
         }
@@ -97,7 +97,7 @@ export default function LoginPage() {
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
             handleLoginSuccess(response.data);
         } catch (error) {
-            message.error(error.response?.data?.message || "Dang nhap Google that bai.");
+            message.error(error.response?.data?.message || "Đăng nhập bằng Google thất bại.");
         }
     };
 
@@ -108,29 +108,29 @@ export default function LoginPage() {
                     <div className="dp-auth-brand-mark">
                         <Image src="/logo.png" alt="DPWOOD" width={40} height={40} priority />
                     </div>
-                    <span className="dp-eyebrow">DPWOOD account</span>
-                    <Title className="dp-auth-aside-title">Tiep tuc mua sam va theo doi don hang</Title>
+                    <span className="dp-eyebrow">Tài khoản DPWOOD</span>
+                    <Title className="dp-auth-aside-title">Tiếp tục mua sắm và theo dõi đơn hàng</Title>
                     <Paragraph className="dp-auth-aside-copy">
-                        Dang nhap de luu dia chi, su dung kho ma giam gia, theo doi don hang va thanh toan nhanh hon.
+                        Đăng nhập để lưu địa chỉ, sử dụng kho mã giảm giá, theo dõi đơn hàng và thanh toán nhanh hơn.
                     </Paragraph>
 
                     <div className="dp-auth-benefits">
                         <div>
                             <ShoppingCartOutlined />
-                            <span>Gio hang va ma uu dai duoc dong bo</span>
+                            <span>Giỏ hàng và mã ưu đãi được đồng bộ</span>
                         </div>
                         <div>
                             <SafetyCertificateOutlined />
-                            <span>Phien dang nhap va thanh toan duoc bao ve</span>
+                            <span>Phiên đăng nhập và thanh toán được bảo vệ</span>
                         </div>
                     </div>
                 </aside>
 
                 <Card variant="borderless" className="dp-auth-card">
                     <div className="dp-auth-heading">
-                        <span className="dp-eyebrow">Welcome back</span>
-                        <Title level={2}>Dang nhap</Title>
-                        <Text className="dp-muted">Chao mung ban quay lai DPWOOD.</Text>
+                        <span className="dp-eyebrow">Chào mừng trở lại</span>
+                        <Title level={2}>Đăng nhập</Title>
+                        <Text className="dp-muted">Chào mừng bạn quay lại DPWOOD.</Text>
                     </div>
 
                     <Form layout="vertical" onFinish={onFinish} className="dp-auth-form">
@@ -138,11 +138,11 @@ export default function LoginPage() {
                             <Alert
                                 type="warning"
                                 showIcon
-                                title="Tai khoan chua xac minh email"
+                                title="Tài khoản chưa xác minh email"
                                 description={
                                     <div className="dp-auth-verify-alert">
                                         <span>
-                                            Kiem tra hop thu den, spam/quang cao hoac bam gui lai email xac minh.
+                                            Kiểm tra hộp thư đến, thư rác/quảng cáo hoặc bấm gửi lại email xác minh.
                                         </span>
                                         <Button
                                             size="small"
@@ -151,7 +151,7 @@ export default function LoginPage() {
                                             disabled={resendCooldown > 0}
                                             onClick={handleResendVerification}
                                         >
-                                            {resendCooldown > 0 ? `Gui lai sau ${resendCooldown}s` : "Gui lai email"}
+                                            {resendCooldown > 0 ? `Gửi lại sau ${resendCooldown}s` : "Gửi lại email"}
                                         </Button>
                                     </div>
                                 }
@@ -159,42 +159,42 @@ export default function LoginPage() {
                         )}
 
                         <Form.Item
-                            label="Tai khoan"
+                            label="Tài khoản"
                             name="login"
-                            rules={[{ required: true, message: "Vui long nhap tai khoan" }]}
+                            rules={[{ required: true, message: "Vui lòng nhập tài khoản" }]}
                         >
                             <Input
                                 size="large"
                                 prefix={<MailOutlined />}
-                                placeholder="Email, username hoac so dien thoai"
+                                placeholder="Email, tên đăng nhập hoặc số điện thoại"
                             />
                         </Form.Item>
 
                         <Form.Item
-                            label="Mat khau"
+                            label="Mật khẩu"
                             name="password"
-                            rules={[{ required: true, message: "Vui long nhap mat khau" }]}
+                            rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
                         >
-                            <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhap mat khau" />
+                            <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhập mật khẩu" />
                         </Form.Item>
 
                         <div className="dp-auth-links-row">
                             <span />
-                            <Link href="/forgot-password">Quen mat khau?</Link>
+                            <Link href="/forgot-password">Quên mật khẩu?</Link>
                         </div>
 
                         <Button type="primary" htmlType="submit" size="large" block icon={<LoginOutlined />}>
-                            Dang nhap
+                            Đăng nhập
                         </Button>
 
-                        <Divider plain>Hoac dang nhap bang</Divider>
+                        <Divider plain>Hoặc đăng nhập bằng</Divider>
 
                         {googleClientId ? (
                             <GoogleOAuthProvider clientId={googleClientId}>
                                 <div className="dp-auth-google">
                                     <GoogleLogin
                                         onSuccess={onGoogleSuccess}
-                                        onError={() => message.error("Dang nhap Google that bai")}
+                                        onError={() => message.error("Đăng nhập bằng Google thất bại")}
                                         ux_mode="popup"
                                         use_fedcm_for_button={false}
                                         text="signin_with"
@@ -204,12 +204,12 @@ export default function LoginPage() {
                             </GoogleOAuthProvider>
                         ) : (
                             <Text type="secondary" className="dp-auth-note">
-                                Chua cau hinh Google Client ID.
+                                Chưa cấu hình mã ứng dụng Google.
                             </Text>
                         )}
 
                         <div className="dp-auth-switch">
-                            Chua co tai khoan? <Link href="/register">Dang ky ngay</Link>
+                            Chưa có tài khoản? <Link href="/register">Đăng ký ngay</Link>
                         </div>
                     </Form>
                 </Card>

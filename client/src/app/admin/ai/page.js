@@ -65,15 +65,15 @@ const supportAllowedItems = [
     "Hướng dẫn đặt hàng, theo dõi trạng thái đơn và chính sách giao hàng chung.",
     "Giải thích cách dùng voucher, điều kiện áp dụng và lỗi nhập mã thông thường.",
     "Trả lời câu hỏi về chất liệu, kích cỡ, bảo quản đồ bếp, kinh nghiệm chọn mua.",
-    "Tóm tắt ticket dài để admin đọc nhanh hơn.",
+    "Tóm tắt yêu cầu hỗ trợ dài để quản trị viên đọc nhanh hơn.",
 ];
 
 const supportBlockedItems = [
     "Thanh toán, PayOS, chuyển khoản, hoàn tiền hoặc tranh chấp tiền bạc.",
     "Sửa số điện thoại, email, địa chỉ, họ tên hoặc dữ liệu cá nhân.",
     "Mật khẩu, OTP, xác minh tài khoản hoặc thông tin định danh.",
-    "Khiếu nại cần quyết định của admin: hủy đơn, đổi trả đặc biệt, bồi thường.",
-    "Bất kỳ ticket nào AI không đủ chắc chắn hoặc khách yêu cầu gặp admin.",
+    "Khiếu nại cần quyết định của quản trị viên: hủy đơn, đổi trả đặc biệt, bồi thường.",
+    "Bất kỳ yêu cầu hỗ trợ nào AI không đủ chắc chắn hoặc khách yêu cầu gặp quản trị viên.",
 ];
 
 export function AdminAiCenterSection({ section = "blog" }) {
@@ -96,7 +96,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
         () => [
             { label: "Blog tối đa/lần", value: "20" },
             { label: "Sản phẩm tối đa/lần", value: "50" },
-            { label: "Ticket AI/lần", value: "20" },
+            { label: "Yêu cầu hỗ trợ AI mỗi lần", value: "20" },
             { label: "Chế độ an toàn", value: "Bật" },
         ],
         [],
@@ -133,7 +133,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
             setCreatedBlogs(blogs);
 
             if (values.publishMode === "schedule") {
-                message.success(`Đã tạo ${blogs.length} bản nháp theo lịch gợi ý. Admin có thể duyệt và xuất bản sau.`);
+                message.success(`Đã tạo ${blogs.length} bản nháp theo lịch gợi ý. Quản trị viên có thể duyệt và xuất bản sau.`);
             } else {
                 message.success(response.data?.message || `AI đã tạo ${blogs.length} blog.`);
             }
@@ -238,7 +238,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             Blog vừa tạo
                         </Space>
                     }
-                    extra={<Button onClick={() => router.push("/admin/blogs")}>Xem blog</Button>}
+                    extra={<Button onClick={() => router.push("/admin/blogs")}>Xem bài viết</Button>}
                 >
                     <div className="dp-admin-ai-result-list">
                         {createdBlogs.map((blog) => (
@@ -246,7 +246,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                 <div>
                                     <Text strong>{blog.title}</Text>
                                     <Paragraph type="secondary" className="dp-admin-ai-result-summary">
-                                        {blog.summary || "Blog AI đang chờ bổ sung mô tả."}
+                                        {blog.summary || "Bài viết AI đang chờ bổ sung mô tả."}
                                     </Paragraph>
                                 </div>
                                 <Space wrap>
@@ -313,7 +313,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                                 }
                                             />
                                         ) : (
-                                            <div className="dp-admin-ai-image-placeholder">No image</div>
+                                            <div className="dp-admin-ai-image-placeholder">Chưa có ảnh</div>
                                         )}
                                         <div>
                                             <Text strong>{product.name}</Text>
@@ -376,7 +376,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             Kết quả xử lý support
                         </Space>
                     }
-                    extra={<Button onClick={() => router.push("/admin/support")}>Mở ticket</Button>}
+                    extra={<Button onClick={() => router.push("/admin/support")}>Mở yêu cầu hỗ trợ</Button>}
                 >
                     <Row gutter={[16, 16]}>
                         <Col xs={24} lg={12}>
@@ -395,12 +395,12 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                         </div>
                                     ))
                                 ) : (
-                                    <Text type="secondary">Chưa có ticket nào được AI xử lý.</Text>
+                                    <Text type="secondary">Chưa có yêu cầu hỗ trợ nào được AI xử lý.</Text>
                                 )}
                             </div>
                         </Col>
                         <Col xs={24} lg={12}>
-                            <Text strong>Chuyển admin</Text>
+                            <Text strong>Chuyển quản trị viên</Text>
                             <div className="dp-admin-ai-result-list" style={{ marginTop: 10 }}>
                                 {(supportResult.skipped || []).length ? (
                                     supportResult.skipped.map((ticket) => (
@@ -411,11 +411,11 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                                     {ticket.reason}
                                                 </Paragraph>
                                             </div>
-                                            <Tag color="warning">Admin</Tag>
+                                            <Tag color="warning">Quản trị viên</Tag>
                                         </div>
                                     ))
                                 ) : (
-                                    <Text type="secondary">Không có ticket bị chặn.</Text>
+                                    <Text type="secondary">Không có yêu cầu hỗ trợ bị chặn.</Text>
                                 )}
                             </div>
                         </Col>
@@ -556,16 +556,16 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     <div className="dp-admin-ai-checklist">
                         <Tag color="success">Tạo nháp</Tag>
                         <Tag color="success">Xuất bản ngay</Tag>
-                        <Tag color="warning">Cần cron để auto publish</Tag>
+                        <Tag color="warning">Cần tác vụ định kỳ để tự động xuất bản</Tag>
                     </div>
                     <Divider />
-                    <Text strong>Option đã bổ sung</Text>
+                    <Text strong>Tùy chọn đã bổ sung</Text>
                     <div className="dp-admin-ai-list">
                         {[
                             "Giọng văn theo mục tiêu bán hàng hoặc tư vấn chuyên gia.",
                             "Độ sâu nội dung ngắn, đầy đủ hoặc chuyên sâu.",
                             "Từ khóa SEO và các khối FAQ, chọn mua, bảo quản.",
-                            "Chuyển về đúng AI Center sau khi chỉnh sửa blog.",
+                            "Quay về đúng Trung tâm AI sau khi chỉnh sửa bài viết.",
                         ].map((item) => (
                             <div key={item} className="dp-admin-ai-list-item">
                                 {item}
@@ -689,8 +689,8 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     <Alert
                         type="warning"
                         showIcon
-                        title="AI chỉ xử lý ticket an toàn"
-                        description="Các vấn đề tiền bạc, thanh toán, hoàn tiền, tài khoản hoặc sửa thông tin cá nhân sẽ bị chặn và chuyển sang admin."
+                        title="AI chỉ xử lý yêu cầu hỗ trợ an toàn"
+                        description="Các vấn đề tiền bạc, thanh toán, hoàn tiền, tài khoản hoặc sửa thông tin cá nhân sẽ bị chặn và chuyển sang quản trị viên."
                         style={{ marginBottom: 18 }}
                     />
 
@@ -702,12 +702,12 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     >
                         <Row gutter={12}>
                             <Col xs={24} md={12}>
-                                <Form.Item name="limit" label="Số ticket xử lý/lần" rules={[{ required: true }]}>
+                                <Form.Item name="limit" label="Số yêu cầu xử lý mỗi lần" rules={[{ required: true }]}>
                                     <InputNumber min={1} max={20} style={{ width: "100%" }} />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} md={12}>
-                                <Form.Item name="closeResolved" label="Đóng ticket sau khi AI trả lời" valuePropName="checked">
+                                <Form.Item name="closeResolved" label="Đóng yêu cầu sau khi AI trả lời" valuePropName="checked">
                                     <Switch />
                                 </Form.Item>
                             </Col>
@@ -725,7 +725,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     title={
                         <Space>
                             <SafetyCertificateOutlined />
-                            Phạm vi xử lý ticket
+                            Phạm vi xử lý yêu cầu hỗ trợ
                         </Space>
                     }
                     className="dp-admin-ai-card"
@@ -757,7 +757,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                         </Col>
                     </Row>
                     <Button block onClick={() => router.push("/admin/support")}>
-                        Quản lý ticket
+                        Quản lý yêu cầu hỗ trợ
                     </Button>
                 </Card>
             </Col>
@@ -767,9 +767,9 @@ export function AdminAiCenterSection({ section = "blog" }) {
     const rulesTab = (
         <Row gutter={[16, 16]}>
             <Col xs={24} lg={8}>
-                <Card className="dp-admin-ai-card" title="Blog">
+                <Card className="dp-admin-ai-card" title="Bài viết">
                     <Paragraph type="secondary">
-                        AI phù hợp để tạo bản nháp, tiêu đề, sapo, SEO title, SEO description và dàn ý. Admin vẫn nên duyệt
+                        AI phù hợp để tạo bản nháp, tiêu đề, đoạn mở đầu, tiêu đề SEO, mô tả SEO và dàn ý. Quản trị viên vẫn nên duyệt
                         lại thông tin, hình ảnh và giọng văn trước khi đăng.
                     </Paragraph>
                     <Tag color="success">Có thể tự động hóa cao</Tag>
@@ -785,10 +785,10 @@ export function AdminAiCenterSection({ section = "blog" }) {
                 </Card>
             </Col>
             <Col xs={24} lg={8}>
-                <Card className="dp-admin-ai-card" title="Ticket">
+                <Card className="dp-admin-ai-card" title="Yêu cầu hỗ trợ">
                     <Paragraph type="secondary">
-                        AI chỉ trả lời câu hỏi vận hành thông thường. Khi có rủi ro tiền bạc hoặc dữ liệu cá nhân, ticket sẽ
-                        được chuyển cho admin.
+                        AI chỉ trả lời câu hỏi vận hành thông thường. Khi có rủi ro tiền bạc hoặc dữ liệu cá nhân, yêu cầu sẽ
+                        được chuyển cho quản trị viên.
                     </Paragraph>
                     <Tag color="error">Chặn nội dung nhạy cảm</Tag>
                 </Card>
@@ -809,18 +809,18 @@ export function AdminAiCenterSection({ section = "blog" }) {
                 <div>
                     <Text className="dp-admin-eyebrow">Trung tâm tự động hóa</Text>
                     <Title level={2}>
-                        <RobotOutlined /> AI Center
+                        <RobotOutlined /> Trung tâm AI
                     </Title>
                     <Paragraph type="secondary">
-                        Điều phối AI tạo nội dung, nhập sản phẩm và hỗ trợ ticket theo phạm vi an toàn cho DPWOOD.
+                        Điều phối AI tạo nội dung, nhập sản phẩm và xử lý yêu cầu hỗ trợ trong phạm vi an toàn cho DPWOOD.
                     </Paragraph>
                 </div>
                 <Space wrap>
                     <Button icon={<FileTextOutlined />} onClick={() => router.push("/admin/ai/blog")}>
-                        Blog AI
+                        Bài viết AI
                     </Button>
                     <Button icon={<CustomerServiceOutlined />} onClick={() => router.push("/admin/ai/support")}>
-                        Ticket AI
+                        Hỗ trợ AI
                     </Button>
                 </Space>
             </Flex>

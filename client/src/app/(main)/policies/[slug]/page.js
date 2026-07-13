@@ -38,7 +38,7 @@ export default async function PolicyPage({ params }) {
                 </aside>
 
                 <article className="dp-legal-document">
-                    <span className="dp-eyebrow">DPWOOD POLICY</span>
+                    <span className="dp-eyebrow">CHÍNH SÁCH DPWOOD</span>
                     <h1>{policy.title}</h1>
                     <p className="dp-legal-summary">{policy.summary}</p>
                     <p className="dp-legal-updated">Cập nhật lần cuối: {POLICY_UPDATED_AT}</p>

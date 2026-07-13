@@ -85,7 +85,7 @@ export default function AdminSupportPage() {
             render: (_, record) => {
                 const handlerMap = {
                     AI: { color: "geekblue", label: "AI" },
-                    ADMIN: { color: "green", label: "Admin" },
+                    ADMIN: { color: "green", label: "Quản trị viên" },
                     NONE: { color: "default", label: "Chưa xử lý" },
                 };
                 const item = handlerMap[record.handlerType] || handlerMap.NONE;

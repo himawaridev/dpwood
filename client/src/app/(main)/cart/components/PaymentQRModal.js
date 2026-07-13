@@ -8,6 +8,7 @@ export default function PaymentQRModal({
     isQrModalVisible,
     payosData,
     checkingPayment,
+    cancelingPayment,
     handleCancelPayment,
 }) {
     return (
@@ -161,7 +162,15 @@ export default function PaymentQRModal({
                         <Text strong>Đang tự động xác nhận thanh toán</Text>
                     </div>
 
-                    <Button type="text" block size="large" onClick={handleCancelPayment} danger>
+                    <Button
+                        type="text"
+                        block
+                        size="large"
+                        onClick={handleCancelPayment}
+                        loading={cancelingPayment}
+                        disabled={cancelingPayment}
+                        danger
+                    >
                         Hủy thanh toán đơn này
                     </Button>
                 </Flex>

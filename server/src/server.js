@@ -49,6 +49,32 @@ const dbState = {
 const DB_RETRY_DELAY_MS = Number(process.env.DB_RETRY_DELAY_MS || 60000);
 app.set("trust proxy", 1);
 
+const normalizeOrigin = (value = "") => String(value).trim().replace(/\/$/, "");
+const configuredOrigins = [process.env.CLIENT_URL, process.env.FRONTEND_URL]
+    .filter(Boolean)
+    .flatMap((value) => value.split(","))
+    .map(normalizeOrigin)
+    .filter(Boolean);
+const allowedOrigins = new Set([
+    "https://dpwood.store",
+    "https://www.dpwood.store",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    ...configuredOrigins,
+]);
+const corsOptions = {
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.has(normalizeOrigin(origin))) {
+            return callback(null, true);
+        }
+        return callback(new Error(`CORS origin is not allowed: ${origin}`));
+    },
+    credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type", "X-Requested-With"],
+    optionsSuccessStatus: 204,
+};
+
 // ==========================================
 // 1. HÀM CẤU HÌNH DATABASE ASSOCIATIONS
 // ==========================================
@@ -102,11 +128,7 @@ const setupDatabaseAssociations = () => {
 // ==========================================
 const setupSocketIO = () => {
     const io = new Server(server, {
-        cors: {
-            origin: process.env.CLIENT_URL || "http://localhost:3000",
-            methods: ["GET", "POST", "PUT", "DELETE"],
-            credentials: true,
-        },
+        cors: corsOptions,
     });
 
     const userSockets = new Map();
@@ -137,18 +159,7 @@ const setupSocketIO = () => {
 // ==========================================
 // 3. KHỞI CHẠY MIDDLEWARE & ROUTERS
 // ==========================================
-// app.use(cors({
-//     origin: process.env.CLIENT_URL || "http://localhost:3000",
-//     credentials: true,
-// }));
-const allowedOrigins = process.env.CLIENT_URL 
-    ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
-    : ["http://localhost:3000"];
-
-app.use(cors({
-    origin: allowedOrigins, // Truyền hẳn một danh sách (mảng) vào đây
-    credentials: true,
-}));
+app.use(cors(corsOptions));
 app.use(securityHeaders);
 app.use(generalLimiter);
 app.use(express.json({ limit: "1mb" }));

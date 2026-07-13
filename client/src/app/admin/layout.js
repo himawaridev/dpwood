@@ -54,7 +54,7 @@ export default function AdminLayout({ children }) {
     const [openMenuKeys, setOpenMenuKeys] = useState([]);
 
     useEffect(() => {
-        setAdminName(localStorage.getItem("userName") || "Admin");
+        setAdminName(localStorage.getItem("userName") || "Quản trị viên");
         setAvatarUrl(localStorage.getItem("avatarUrl") || "");
         setAdminRole(localStorage.getItem("userRole") || "");
     }, []);
@@ -90,7 +90,7 @@ export default function AdminLayout({ children }) {
             const refreshToken = localStorage.getItem("refreshToken");
             if (refreshToken) await api.post("/auth/logout", { refreshToken });
         } catch (error) {
-            console.log("Loi dang xuat", error);
+            console.log("Lỗi đăng xuất", error);
         } finally {
             localStorage.clear();
             router.push("/login");
@@ -98,7 +98,7 @@ export default function AdminLayout({ children }) {
     };
 
     const administratorMenuItems = [
-        { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Tong quan" },
+        { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Tổng quan" },
         {
             key: "/admin/users",
             icon: <TeamOutlined />,
@@ -110,21 +110,21 @@ export default function AdminLayout({ children }) {
                 { key: "/admin/users/transactions", icon: <SwapOutlined />, label: "Lịch sử giao dịch" },
             ],
         },
-        { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "San pham" },
-        { key: "/admin/orders", icon: <FileTextOutlined />, label: "Don hang" },
-        { key: "/admin/notifications", icon: <BellOutlined />, label: "Thong bao" },
-        { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Ho tro" },
-        { key: "/admin/blogs", icon: <EditOutlined />, label: "Bai viet" },
-        { key: "/admin/coupons", icon: <PercentageOutlined />, label: "Ma giam gia" },
+        { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "Sản phẩm" },
+        { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
+        { key: "/admin/notifications", icon: <BellOutlined />, label: "Thông báo" },
+        { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ" },
+        { key: "/admin/blogs", icon: <EditOutlined />, label: "Bài viết" },
+        { key: "/admin/coupons", icon: <PercentageOutlined />, label: "Mã giảm giá" },
         {
             key: "/admin/ai",
             icon: <RobotOutlined />,
-            label: "AI Center",
+            label: "Trung tâm AI",
             children: [
-                { key: "/admin/ai/blog", label: "Blog AI" },
-                { key: "/admin/ai/products", label: "San pham AI" },
-                { key: "/admin/ai/support", label: "Ticket AI" },
-                { key: "/admin/ai/rules", label: "Quy tac AI" },
+                { key: "/admin/ai/blog", label: "Bài viết AI" },
+                { key: "/admin/ai/products", label: "Sản phẩm AI" },
+                { key: "/admin/ai/support", label: "Hỗ trợ AI" },
+                { key: "/admin/ai/rules", label: "Quy tắc AI" },
             ],
         },
     ];
@@ -143,13 +143,13 @@ export default function AdminLayout({ children }) {
         {
             key: "profile",
             icon: <UserOutlined />,
-            label: "Trang ca nhan",
+            label: "Trang cá nhân",
             onClick: () => router.push("/profile"),
         },
         {
             key: "home",
             icon: <HomeOutlined />,
-            label: "Ve cua hang",
+            label: "Về cửa hàng",
             onClick: () => router.push("/"),
         },
         { type: "divider" },
@@ -157,7 +157,7 @@ export default function AdminLayout({ children }) {
             key: "logout",
             danger: true,
             icon: <LogoutOutlined />,
-            label: "Dang xuat",
+            label: "Đăng xuất",
             onClick: handleLogout,
         },
     ];
@@ -185,10 +185,10 @@ export default function AdminLayout({ children }) {
                 type="button"
                 onClick={() => router.push("/admin/dashboard")}
                 className="dp-admin-brand"
-                aria-label="DPWOOD Admin"
+                aria-label="Trang quản trị DPWOOD"
             >
                 <Image src="/logo.png" alt="DPWOOD" width={38} height={38} className="dp-admin-brand-logo" />
-                {(!collapsed || isMobile) && <strong>DPWOOD Admin</strong>}
+                {(!collapsed || isMobile) && <strong>Quản trị DPWOOD</strong>}
             </button>
 
             <Menu

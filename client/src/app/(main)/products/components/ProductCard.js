@@ -26,7 +26,7 @@ const getRatingValue = (product) => {
 
 function DisplayRatingStars({ value }) {
     return (
-        <span className="webcake-rating-stars" aria-label={`${value.toFixed(1)} out of 5 stars`}>
+        <span className="webcake-rating-stars" aria-label={`${value.toFixed(1)} trên 5 sao`}>
             {Array.from({ length: 5 }).map((_, index) => {
                 const fill = Math.max(0, Math.min(1, value - index));
 
@@ -75,7 +75,7 @@ export default function ProductCard({
                 <div className="webcake-product-media">
                     <button type="button" className="webcake-product-image" onClick={onClickDetail}>
                         {image ? (
-                            <img alt={product.name || "DPWOOD Kitchen product"} src={image} />
+                            <img alt={product.name || "Sản phẩm nhà bếp DPWOOD"} src={image} />
                         ) : (
                             <span className="webcake-product-image-placeholder">DPWOOD</span>
                         )}

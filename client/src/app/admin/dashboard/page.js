@@ -320,7 +320,7 @@ export default function AdminDashboard() {
             <Flex className="dp-admin-dashboard-head" justify="space-between" align="flex-start" gap={16} wrap="wrap">
                 <div>
                     <Text className="dp-admin-eyebrow">Tổng quan vận hành</Text>
-                    <Title level={2}>Dashboard quản trị DPWOOD</Title>
+                    <Title level={2}>Bảng điều khiển quản trị DPWOOD</Title>
                     <Paragraph type="secondary">
                         Theo dõi doanh thu, đơn hàng, tồn kho và hoạt động khách hàng từ một màn hình.
                     </Paragraph>
@@ -380,7 +380,7 @@ export default function AdminDashboard() {
                 <Col xs={24} sm={12} xl={6}>
                     <Card className="dp-admin-kpi-card">
                         <Statistic title="Sản phẩm" value={data.products.length} prefix={<InboxOutlined />} />
-                        <Text type="secondary">{dashboard.hotProducts.length} mặt hàng đang hot</Text>
+                        <Text type="secondary">{dashboard.hotProducts.length} mặt hàng bán chạy</Text>
                     </Card>
                 </Col>
             </Row>

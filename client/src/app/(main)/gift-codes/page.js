@@ -149,7 +149,7 @@ export default function GiftCodesPage() {
                 <div className="webcake-coupon-value">
                     <GiftOutlined />
                     <strong>{getCouponValue(coupon)}</strong>
-                    <span>OFF</span>
+                    <span>GIẢM</span>
                 </div>
                 <div className="webcake-coupon-content">
                     <Text className="webcake-coupon-code">{coupon.code}</Text>
@@ -186,7 +186,7 @@ export default function GiftCodesPage() {
             <section className="dp-gift-code-hero">
                 <div className="webcake-container">
                     <Text className="webcake-section-kicker">Ưu đãi DPWOOD</Text>
-                    <Title level={1}>Gift Code</Title>
+                    <Title level={1}>Kho mã giảm giá</Title>
                     <Paragraph>Lưu mã giảm giá vào tài khoản để sử dụng nhanh khi thanh toán.</Paragraph>
                 </div>
             </section>

@@ -43,16 +43,16 @@ export default function AppFooter() {
         <Footer className="webcake-footer">
             <div className="webcake-container">
                 <div className="webcake-newsletter">
-                    <Title level={3}>Subscribe Our Newsletter</Title>
+                    <Title level={3}>Đăng ký nhận bản tin</Title>
                     <Space.Compact className="webcake-newsletter-form">
-                        <Input placeholder="Enter your email" />
-                        <Button type="primary">SUBCRIBE</Button>
+                        <Input placeholder="Nhập địa chỉ email" />
+                        <Button type="primary">ĐĂNG KÝ</Button>
                     </Space.Compact>
                 </div>
 
                 <Row gutter={[34, 30]}>
                     <Col xs={24} lg={7}>
-                        <Title level={5}>Store information</Title>
+                        <Title level={5}>Thông tin cửa hàng</Title>
                         <Space orientation="vertical" size={12}>
                             <Text>
                                 <EnvironmentOutlined /> 128 Hàng Trống, Hoàn Kiếm, Hà Nội
@@ -83,7 +83,7 @@ export default function AppFooter() {
                 </Row>
 
                 <div className="webcake-footer-bottom">
-                    <span>Copyright by DPWOOD | Inspired by Pancake Vietnam</span>
+                    <span>Bản quyền thuộc về DPWOOD | Thiết kế tham khảo Pancake Việt Nam</span>
                     <span>dpwood.store</span>
                 </div>
             </div>

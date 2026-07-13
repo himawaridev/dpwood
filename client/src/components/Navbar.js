@@ -81,10 +81,10 @@ export default function Navbar() {
 
     const navItems = useMemo(
         () => [
-            { key: "/", label: "Home" },
-            { key: "/products", label: "Products" },
-            { key: "/blogs", label: "Blog" },
-            { key: "/support", label: "Contact Us" },
+            { key: "/", label: "Trang chủ" },
+            { key: "/products", label: "Sản phẩm" },
+            { key: "/blogs", label: "Bài viết" },
+            { key: "/support", label: "Liên hệ" },
         ],
         [],
     );
@@ -99,13 +99,13 @@ export default function Navbar() {
         {
             key: "profile",
             icon: <UserOutlined />,
-            label: "Profile",
+            label: "Hồ sơ cá nhân",
             onClick: () => goTo("/profile"),
         },
         ["admin", "root", "staff"].includes(authState.userRole) && {
             key: "admin",
             icon: <TeamOutlined />,
-            label: "Admin",
+            label: "Trang quản trị",
             onClick: () => goTo(authState.userRole === "staff" ? "/admin/orders" : "/admin/dashboard"),
         },
         { type: "divider" },
@@ -113,7 +113,7 @@ export default function Navbar() {
             key: "logout",
             danger: true,
             icon: <LogoutOutlined />,
-            label: "Log out",
+            label: "Đăng xuất",
             onClick: handleLogout,
         },
     ].filter(Boolean);
@@ -134,18 +134,18 @@ export default function Navbar() {
             classNames={{ root: "webcake-account-dropdown" }}
             styles={{ root: { zIndex: 5000 } }}
         >
-            <button type="button" className="webcake-account-button" aria-label="Account">
+            <button type="button" className="webcake-account-button" aria-label="Tài khoản">
                 <Avatar
                     className="webcake-avatar"
                     icon={!authState.avatarUrl ? <UserOutlined /> : null}
                     {...(authState.avatarUrl ? { src: authState.avatarUrl } : {})}
                 />
-                {!isMobile && <span className="webcake-account-name">{authState.userName || "Account"}</span>}
+                {!isMobile && <span className="webcake-account-name">{authState.userName || "Tài khoản"}</span>}
             </button>
         </Dropdown>
     ) : (
         <Button type="text" icon={<LoginOutlined />} onClick={() => goTo("/login")} className="webcake-login-button">
-            Login
+            Đăng nhập
         </Button>
     );
 
@@ -154,14 +154,14 @@ export default function Navbar() {
             <div className="webcake-utility-group">
                 <Button
                     type="text"
-                    aria-label="Search"
+                    aria-label="Tìm kiếm"
                     className="webcake-icon-button"
                     icon={<SearchOutlined />}
                     onClick={() => goTo("/products")}
                 />
                 <Button
                     type="text"
-                    aria-label="Coupons"
+                    aria-label="Mã giảm giá"
                     className="webcake-icon-button"
                     icon={<GiftOutlined />}
                     onClick={() => goTo("/gift-codes")}
@@ -169,7 +169,7 @@ export default function Navbar() {
                 <Badge count={cartCount} size="small" offset={[1, 1]}>
                     <Button
                         type="text"
-                        aria-label="Cart"
+                        aria-label="Giỏ hàng"
                         className="webcake-icon-button"
                         icon={<ShoppingCartOutlined />}
                         onClick={() => goTo("/cart")}
@@ -180,7 +180,7 @@ export default function Navbar() {
             {isMobile && (
                 <Button
                     type="text"
-                    aria-label="Open menu"
+                    aria-label="Mở trình đơn"
                     className="webcake-icon-button"
                     icon={<MenuOutlined />}
                     onClick={() => setDrawerOpen(true)}

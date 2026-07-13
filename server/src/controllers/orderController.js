@@ -463,52 +463,101 @@ const getOrderStatus = async (req, res) => {
 };
 
 const cancelOrder = async (req, res) => {
-    const t = await sequelize.transaction();
     try {
         const { orderCode } = req.params;
-        const order = await Order.findOne({
-            where: { orderCode, status: "PENDING" },
-            transaction: t,
+        const existingOrder = await Order.findOne({
+            where: { orderCode },
+            include: [{ model: User, attributes: ["email", "name"] }],
         });
-        if (!order) throw new Error("Không thể hủy");
+        if (!existingOrder) {
+            return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
+        }
+        if (String(existingOrder.userId) !== String(req.user.id)) {
+            return res.status(403).json({ message: "Bạn không có quyền hủy đơn hàng này." });
+        }
+        if (existingOrder.status !== "PENDING") {
+            return res.status(409).json({ message: "Chỉ có thể hủy đơn hàng đang chờ thanh toán." });
+        }
 
-        const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
-        for (const item of items) {
-            const product = await Product.findByPk(item.productId, {
+        if (existingOrder.paymentMethod === "QR") {
+            try {
+                const paymentInfo = await paymentService.getPaymentLinkInfo(existingOrder.orderCode);
+                const paymentStatus = normalizePayosStatus(paymentInfo);
+
+                if (paymentStatus === "PAID") {
+                    await markOrderAsPaid(existingOrder, paymentInfo);
+                    return res.status(409).json({
+                        message: "PayOS đã xác nhận thanh toán nên đơn hàng không thể hủy.",
+                    });
+                }
+
+                if (!new Set(["CANCELLED", "CANCELED", "EXPIRED"]).has(paymentStatus)) {
+                    await paymentService.cancelPaymentLink(
+                        existingOrder.orderCode,
+                        "Khách hàng hủy thanh toán trên DPWOOD",
+                    );
+                }
+            } catch (error) {
+                console.warn(`Không thể hủy link PayOS #${orderCode}:`, error.message);
+                return res.status(502).json({
+                    message: "Chưa thể kết nối PayOS để hủy thanh toán. Vui lòng thử lại.",
+                });
+            }
+        }
+
+        const t = await sequelize.transaction();
+        try {
+            const order = await Order.findOne({
+                where: { orderCode },
                 transaction: t,
                 lock: t.LOCK.UPDATE,
             });
-            if (product) {
-                const variants = normalizeProductVariants(product.variants);
-                const selectedVariant = item.variantId ? findProductVariant(product, item.variantId) : null;
-                if (selectedVariant) {
-                    selectedVariant.stock = Number(selectedVariant.stock || 0) + Number(item.quantity || 0);
-                    product.variants = variants;
-                    product.stock = getVariantStockTotal(variants);
-                } else {
-                    product.stock += item.quantity;
-                }
-                product.sold = Math.max(0, Number(product.sold || 0) - Number(item.quantity || 0));
-                await product.save({ transaction: t });
+            if (!order || order.status !== "PENDING") {
+                await t.rollback();
+                return res.status(409).json({ message: "Trạng thái đơn hàng vừa thay đổi. Vui lòng tải lại." });
             }
+
+            const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
+            for (const item of items) {
+                const product = await Product.findByPk(item.productId, {
+                    transaction: t,
+                    lock: t.LOCK.UPDATE,
+                });
+                if (product) {
+                    const variants = normalizeProductVariants(product.variants);
+                    const selectedVariant = item.variantId ? findProductVariant(product, item.variantId) : null;
+                    if (selectedVariant) {
+                        selectedVariant.stock = Number(selectedVariant.stock || 0) + Number(item.quantity || 0);
+                        product.variants = variants;
+                        product.stock = getVariantStockTotal(variants);
+                    } else {
+                        product.stock = Number(product.stock || 0) + Number(item.quantity || 0);
+                    }
+                    product.sold = Math.max(0, Number(product.sold || 0) - Number(item.quantity || 0));
+                    await product.save({ transaction: t });
+                }
+            }
+            order.status = "CANCELED";
+            await order.save({ transaction: t });
+
+            await AuditLog.create(
+                {
+                    userId: req.user.id,
+                    action: "ORDER_CANCELED",
+                    details: `Hủy đơn #${orderCode}, đã hoàn tồn kho.`,
+                },
+                { transaction: t },
+            );
+
+            await t.commit();
+            return res.json({ message: "Đã hủy thanh toán và hoàn lại tồn kho." });
+        } catch (error) {
+            if (!t.finished) await t.rollback();
+            throw error;
         }
-        order.status = "CANCELED";
-        await order.save({ transaction: t });
-
-        await AuditLog.create(
-            {
-                userId: req.user.id,
-                action: "ORDER_CANCELED",
-                details: `Hủy đơn #${orderCode}, đã hoàn tồn kho.`,
-            },
-            { transaction: t },
-        );
-
-        await t.commit();
-        res.json({ message: "Đã hủy" });
     } catch (error) {
-        await t.rollback();
-        res.status(400).json({ message: error.message });
+        console.error(`Lỗi hủy đơn #${req.params.orderCode}:`, error);
+        return res.status(500).json({ message: "Không thể hủy giao dịch lúc này." });
     }
 };
 

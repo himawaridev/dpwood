@@ -33,17 +33,17 @@ export default function RegisterPage() {
         } else {
             localStorage.removeItem("avatarUrl");
         }
-        message.success("Dang ky va dang nhap thanh cong.");
+        message.success("Đăng ký và đăng nhập thành công.");
         router.push("/");
     };
 
     const onFinish = async (values) => {
         try {
             const response = await api.post("/auth/register", values);
-            message.success(response.data?.message || "Dang ky thanh cong. Vui long kiem tra email.");
+            message.success(response.data?.message || "Đăng ký thành công. Vui lòng kiểm tra email.");
             router.push("/login");
         } catch (error) {
-            message.error(error.response?.data?.message || "Dang ky that bai.");
+            message.error(error.response?.data?.message || "Đăng ký thất bại.");
         }
     };
 
@@ -52,7 +52,7 @@ export default function RegisterPage() {
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
             handleLoginSuccess(response.data);
         } catch (error) {
-            message.error(error.response?.data?.message || "Google OAuth that bai.");
+            message.error(error.response?.data?.message || "Đăng ký bằng Google thất bại.");
         }
     };
 
@@ -63,34 +63,34 @@ export default function RegisterPage() {
                     <div className="dp-auth-brand-mark">
                         <Image src="/logo.png" alt="DPWOOD" width={40} height={40} priority />
                     </div>
-                    <span className="dp-eyebrow">Create account</span>
-                    <Title level={1}>Tao tai khoan DPWOOD</Title>
+                    <span className="dp-eyebrow">Tạo tài khoản</span>
+                    <Title level={1}>Tạo tài khoản DPWOOD</Title>
                     <Paragraph>
-                        Luu dia chi giao hang, nhan ma giam gia, theo doi don hang va danh gia san pham da mua.
+                        Lưu địa chỉ giao hàng, nhận mã giảm giá, theo dõi đơn hàng và đánh giá sản phẩm đã mua.
                     </Paragraph>
                 </section>
 
                 <Card variant="borderless" className="dp-auth-card dp-auth-register-card">
                     <div className="dp-auth-heading">
-                        <span className="dp-eyebrow">Join DPWOOD</span>
-                        <Title level={2}>Dang ky</Title>
-                        <Text className="dp-muted">Hoan tat thong tin de tao tai khoan mua sam.</Text>
+                        <span className="dp-eyebrow">Tham gia DPWOOD</span>
+                        <Title level={2}>Đăng ký</Title>
+                        <Text className="dp-muted">Hoàn tất thông tin để tạo tài khoản mua sắm.</Text>
                     </div>
 
                     <Form layout="vertical" onFinish={onFinish} className="dp-auth-form">
                         <div className="dp-auth-register-grid">
                             <Form.Item
-                                label="Ho va ten"
+                                label="Họ và tên"
                                 name="name"
-                                rules={[{ required: true, message: "Vui long nhap ho ten" }]}
+                                rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
                             >
-                                <Input size="large" prefix={<UserOutlined />} placeholder="Nguyen Van A" />
+                                <Input size="large" prefix={<UserOutlined />} placeholder="Nguyễn Văn A" />
                             </Form.Item>
 
                             <Form.Item
-                                label="Username"
+                                label="Tên đăng nhập"
                                 name="username"
-                                rules={[{ required: true, message: "Vui long nhap username" }]}
+                                rules={[{ required: true, message: "Vui lòng nhập tên đăng nhập" }]}
                             >
                                 <Input size="large" prefix={<UserOutlined />} placeholder="nguyenvana" />
                             </Form.Item>
@@ -98,19 +98,19 @@ export default function RegisterPage() {
                             <Form.Item
                                 label="Email"
                                 name="email"
-                                rules={[{ required: true, type: "email", message: "Email khong hop le" }]}
+                                rules={[{ required: true, type: "email", message: "Email không hợp lệ" }]}
                             >
                                 <Input size="large" prefix={<MailOutlined />} placeholder="email@example.com" />
                             </Form.Item>
 
                             <Form.Item
-                                label="So dien thoai"
+                                label="Số điện thoại"
                                 name="phone"
                                 rules={[
-                                    { required: true, message: "Vui long nhap so dien thoai" },
+                                    { required: true, message: "Vui lòng nhập số điện thoại" },
                                     {
                                         pattern: /^[0-9]{10,11}$/,
-                                        message: "So dien thoai can co 10-11 chu so",
+                                        message: "Số điện thoại cần có 10-11 chữ số",
                                     },
                                 ]}
                             >
@@ -119,28 +119,28 @@ export default function RegisterPage() {
                         </div>
 
                         <Form.Item
-                            label="Mat khau"
+                            label="Mật khẩu"
                             name="password"
                             rules={[
-                                { required: true, message: "Vui long nhap mat khau" },
-                                { min: 6, message: "Mat khau can it nhat 6 ky tu" },
+                                { required: true, message: "Vui lòng nhập mật khẩu" },
+                                { min: 6, message: "Mật khẩu cần ít nhất 6 ký tự" },
                             ]}
                         >
-                            <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhap mat khau" />
+                            <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhập mật khẩu" />
                         </Form.Item>
 
                         <Button type="primary" htmlType="submit" size="large" block icon={<UserAddOutlined />}>
-                            Dang ky
+                            Đăng ký
                         </Button>
 
-                        <Divider plain>Hoac dang ky nhanh bang</Divider>
+                        <Divider plain>Hoặc đăng ký nhanh bằng</Divider>
 
                         {googleClientId ? (
                             <GoogleOAuthProvider clientId={googleClientId}>
                                 <div className="dp-auth-google">
                                     <GoogleLogin
                                         onSuccess={onGoogleSuccess}
-                                        onError={() => message.error("Google OAuth that bai")}
+                                        onError={() => message.error("Đăng ký bằng Google thất bại")}
                                         ux_mode="popup"
                                         use_fedcm_for_button={false}
                                         text="signup_with"
@@ -150,12 +150,12 @@ export default function RegisterPage() {
                             </GoogleOAuthProvider>
                         ) : (
                             <Text type="secondary" className="dp-auth-note">
-                                Chua cau hinh Google Client ID.
+                                Chưa cấu hình mã ứng dụng Google.
                             </Text>
                         )}
 
                         <div className="dp-auth-switch">
-                            Da co tai khoan? <Link href="/login">Dang nhap</Link>
+                            Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
                         </div>
                     </Form>
                 </Card>

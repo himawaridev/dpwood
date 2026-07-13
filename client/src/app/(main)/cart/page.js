@@ -41,6 +41,7 @@ export default function CartPage() {
     const [currentUser, setCurrentUser] = useState(null);
     const [orderCode, setOrderCode] = useState("");
     const [checkingPayment, setCheckingPayment] = useState(false);
+    const [cancelingPayment, setCancelingPayment] = useState(false);
     const [addresses, setAddresses] = useState([]);
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
@@ -234,7 +235,7 @@ export default function CartPage() {
     );
 
     useEffect(() => {
-        if (!isQrModalVisible || !orderCode) return undefined;
+        if (!isQrModalVisible || !orderCode || cancelingPayment) return undefined;
 
         let stopped = false;
         let polling = false;
@@ -259,7 +260,7 @@ export default function CartPage() {
             window.clearInterval(intervalId);
             setCheckingPayment(false);
         };
-    }, [isQrModalVisible, orderCode, refreshPaymentStatus]);
+    }, [cancelingPayment, isQrModalVisible, orderCode, refreshPaymentStatus]);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -290,13 +291,46 @@ export default function CartPage() {
         return () => window.clearInterval(intervalId);
     }, [message, refreshPaymentStatus, router]);
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const canceledOrderCode = params.get("orderCode");
+        if (params.get("cancel") !== "true" || !canceledOrderCode) return;
+
+        let active = true;
+        const cancelReturnedPayment = async () => {
+            try {
+                setCancelingPayment(true);
+                const response = await api.put(`/orders/${canceledOrderCode}/cancel`);
+                if (active) message.info(response.data?.message || "Đã hủy thanh toán. Giỏ hàng của bạn được giữ nguyên.");
+            } catch (error) {
+                if (active) message.error(error.response?.data?.message || "Không thể hủy giao dịch lúc này.");
+            } finally {
+                if (active) {
+                    setCancelingPayment(false);
+                    router.replace("/cart");
+                }
+            }
+        };
+
+        cancelReturnedPayment();
+        return () => {
+            active = false;
+        };
+    }, [message, router]);
+
     const handleCancelPayment = async () => {
+        if (!orderCode || cancelingPayment) return;
         try {
-            await api.put(`/orders/${orderCode}/cancel`);
+            setCancelingPayment(true);
+            const response = await api.put(`/orders/${orderCode}/cancel`);
             setIsQrModalVisible(false);
-            message.info("\u0110\u00e3 h\u1ee7y thanh to\u00e1n. Gi\u1ecf h\u00e0ng c\u1ee7a b\u1ea1n \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean.");
-        } catch {
-            message.error("L\u1ed7i khi h\u1ee7y giao d\u1ecbch.");
+            setPayosData(null);
+            setOrderCode("");
+            message.info(response.data?.message || "Đã hủy thanh toán. Giỏ hàng của bạn được giữ nguyên.");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể hủy giao dịch lúc này.");
+        } finally {
+            setCancelingPayment(false);
         }
     };
 
@@ -306,7 +340,7 @@ export default function CartPage() {
         <div className="dp-page">
             <div className="dp-container" style={{ maxWidth: 1060 }}>
                 <section style={{ marginBottom: 22 }}>
-                    <span className="dp-eyebrow">Checkout</span>
+                    <span className="dp-eyebrow">Thanh toán</span>
                     <Title level={1} className="dp-section-title">
                         <ShoppingCartOutlined style={{ color: "var(--dp-primary)", marginRight: 10 }} />
                         {"Gi\u1ecf h\u00e0ng"}
@@ -377,6 +411,7 @@ export default function CartPage() {
                 isQrModalVisible={isQrModalVisible}
                 payosData={payosData}
                 checkingPayment={checkingPayment}
+                cancelingPayment={cancelingPayment}
                 handleCancelPayment={handleCancelPayment}
             />
         </div>

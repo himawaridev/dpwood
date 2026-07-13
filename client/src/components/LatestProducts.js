@@ -372,7 +372,7 @@ export default function LatestProducts() {
                 <div className="webcake-coupon-value">
                     <GiftOutlined />
                     <strong>{getCouponValue(coupon)}</strong>
-                    <span>OFF</span>
+                    <span>GIẢM</span>
                 </div>
                 <div className="webcake-coupon-content">
                     <Text className="webcake-coupon-code">{coupon.code}</Text>
@@ -414,7 +414,7 @@ export default function LatestProducts() {
                                 style={{ "--webcake-hero-image": `url(${slide.image})` }}
                             >
                                 <div className="webcake-hero-copy">
-                                    <span className="webcake-hero-eyebrow">Kitchen Highlight</span>
+                                    <span className="webcake-hero-eyebrow">Nổi bật cho gian bếp</span>
                                     <Title level={1}>{slide.title}</Title>
                                     <Paragraph className="dp-line-clamp-2">{slide.copy}</Paragraph>
                                     <Text className="webcake-hero-price">
@@ -440,7 +440,7 @@ export default function LatestProducts() {
                         <div>
                             <div className="webcake-hero-slide webcake-hero-empty">
                                 <div className="webcake-hero-copy">
-                                    <span className="webcake-hero-eyebrow">DPWOOD Kitchen</span>
+                                    <span className="webcake-hero-eyebrow">Gian bếp DPWOOD</span>
                                     <Title level={1}>Đồ gia dụng nhà bếp cho từng bữa ăn</Title>
                                     <Paragraph>Khám phá nồi chảo, dụng cụ bếp và sản phẩm tiện ích được chọn lọc.</Paragraph>
                                     <Button type="primary" onClick={() => router.push("/products")}>

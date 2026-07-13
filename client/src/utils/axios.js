@@ -1,13 +1,13 @@
 import axios from "axios";
 
 const getBaseURL = () => {
-    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
     if (typeof window !== "undefined") {
         const localHosts = ["localhost", "127.0.0.1", "::1"];
         if (!localHosts.includes(window.location.hostname)) {
-            return `${window.location.origin}/api`;
+            return "/api";
         }
     }
+    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
     return "http://localhost:5000/api";
 };
 
@@ -49,6 +49,18 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+        const method = String(originalRequest?.method || "").toLowerCase();
+        const status = error.response?.status;
+        const isTransientReadFailure =
+            method === "get" && (!error.response || [502, 503, 504].includes(status));
+        const retryCount = Number(originalRequest?._transientRetryCount || 0);
+
+        if (originalRequest && isTransientReadFailure && retryCount < 2) {
+            originalRequest._transientRetryCount = retryCount + 1;
+            await new Promise((resolve) => setTimeout(resolve, 700 * (retryCount + 1)));
+            return api(originalRequest);
+        }
 
         if (error.response?.status === 403 && error.response?.data?.message === "ACCOUNT_BANNED") {
             storage.clear();

@@ -27,7 +27,7 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
 
     const columns = [
         { title: "Tên", dataIndex: "name", key: "name" },
-        { title: "Username", dataIndex: "username", key: "username" },
+        { title: "Tên đăng nhập", dataIndex: "username", key: "username" },
         { title: "Email", dataIndex: "email", key: "email" },
         {
             title: "Số điện thoại",
@@ -83,9 +83,9 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                     onChange={(value) => onChangeRole(record.id, value)}
                     disabled={record.role === "root"}
                     options={[
-                        { value: "user", label: "User" },
-                        { value: "staff", label: "Staff vận hành" },
-                        { value: "admin", label: "Admin" },
+                        { value: "user", label: "Khách hàng" },
+                        { value: "staff", label: "Nhân viên vận hành" },
+                        { value: "admin", label: "Quản trị viên" },
                     ]}
                 />
             ),
@@ -113,9 +113,9 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                         options={[
                             { value: "all", label: "Tất cả quyền" },
                             { value: "root", label: "Root" },
-                            { value: "admin", label: "Admin" },
-                            { value: "staff", label: "Staff vận hành" },
-                            { value: "user", label: "User" },
+                            { value: "admin", label: "Quản trị viên" },
+                            { value: "staff", label: "Nhân viên vận hành" },
+                            { value: "user", label: "Khách hàng" },
                         ]}
                     />
                 </Space>

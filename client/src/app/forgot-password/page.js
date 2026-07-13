@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
 
                 <Form layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
                     <Form.Item
-                        label="Email / Username / Số điện thoại"
+                        label="Email / Tên đăng nhập / Số điện thoại"
                         name="login"
                         rules={[{ required: true, message: "Vui lòng nhập thông tin" }]}
                     >
