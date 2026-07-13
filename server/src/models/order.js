@@ -26,6 +26,14 @@ const Order = sequelize.define(
             type: DataTypes.STRING,
             defaultValue: "COD",
         },
+        paymentExpiresAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        paymentData: {
+            type: DataTypes.JSON,
+            allowNull: true,
+        },
         shippingName: {
             type: DataTypes.STRING,
             allowNull: true,

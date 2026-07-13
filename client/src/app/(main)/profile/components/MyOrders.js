@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { App, Table, Tag, Button, Typography, Modal, Empty, Alert, Descriptions, Image, Steps, Tooltip } from "antd";
-import { CloseCircleOutlined, EyeOutlined } from "@ant-design/icons";
+import { CloseCircleOutlined, EyeOutlined, QrcodeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
+import PaymentQRModal from "@/app/(main)/cart/components/PaymentQRModal";
 
 const { Text, Title } = Typography;
 
@@ -20,6 +21,11 @@ const getProductImage = (product) => {
 export default function MyOrders({ orders, onRefresh, hasError }) {
     const { message } = App.useApp();
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [paymentOrder, setPaymentOrder] = useState(null);
+    const [payosData, setPayosData] = useState(null);
+    const [openingPaymentCode, setOpeningPaymentCode] = useState("");
+    const [checkingPayment, setCheckingPayment] = useState(false);
+    const [cancelingPayment, setCancelingPayment] = useState(false);
 
     const orderItems = useMemo(() => selectedOrder?.OrderItems || [], [selectedOrder]);
     const itemsSubtotal = orderItems.reduce(
@@ -28,11 +34,104 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
     );
     const discountAmount = Number(selectedOrder?.discountAmount || 0);
 
-    const getStatusTag = (status) => {
+    const closePaymentModal = useCallback(() => {
+        setPaymentOrder(null);
+        setPayosData(null);
+        setCheckingPayment(false);
+    }, []);
+
+    const handleOpenPayment = async (order) => {
+        try {
+            setOpeningPaymentCode(String(order.orderCode));
+            const response = await api.get(`/orders/${order.orderCode}/payment-link`);
+            const expiresAt = response.data?.expiresAt;
+            setPayosData({
+                ...(response.data?.payosData || {}),
+                expiredAt:
+                    response.data?.payosData?.expiredAt ||
+                    (expiresAt ? Math.floor(new Date(expiresAt).getTime() / 1000) : null),
+            });
+            setPaymentOrder({ ...order, paymentExpiresAt: expiresAt });
+            setSelectedOrder(null);
+        } catch (error) {
+            const status = error.response?.status;
+            const errorMessage = error.response?.data?.message || "Không thể mở lại thanh toán PayOS lúc này.";
+            if (status === 410) message.warning(errorMessage);
+            else if (status === 409) message.info(errorMessage);
+            else message.error(errorMessage);
+            if ([409, 410].includes(status)) await onRefresh();
+        } finally {
+            setOpeningPaymentCode("");
+        }
+    };
+
+    const handleCancelPayment = async () => {
+        if (!paymentOrder?.orderCode || cancelingPayment) return;
+        try {
+            setCancelingPayment(true);
+            const response = await api.put(`/orders/${paymentOrder.orderCode}/cancel`);
+            message.success(response.data?.message || "Đã hủy đơn hàng.");
+            closePaymentModal();
+            await onRefresh();
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể hủy đơn hàng lúc này.");
+        } finally {
+            setCancelingPayment(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!paymentOrder?.orderCode) return undefined;
+
+        let active = true;
+        let polling = false;
+        setCheckingPayment(true);
+
+        const pollPayment = async () => {
+            if (!active || polling) return;
+            polling = true;
+            try {
+                const response = await api.get(`/orders/${paymentOrder.orderCode}/status`);
+                const status = String(response.data?.status || response.data?.paymentStatus || "").toUpperCase();
+                const paymentStatus = String(response.data?.paymentStatus || "").toUpperCase();
+
+                if (status === "PAID" || paymentStatus === "PAID") {
+                    message.success("Thanh toán thành công. Đơn hàng đã được cập nhật.");
+                    closePaymentModal();
+                    await onRefresh();
+                    active = false;
+                } else if (
+                    status === "CANCELED" ||
+                    ["CANCELED", "CANCELLED", "EXPIRED"].includes(paymentStatus)
+                ) {
+                    message.warning("Mã QR đã hết hạn hoặc đơn hàng đã được hủy.");
+                    closePaymentModal();
+                    await onRefresh();
+                    active = false;
+                }
+            } catch {
+                // A transient status failure is retried by the next polling cycle.
+            } finally {
+                polling = false;
+            }
+        };
+
+        pollPayment();
+        const intervalId = window.setInterval(pollPayment, 2500);
+        return () => {
+            active = false;
+            window.clearInterval(intervalId);
+            setCheckingPayment(false);
+        };
+    }, [closePaymentModal, message, onRefresh, paymentOrder?.orderCode]);
+
+    const getStatusTag = (status, paymentMethod) => {
         const normalizedStatus = status?.toUpperCase();
         if (normalizedStatus === "PAID") return <Tag color="green">Đã thanh toán</Tag>;
         if (normalizedStatus === "COMPLETED") return <Tag color="green">Hoàn tất</Tag>;
-        if (normalizedStatus === "PENDING") return <Tag color="orange">Chờ xử lý</Tag>;
+        if (normalizedStatus === "PENDING") {
+            return <Tag color="orange">{paymentMethod === "QR" ? "Chờ thanh toán" : "Chờ xử lý"}</Tag>;
+        }
         if (normalizedStatus === "SHIPPING") return <Tag color="blue">Đang giao</Tag>;
         if (normalizedStatus === "CANCELED" || normalizedStatus === "CANCELLED") {
             return <Tag color="red">Đã hủy</Tag>;
@@ -86,7 +185,7 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
         {
             title: "Trạng thái",
             dataIndex: "status",
-            render: (status) => getStatusTag(status),
+            render: (status, record) => getStatusTag(status, record.paymentMethod),
         },
         {
             title: "",
@@ -151,6 +250,19 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                 open={Boolean(selectedOrder)}
                 onCancel={() => setSelectedOrder(null)}
                 footer={[
+                    selectedOrder?.status === "PENDING" &&
+                    selectedOrder?.paymentMethod === "QR" &&
+                    selectedOrder?.canResumePayment !== false ? (
+                        <Button
+                            key="resume-payment"
+                            type="primary"
+                            icon={<QrcodeOutlined />}
+                            loading={openingPaymentCode === String(selectedOrder.orderCode)}
+                            onClick={() => handleOpenPayment(selectedOrder)}
+                        >
+                            Thanh toán
+                        </Button>
+                    ) : null,
                     selectedOrder?.status === "PENDING" ? (
                         <Tooltip key="cancel-order" title="Hủy đơn hàng">
                             <Button
@@ -175,7 +287,7 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                         <div className="dp-order-detail-summary">
                             <div>
                                 <Text type="secondary">Trạng thái</Text>
-                                <div>{getStatusTag(selectedOrder.status)}</div>
+                                <div>{getStatusTag(selectedOrder.status, selectedOrder.paymentMethod)}</div>
                             </div>
                             <div>
                                 <Text type="secondary">Ngày đặt</Text>
@@ -186,6 +298,23 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                                 <Text strong>{selectedOrder.paymentMethod === "QR" ? "QR PayOS" : "COD"}</Text>
                             </div>
                         </div>
+
+                        {selectedOrder.status === "PENDING" && selectedOrder.paymentMethod === "QR" && (
+                            <Alert
+                                type={selectedOrder.canResumePayment === false ? "warning" : "info"}
+                                showIcon
+                                title={
+                                    selectedOrder.canResumePayment === false
+                                        ? "Mã QR đã hết thời hạn thanh toán"
+                                        : "Đơn hàng đang chờ thanh toán QR"
+                                }
+                                description={
+                                    selectedOrder.canResumePayment === false
+                                        ? "Hệ thống đang đồng bộ trạng thái hủy và hoàn lại tồn kho."
+                                        : "Bạn có thể tiếp tục thanh toán trong vòng 10 phút kể từ lúc tạo đơn."
+                                }
+                            />
+                        )}
 
                         {selectedOrder.timeline?.length > 0 && (
                             <div className="dp-order-timeline">
@@ -308,6 +437,14 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                     </div>
                 )}
             </Modal>
+
+            <PaymentQRModal
+                isQrModalVisible={Boolean(paymentOrder)}
+                payosData={payosData}
+                checkingPayment={checkingPayment}
+                cancelingPayment={cancelingPayment}
+                handleCancelPayment={handleCancelPayment}
+            />
         </>
     );
 }

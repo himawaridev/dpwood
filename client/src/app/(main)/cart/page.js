@@ -215,6 +215,13 @@ export default function CartPage() {
         [message, orderCode, router],
     );
 
+    const closeCanceledPayment = useCallback(() => {
+        setIsQrModalVisible(false);
+        setPayosData(null);
+        setOrderCode("");
+        message.warning("Mã QR đã hết hạn hoặc đơn hàng đã được hủy. Giỏ hàng của bạn được giữ nguyên.");
+    }, [message]);
+
     const refreshPaymentStatus = useCallback(
         async (targetOrderCode = orderCode, { silent = true } = {}) => {
             if (!targetOrderCode) return false;
@@ -225,13 +232,22 @@ export default function CartPage() {
                     completePaidOrder(targetOrderCode);
                     return true;
                 }
+                if (
+                    response.data.status === "CANCELED" ||
+                    response.data.paymentStatus === "CANCELED" ||
+                    response.data.paymentStatus === "CANCELLED" ||
+                    response.data.paymentStatus === "EXPIRED"
+                ) {
+                    closeCanceledPayment();
+                    return true;
+                }
                 return false;
             } catch {
                 if (!silent) message.error("Kh\u00f4ng th\u1ec3 ki\u1ec3m tra tr\u1ea1ng th\u00e1i thanh to\u00e1n.");
                 return false;
             }
         },
-        [completePaidOrder, message, orderCode],
+        [closeCanceledPayment, completePaidOrder, message, orderCode],
     );
 
     useEffect(() => {
@@ -253,7 +269,7 @@ export default function CartPage() {
         };
 
         pollPayment();
-        const intervalId = window.setInterval(pollPayment, 1000);
+        const intervalId = window.setInterval(pollPayment, 2500);
 
         return () => {
             stopped = true;

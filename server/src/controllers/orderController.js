@@ -17,6 +17,8 @@ const getFrontendUrl = () =>
 
 const ORDER_STATUSES = new Set(["PENDING", "PAID", "SHIPPING", "COMPLETED", "CANCELED"]);
 const PAYMENT_METHODS = new Set(["COD", "QR"]);
+const QR_PAYMENT_TTL_MS = 10 * 60 * 1000;
+const TERMINAL_PAYOS_STATUSES = new Set(["CANCELLED", "CANCELED", "EXPIRED"]);
 
 const normalizeProductVariants = (variants) => (Array.isArray(variants) ? variants : []);
 
@@ -31,6 +33,71 @@ const findProductVariant = (product, variantId) =>
 
 const normalizePayosStatus = (paymentInfo) =>
     String(paymentInfo?.status || paymentInfo?.data?.status || "").toUpperCase();
+
+const getQrPaymentExpiry = (order) => {
+    if (!order || order.paymentMethod !== "QR") return null;
+    const storedExpiry = order.paymentExpiresAt ? new Date(order.paymentExpiresAt) : null;
+    if (storedExpiry && Number.isFinite(storedExpiry.getTime())) return storedExpiry;
+
+    const createdAt = new Date(order.createdAt || Date.now());
+    return new Date(createdAt.getTime() + QR_PAYMENT_TTL_MS);
+};
+
+const isQrPaymentExpired = (order, now = Date.now()) => {
+    const expiry = getQrPaymentExpiry(order);
+    return Boolean(expiry && expiry.getTime() <= now);
+};
+
+const getRemainingPaymentSeconds = (order) => {
+    const expiry = getQrPaymentExpiry(order);
+    if (!expiry) return 0;
+    return Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / 1000));
+};
+
+const readStoredPaymentData = (order) => {
+    if (!order?.paymentData) return {};
+    if (typeof order.paymentData === "object") return order.paymentData;
+    try {
+        return JSON.parse(order.paymentData);
+    } catch {
+        return {};
+    }
+};
+
+const serializePayosData = (paymentInfo = {}, order = {}) => {
+    const source = paymentInfo?.data && typeof paymentInfo.data === "object" ? paymentInfo.data : paymentInfo;
+    const paymentLinkId = source.paymentLinkId || source.id || null;
+    const expiry = getQrPaymentExpiry(order);
+
+    return {
+        bin: source.bin || null,
+        accountNumber: source.accountNumber || null,
+        accountName: source.accountName || null,
+        amount: Number(source.amount || order.totalAmount || 0),
+        description: source.description || `Thanh toan don ${order.orderCode}`,
+        orderCode: Number(source.orderCode || order.orderCode || 0),
+        currency: source.currency || "VND",
+        paymentLinkId,
+        status: normalizePayosStatus(source) || "PENDING",
+        expiredAt: source.expiredAt || (expiry ? Math.floor(expiry.getTime() / 1000) : null),
+        checkoutUrl:
+            source.checkoutUrl || (paymentLinkId ? `https://pay.payos.vn/web/${paymentLinkId}` : null),
+        qrCode: source.qrCode || null,
+    };
+};
+
+const getResumablePayosData = (order, paymentInfo = {}) => {
+    const providerData = serializePayosData(paymentInfo, order);
+    const storedData = Object.fromEntries(
+        Object.entries(readStoredPaymentData(order)).filter(([, value]) => value !== null && value !== ""),
+    );
+    return {
+        ...providerData,
+        ...storedData,
+        status: providerData.status,
+        expiredAt: Math.floor(getQrPaymentExpiry(order).getTime() / 1000),
+    };
+};
 
 const ORDER_PROGRESS = ["PENDING", "PAID", "SHIPPING", "COMPLETED"];
 
@@ -87,33 +154,72 @@ const buildOrderTimeline = (order) => {
 
 const serializeOrder = (order) => {
     const value = order?.toJSON ? order.toJSON() : order;
-    return { ...value, timeline: buildOrderTimeline(value) };
+    const publicValue = { ...value };
+    delete publicValue.paymentData;
+    const paymentExpiresAt = getQrPaymentExpiry(value);
+    return {
+        ...publicValue,
+        paymentExpiresAt: paymentExpiresAt?.toISOString() || null,
+        paymentTimeRemainingSeconds: getRemainingPaymentSeconds(value),
+        canResumePayment:
+            value.status === "PENDING" && value.paymentMethod === "QR" && !isQrPaymentExpired(value),
+        timeline: buildOrderTimeline(value),
+    };
 };
 
 const markOrderAsPaid = async (order, paymentInfo = {}) => {
-    if (!order || order.status !== "PENDING") return order;
+    if (!order) return order;
 
-    order.status = "PAID";
-    await order.save();
+    const t = await sequelize.transaction();
+    let paidOrder;
+    let changedToPaid = false;
+    try {
+        paidOrder = await Order.findByPk(order.id, {
+            transaction: t,
+            lock: t.LOCK.UPDATE,
+        });
+        if (!paidOrder) {
+            await t.rollback();
+            return order;
+        }
+
+        if (paidOrder.status === "PENDING") {
+            paidOrder.status = "PAID";
+            await paidOrder.save({ transaction: t });
+
+            const transaction = paymentInfo.transactions?.[0] || {};
+            const transactionCode =
+                transaction.reference ||
+                paymentInfo.transactionReference ||
+                paymentInfo.reference ||
+                "Giao dich Online";
+            await AuditLog.create(
+                {
+                    userId: paidOrder.userId,
+                    action: "PAYMENT_RECEIVED",
+                    details: `PayOS xac nhan ${new Intl.NumberFormat("vi-VN").format(paidOrder.totalAmount)}d cho don #${paidOrder.orderCode}. Ma GD: ${transactionCode}`,
+                },
+                { transaction: t },
+            );
+            changedToPaid = true;
+        }
+
+        await t.commit();
+    } catch (error) {
+        if (!t.finished) await t.rollback();
+        throw error;
+    }
+
+    order.status = paidOrder.status;
+    if (!changedToPaid) return paidOrder;
 
     const items = await OrderItem.findAll({
-        where: { orderId: order.id },
+        where: { orderId: paidOrder.id },
         include: [{ model: Product }],
     });
-    const transaction = paymentInfo.transactions?.[0] || {};
-    const transactionCode =
-        transaction.reference ||
-        paymentInfo.transactionReference ||
-        paymentInfo.reference ||
-        "Giao dich Online";
+    const orderUser = order.User || (await User.findByPk(paidOrder.userId, { attributes: ["email", "name"] }));
 
-    await AuditLog.create({
-        userId: order.userId,
-        action: "PAYMENT_RECEIVED",
-        details: `PayOS xac nhan ${new Intl.NumberFormat("vi-VN").format(order.totalAmount)}d cho don #${order.orderCode}. Ma GD: ${transactionCode}`,
-    });
-
-    if (order.User && order.User.email) {
+    if (orderUser?.email) {
         const emailItemsInfo = items.map((item) => ({
             name: item.variantLabel
                 ? `${item.Product?.name || "San pham"} (${item.variantLabel})`
@@ -122,22 +228,147 @@ const markOrderAsPaid = async (order, paymentInfo = {}) => {
             price: item.priceAtPurchase,
         }));
         const orderInfo = {
-            orderCode: order.orderCode,
-            customerName: order.User.name,
-            shippingName: order.shippingName,
-            shippingPhone: order.shippingPhone,
-            shippingAddress: order.shippingAddress,
-            totalAmount: order.totalAmount,
+            orderCode: paidOrder.orderCode,
+            customerName: orderUser.name,
+            shippingName: paidOrder.shippingName,
+            shippingPhone: paidOrder.shippingPhone,
+            shippingAddress: paidOrder.shippingAddress,
+            totalAmount: paidOrder.totalAmount,
         };
         sendEmailInBackground(
-            order.User.email,
-            `[DPWOOD] Da thanh toan don #${order.orderCode}`,
+            orderUser.email,
+            `[DPWOOD] Da thanh toan don #${paidOrder.orderCode}`,
             buildOrderEmail(orderInfo, emailItemsInfo, true),
-            `paid order #${order.orderCode}`,
+            `paid order #${paidOrder.orderCode}`,
         );
     }
 
-    return order;
+    return paidOrder;
+};
+
+const createOrderError = (message, status) => {
+    const error = new Error(message);
+    error.status = status;
+    return error;
+};
+
+const cancelPendingOrderLocally = async ({ orderCode, userId, reason }) => {
+    const t = await sequelize.transaction();
+    try {
+        const order = await Order.findOne({
+            where: { orderCode },
+            transaction: t,
+            lock: t.LOCK.UPDATE,
+        });
+        if (!order) throw createOrderError("Không tìm thấy đơn hàng.", 404);
+        if (userId && String(order.userId) !== String(userId)) {
+            throw createOrderError("Bạn không có quyền hủy đơn hàng này.", 403);
+        }
+        if (order.status === "CANCELED") {
+            await t.rollback();
+            return { order, alreadyCanceled: true };
+        }
+        if (order.status !== "PENDING") {
+            throw createOrderError("Trạng thái đơn hàng vừa thay đổi. Vui lòng tải lại.", 409);
+        }
+
+        const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
+        for (const item of items) {
+            const product = await Product.findByPk(item.productId, {
+                transaction: t,
+                lock: t.LOCK.UPDATE,
+            });
+            if (!product) continue;
+
+            const variants = normalizeProductVariants(product.variants);
+            const selectedVariant = item.variantId ? findProductVariant(product, item.variantId) : null;
+            if (selectedVariant) {
+                selectedVariant.stock = Number(selectedVariant.stock || 0) + Number(item.quantity || 0);
+                product.variants = variants;
+                product.stock = getVariantStockTotal(variants);
+            } else {
+                product.stock = Number(product.stock || 0) + Number(item.quantity || 0);
+            }
+            product.sold = Math.max(0, Number(product.sold || 0) - Number(item.quantity || 0));
+            await product.save({ transaction: t });
+        }
+
+        order.status = "CANCELED";
+        await order.save({ transaction: t });
+        await AuditLog.create(
+            {
+                userId: userId || order.userId,
+                action: "ORDER_CANCELED",
+                details: `${reason || "Hủy đơn"} #${orderCode}, đã hoàn tồn kho.`,
+            },
+            { transaction: t },
+        );
+
+        await t.commit();
+        return { order, alreadyCanceled: false };
+    } catch (error) {
+        if (!t.finished) await t.rollback();
+        throw error;
+    }
+};
+
+const expirePendingQrOrder = async (order) => {
+    if (!order || order.status !== "PENDING" || order.paymentMethod !== "QR" || !isQrPaymentExpired(order)) {
+        return order;
+    }
+
+    const hasProviderExpiry = Boolean(order.paymentExpiresAt);
+    try {
+        const paymentInfo = await paymentService.getPaymentLinkInfo(order.orderCode);
+        const paymentStatus = normalizePayosStatus(paymentInfo);
+        if (paymentStatus === "PAID") return markOrderAsPaid(order, paymentInfo);
+
+        if (!TERMINAL_PAYOS_STATUSES.has(paymentStatus)) {
+            await paymentService.cancelPaymentLink(order.orderCode, "Mã QR đã hết hạn sau 10 phút");
+        }
+    } catch (error) {
+        console.warn(`Không thể đồng bộ QR hết hạn #${order.orderCode}:`, error.message);
+        if (!hasProviderExpiry) return order;
+    }
+
+    await cancelPendingOrderLocally({
+        orderCode: order.orderCode,
+        userId: order.userId,
+        reason: "QR hết hạn sau 10 phút",
+    });
+    return Order.findOne({
+        where: { orderCode: order.orderCode },
+        include: [{ model: User, attributes: ["email", "name"] }],
+    });
+};
+
+const expireStaleQrOrders = async () => {
+    const now = new Date();
+    const legacyCutoff = new Date(now.getTime() - QR_PAYMENT_TTL_MS);
+    const candidates = await Order.findAll({
+        where: {
+            status: "PENDING",
+            paymentMethod: "QR",
+            [Op.or]: [
+                { paymentExpiresAt: { [Op.lte]: now } },
+                {
+                    paymentExpiresAt: null,
+                    createdAt: { [Op.lte]: legacyCutoff },
+                },
+            ],
+        },
+        include: [{ model: User, attributes: ["email", "name"] }],
+        limit: 100,
+    });
+
+    for (const order of candidates) {
+        if (!isQrPaymentExpired(order)) continue;
+        try {
+            await expirePendingQrOrder(order);
+        } catch (error) {
+            console.warn(`Không thể tự hủy QR hết hạn #${order.orderCode}:`, error.message);
+        }
+    }
 };
 
 const checkout = async (req, res) => {
@@ -323,6 +554,8 @@ const checkout = async (req, res) => {
 
         // 4. TẠO MÃ ĐƠN HÀNG VÀ LƯU VÀO DATABASE
         const orderCodeNum = Math.floor(100000 + Math.random() * 900000);
+        const paymentExpiresAt =
+            normalizedPaymentMethod === "QR" ? new Date(Date.now() + QR_PAYMENT_TTL_MS) : null;
         const order = await Order.create(
             {
                 userId,
@@ -332,6 +565,7 @@ const checkout = async (req, res) => {
                 couponCode: finalAppliedCode,
                 discountAmount: discountAmount,
                 paymentMethod: normalizedPaymentMethod,
+                paymentExpiresAt,
                 status: "PENDING",
                 shippingName: shippingInfo.recipientName,
                 shippingPhone: shippingInfo.phoneNumber,
@@ -360,9 +594,13 @@ const checkout = async (req, res) => {
                 })),
                 returnUrl: `${getFrontendUrl()}/cart?success=true&orderCode=${orderCodeNum}`,
                 cancelUrl: `${getFrontendUrl()}/cart?cancel=true&orderCode=${orderCodeNum}`,
+                expiredAt: Math.floor(paymentExpiresAt.getTime() / 1000),
             };
 
             payosData = await paymentService.createPaymentLink(paymentBody);
+            payosData = serializePayosData(payosData, order);
+            order.paymentData = payosData;
+            await order.save({ transaction: t });
         }
 
         // 6. HOÀN TẤT VÀ PHẢN HỒI
@@ -431,7 +669,7 @@ const handleWebhook = async (req, res) => {
 const getOrderStatus = async (req, res) => {
     try {
         const { orderCode } = req.params;
-        const order = await Order.findOne({
+        let order = await Order.findOne({
             where: { orderCode },
             include: [{ model: User, attributes: ["email", "name"] }],
         });
@@ -446,11 +684,26 @@ const getOrderStatus = async (req, res) => {
         let paymentStatus = order.status;
 
         if (order.status === "PENDING" && order.paymentMethod === "QR") {
+            if (isQrPaymentExpired(order)) {
+                order = await expirePendingQrOrder(order);
+                paymentStatus = order.status;
+            }
+
             try {
-                const paymentInfo = await paymentService.getPaymentLinkInfo(order.orderCode);
-                paymentStatus = normalizePayosStatus(paymentInfo) || order.status;
-                if (paymentStatus === "PAID") {
-                    await markOrderAsPaid(order, paymentInfo);
+                if (order.status === "PENDING") {
+                    const paymentInfo = await paymentService.getPaymentLinkInfo(order.orderCode);
+                    paymentStatus = normalizePayosStatus(paymentInfo) || order.status;
+                    if (paymentStatus === "PAID") {
+                        await markOrderAsPaid(order, paymentInfo);
+                    } else if (TERMINAL_PAYOS_STATUSES.has(paymentStatus)) {
+                        await cancelPendingOrderLocally({
+                            orderCode: order.orderCode,
+                            userId: order.userId,
+                            reason: "PayOS đã đóng link thanh toán",
+                        });
+                        order = await Order.findOne({ where: { orderCode } });
+                        paymentStatus = order.status;
+                    }
                 }
             } catch (error) {
                 console.warn(`Cannot refresh PayOS status for order #${orderCode}:`, error.message);
@@ -461,10 +714,90 @@ const getOrderStatus = async (req, res) => {
             status: order.status,
             paymentStatus,
             orderCode: order.orderCode,
+            paymentExpiresAt: getQrPaymentExpiry(order)?.toISOString() || null,
+            paymentTimeRemainingSeconds: getRemainingPaymentSeconds(order),
+            canResumePayment:
+                order.status === "PENDING" && order.paymentMethod === "QR" && !isQrPaymentExpired(order),
             timeline: buildOrderTimeline(order),
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+const getPaymentLink = async (req, res) => {
+    try {
+        const { orderCode } = req.params;
+        let order = await Order.findOne({
+            where: { orderCode },
+            include: [{ model: User, attributes: ["email", "name"] }],
+        });
+        if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
+        if (String(order.userId) !== String(req.user.id)) {
+            return res.status(403).json({ message: "Bạn không có quyền thanh toán đơn hàng này." });
+        }
+        if (order.paymentMethod !== "QR") {
+            return res.status(400).json({ message: "Đơn hàng này không sử dụng thanh toán QR PayOS." });
+        }
+        if (order.status === "PAID") {
+            return res.status(409).json({ message: "Đơn hàng đã được thanh toán.", status: order.status });
+        }
+        if (order.status === "CANCELED") {
+            return res.status(410).json({ message: "Đơn hàng đã bị hủy.", status: order.status });
+        }
+        if (order.status !== "PENDING") {
+            return res.status(409).json({ message: "Đơn hàng không còn chờ thanh toán.", status: order.status });
+        }
+
+        if (isQrPaymentExpired(order)) {
+            order = await expirePendingQrOrder(order);
+            if (order.status === "PAID") {
+                return res.status(409).json({ message: "Đơn hàng đã được thanh toán.", status: order.status });
+            }
+            if (order.status === "CANCELED") {
+                return res.status(410).json({
+                    message: "Mã QR đã hết hạn sau 10 phút và đơn hàng đã được hủy.",
+                    status: order.status,
+                });
+            }
+            return res.status(502).json({
+                message: "Chưa thể đóng link PayOS cũ. Vui lòng thử lại sau.",
+                status: order.status,
+            });
+        }
+
+        const paymentInfo = await paymentService.getPaymentLinkInfo(order.orderCode);
+        const paymentStatus = normalizePayosStatus(paymentInfo);
+        if (paymentStatus === "PAID") {
+            await markOrderAsPaid(order, paymentInfo);
+            return res.status(409).json({ message: "Đơn hàng đã được thanh toán.", status: "PAID" });
+        }
+        if (TERMINAL_PAYOS_STATUSES.has(paymentStatus)) {
+            await cancelPendingOrderLocally({
+                orderCode: order.orderCode,
+                userId: order.userId,
+                reason: "PayOS đã đóng link thanh toán",
+            });
+            return res.status(410).json({ message: "Link thanh toán đã hết hiệu lực.", status: "CANCELED" });
+        }
+
+        const payosData = getResumablePayosData(order, paymentInfo);
+        if (!payosData.checkoutUrl && !payosData.qrCode) {
+            return res.status(502).json({ message: "PayOS không trả về link thanh toán hợp lệ." });
+        }
+
+        return res.json({
+            orderCode: order.orderCode,
+            status: order.status,
+            expiresAt: getQrPaymentExpiry(order).toISOString(),
+            remainingSeconds: getRemainingPaymentSeconds(order),
+            payosData,
+        });
+    } catch (error) {
+        console.error(`Lỗi mở lại thanh toán #${req.params.orderCode}:`, error.message);
+        return res.status(error.status || 502).json({
+            message: error.message || "Không thể mở lại thanh toán PayOS lúc này.",
+        });
     }
 };
 
@@ -503,7 +836,7 @@ const cancelOrder = async (req, res) => {
                     });
                 }
 
-                if (!new Set(["CANCELLED", "CANCELED", "EXPIRED"]).has(paymentStatus)) {
+                if (!TERMINAL_PAYOS_STATUSES.has(paymentStatus)) {
                     await paymentService.cancelPaymentLink(
                         existingOrder.orderCode,
                         "Khách hàng hủy thanh toán trên DPWOOD",
@@ -517,70 +850,22 @@ const cancelOrder = async (req, res) => {
             }
         }
 
-        const t = await sequelize.transaction();
-        try {
-            const order = await Order.findOne({
-                where: { orderCode },
-                transaction: t,
-                lock: t.LOCK.UPDATE,
-            });
-            if (!order) {
-                await t.rollback();
-                return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
-            }
-            if (order.status === "CANCELED") {
-                await t.rollback();
-                return res.json({
-                    message: "Đơn hàng đã được hủy trước đó. Giỏ hàng của bạn được giữ nguyên.",
-                    alreadyCanceled: true,
-                });
-            }
-            if (order.status !== "PENDING") {
-                await t.rollback();
-                return res.status(409).json({ message: "Trạng thái đơn hàng vừa thay đổi. Vui lòng tải lại." });
-            }
-
-            const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
-            for (const item of items) {
-                const product = await Product.findByPk(item.productId, {
-                    transaction: t,
-                    lock: t.LOCK.UPDATE,
-                });
-                if (product) {
-                    const variants = normalizeProductVariants(product.variants);
-                    const selectedVariant = item.variantId ? findProductVariant(product, item.variantId) : null;
-                    if (selectedVariant) {
-                        selectedVariant.stock = Number(selectedVariant.stock || 0) + Number(item.quantity || 0);
-                        product.variants = variants;
-                        product.stock = getVariantStockTotal(variants);
-                    } else {
-                        product.stock = Number(product.stock || 0) + Number(item.quantity || 0);
-                    }
-                    product.sold = Math.max(0, Number(product.sold || 0) - Number(item.quantity || 0));
-                    await product.save({ transaction: t });
-                }
-            }
-            order.status = "CANCELED";
-            await order.save({ transaction: t });
-
-            await AuditLog.create(
-                {
-                    userId: req.user.id,
-                    action: "ORDER_CANCELED",
-                    details: `Hủy đơn #${orderCode}, đã hoàn tồn kho.`,
-                },
-                { transaction: t },
-            );
-
-            await t.commit();
-            return res.json({ message: "Đã hủy thanh toán và hoàn lại tồn kho." });
-        } catch (error) {
-            if (!t.finished) await t.rollback();
-            throw error;
-        }
+        const result = await cancelPendingOrderLocally({
+            orderCode,
+            userId: req.user.id,
+            reason: "Khách hàng hủy đơn",
+        });
+        return res.json({
+            message: result.alreadyCanceled
+                ? "Đơn hàng đã được hủy trước đó. Giỏ hàng của bạn được giữ nguyên."
+                : "Đã hủy thanh toán và hoàn lại tồn kho.",
+            alreadyCanceled: result.alreadyCanceled,
+        });
     } catch (error) {
         console.error(`Lỗi hủy đơn #${req.params.orderCode}:`, error);
-        return res.status(500).json({ message: "Không thể hủy giao dịch lúc này." });
+        return res.status(error.status || 500).json({
+            message: error.status ? error.message : "Không thể hủy giao dịch lúc này.",
+        });
     }
 };
 
@@ -620,6 +905,22 @@ const updateOrderStatusAdmin = async (req, res) => {
 // 🔴 ĐÃ BỔ SUNG: Cho trang Profile User cũng xem được chi tiết và Hình ảnh nếu cần
 const getMyOrders = async (req, res) => {
     try {
+        const pendingQrOrders = await Order.findAll({
+            where: { userId: req.user.id, status: "PENDING", paymentMethod: "QR" },
+            include: [{ model: User, attributes: ["email", "name"] }],
+        });
+        for (const pendingOrder of pendingQrOrders) {
+            if (!isQrPaymentExpired(pendingOrder)) continue;
+            try {
+                await expirePendingQrOrder(pendingOrder);
+            } catch (error) {
+                console.warn(
+                    `Không thể cập nhật QR hết hạn #${pendingOrder.orderCode} khi tải hồ sơ:`,
+                    error.message,
+                );
+            }
+        }
+
         const orders = await Order.findAll({
             where: { userId: req.user.id },
             order: [["createdAt", "DESC"]],
@@ -637,8 +938,10 @@ module.exports = {
     checkout,
     handleWebhook,
     getOrderStatus,
+    getPaymentLink,
     cancelOrder,
     getAllOrdersAdmin,
     updateOrderStatusAdmin,
     getMyOrders,
+    expireStaleQrOrders,
 };

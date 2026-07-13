@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Flex, Alert, Image, Divider, Typography, Button, Spin } from "antd";
-import { QrcodeOutlined, LinkOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, QrcodeOutlined, LinkOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -11,6 +11,32 @@ export default function PaymentQRModal({
     cancelingPayment,
     handleCancelPayment,
 }) {
+    const expiresAt = useMemo(() => {
+        const rawExpiry = payosData?.expiredAt || payosData?.expiresAt;
+        if (!rawExpiry) return null;
+        const numericExpiry = Number(rawExpiry);
+        const timestamp = Number.isFinite(numericExpiry)
+            ? numericExpiry < 1000000000000
+                ? numericExpiry * 1000
+                : numericExpiry
+            : new Date(rawExpiry).getTime();
+        return Number.isFinite(timestamp) ? timestamp : null;
+    }, [payosData]);
+    const [clock, setClock] = useState(() => Date.now());
+
+    useEffect(() => {
+        if (!isQrModalVisible || !expiresAt) return undefined;
+        const intervalId = window.setInterval(() => setClock(Date.now()), 1000);
+        return () => window.clearInterval(intervalId);
+    }, [expiresAt, isQrModalVisible]);
+
+    const remainingSeconds = expiresAt ? Math.max(0, Math.ceil((expiresAt - clock) / 1000)) : null;
+    const isExpired = remainingSeconds === 0;
+    const remainingLabel =
+        remainingSeconds === null
+            ? "10:00"
+            : `${String(Math.floor(remainingSeconds / 60)).padStart(2, "0")}:${String(remainingSeconds % 60).padStart(2, "0")}`;
+
     return (
         <Modal
             title={
@@ -34,6 +60,13 @@ export default function PaymentQRModal({
                     showIcon
                     style={{ width: "100%" }}
                 />
+
+                <Text strong type={isExpired ? "danger" : undefined}>
+                    <ClockCircleOutlined style={{ marginRight: 8 }} />
+                    {isExpired
+                        ? "Mã QR đã hết hạn, hệ thống đang cập nhật đơn hàng"
+                        : `Mã QR còn hiệu lực ${remainingLabel}`}
+                </Text>
 
                 <div
                     style={{
@@ -131,6 +164,7 @@ export default function PaymentQRModal({
                                     icon={<LinkOutlined />}
                                     href={payosData.checkoutUrl}
                                     target="_blank"
+                                    disabled={isExpired}
                                 >
                                     Mở trang thanh toán PayOS
                                 </Button>

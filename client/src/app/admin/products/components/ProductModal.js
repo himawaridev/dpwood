@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Form, Input, InputNumber, Button, Flex, Typography, Row, Col, Select, Switch, Divider } from "antd";
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { MinusCircleOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
 import {
     KITCHEN_CATEGORY_OPTIONS,
     KITCHEN_COLOR_OPTIONS,
@@ -12,6 +12,12 @@ const createVariantId = () => `variant-${Date.now()}-${Math.random().toString(16
 export default function ProductModal({ isVisible, onClose, onSave, editingProduct, draftProduct }) {
     const [form] = Form.useForm();
     const [isMounted, setIsMounted] = useState(false);
+    const watchedVariants = Form.useWatch("variants", form) || [];
+    const hasVariants = watchedVariants.length > 0;
+    const variantStockTotal = watchedVariants.reduce(
+        (sum, variant) => sum + Number(variant?.stock || 0),
+        0,
+    );
 
     useEffect(() => {
         const timer = setTimeout(() => setIsMounted(true), 0);
@@ -61,7 +67,23 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
             width={960}
             forceRender
         >
-            <Form form={form} layout="vertical" onFinish={onSave}>
+            <Form
+                form={form}
+                layout="vertical"
+                onFinish={onSave}
+                onValuesChange={(changedValues, allValues) => {
+                    if (!Object.prototype.hasOwnProperty.call(changedValues, "variants")) return;
+                    const variants = Array.isArray(allValues.variants) ? allValues.variants : [];
+                    if (!variants.length) return;
+                    form.setFieldValue(
+                        "stock",
+                        variants.reduce(
+                            (sum, variant) => sum + Number(variant?.stock || 0),
+                            0,
+                        ),
+                    );
+                }}
+            >
                 <Row gutter={16}>
                     <Col xs={24} md={14}>
                         <Form.Item
@@ -110,10 +132,21 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="stock"
-                            label="Tồn kho mặc định"
+                            extra={
+                                hasVariants
+                                    ? `Tổng ${variantStockTotal} sản phẩm, tự động tính từ từng biến thể bên dưới.`
+                                    : undefined
+                            }
+                            label={hasVariants ? "Tổng tồn kho" : "Tồn kho mặc định"}
                             rules={[{ required: true, message: "Nhập số lượng" }]}
                         >
-                            <InputNumber size="large" style={{ width: "100%" }} min={0} />
+                            <InputNumber
+                                size="large"
+                                style={{ width: "100%" }}
+                                min={0}
+                                precision={0}
+                                disabled={hasVariants}
+                            />
                         </Form.Item>
                     </Col>
                 </Row>
@@ -183,6 +216,24 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                     <Typography.Text type="secondary" style={{ display: "block", marginBottom: 14 }}>
                         Dùng để bán cùng một sản phẩm với nhiều màu sắc, kích cỡ hoặc dung tích khác nhau.
                     </Typography.Text>
+
+                    {hasVariants && (
+                        <Flex justify="flex-end" style={{ marginBottom: 12 }}>
+                            <Button
+                                size="small"
+                                icon={<StopOutlined />}
+                                onClick={() => {
+                                    const nextVariants = watchedVariants.map((variant) => ({
+                                        ...variant,
+                                        stock: 0,
+                                    }));
+                                    form.setFieldsValue({ variants: nextVariants, stock: 0 });
+                                }}
+                            >
+                                Đặt tất cả biến thể hết hàng
+                            </Button>
+                        </Flex>
+                    )}
 
                     <Form.List name="variants">
                         {(fields, { add, remove }) => (
@@ -289,9 +340,8 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                                                 validateTrigger={["onChange", "onBlur"]}
                                                 rules={[
                                                     {
-                                                        required: true,
-                                                        whitespace: true,
-                                                        message: "Vui lòng nhập link ảnh hoặc xóa ô này",
+                                                        type: "url",
+                                                        message: "Đường dẫn ảnh không hợp lệ",
                                                     },
                                                 ]}
                                                 noStyle

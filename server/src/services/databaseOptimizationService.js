@@ -127,6 +127,11 @@ const optimizeDatabase = async (sequelize) => {
         ["Products", ["isActive", "category", "createdAt"], "idx_products_active_category_created"],
         ["Orders", ["userId", "createdAt"], "idx_orders_user_created"],
         ["Orders", ["status", "createdAt"], "idx_orders_status_created"],
+        [
+            "Orders",
+            ["status", "paymentMethod", "paymentExpiresAt"],
+            "idx_orders_pending_qr_expiry",
+        ],
         ["OrderItems", ["orderId"], "idx_order_items_order"],
         ["AuditLogs", ["userId", "createdAt"], "idx_audit_logs_user_created"],
         ["AuditLogs", ["action", "createdAt"], "idx_audit_logs_action_created"],

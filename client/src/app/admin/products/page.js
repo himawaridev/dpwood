@@ -73,7 +73,11 @@ export default function AdminProductsPage() {
             };
 
             if (editingProduct) {
-                await api.put(`/products/${editingProduct.id}`, payload);
+                const response = await api.put(`/products/${editingProduct.id}`, payload);
+                const persistedStock = Number(response.data?.product?.stock);
+                if (!Number.isFinite(persistedStock) || persistedStock !== payload.stock) {
+                    throw new Error("Tồn kho trên máy chủ chưa được cập nhật đúng. Vui lòng thử lại.");
+                }
                 message.success("Cập nhật sản phẩm thành công");
             } else {
                 await api.post("/products", payload);
@@ -82,9 +86,13 @@ export default function AdminProductsPage() {
 
             setIsModalVisible(false);
             setDraftProduct(null);
-            fetchProducts();
+            await fetchProducts();
         } catch (error) {
-            const errorMsg = error.response?.data?.error || error.response?.data?.message || "Lỗi không xác định";
+            const errorMsg =
+                error.response?.data?.error ||
+                error.response?.data?.message ||
+                error.message ||
+                "Lỗi không xác định";
             message.error(`Lỗi: ${errorMsg}`);
         }
     };

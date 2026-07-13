@@ -48,11 +48,27 @@ const dbState = {
 };
 const DB_RETRY_DELAY_MS = Number(process.env.DB_RETRY_DELAY_MS || 60000);
 const DB_REQUEST_WAIT_MS = Number(process.env.DB_REQUEST_WAIT_MS || 15000);
+const QR_EXPIRATION_SWEEP_MS = Number(process.env.QR_EXPIRATION_SWEEP_MS || 60000);
 let resolveDatabaseReady;
 const databaseReadyPromise = new Promise((resolve) => {
     resolveDatabaseReady = resolve;
 });
+let qrExpirationSweepTimer = null;
 app.set("trust proxy", 1);
+
+const scheduleQrExpirationSweep = () => {
+    if (qrExpirationSweepTimer) return;
+    const runSweep = () => {
+        const { expireStaleQrOrders } = require("./controllers/orderController");
+        void expireStaleQrOrders().catch((error) => {
+            console.warn("QR expiration sweep failed:", error.message);
+        });
+    };
+
+    setTimeout(runSweep, 5000);
+    qrExpirationSweepTimer = setInterval(runSweep, QR_EXPIRATION_SWEEP_MS);
+    qrExpirationSweepTimer.unref?.();
+};
 
 const normalizeOrigin = (value = "") => String(value).trim().replace(/\/$/, "");
 const configuredOrigins = [process.env.CLIENT_URL, process.env.FRONTEND_URL]
@@ -341,6 +357,20 @@ const initializeDatabase = async () => {
                 });
                 console.log("Added discountAmount column to Orders via QueryInterface");
             }
+            if (!tableDesc.paymentExpiresAt) {
+                await queryInterface.addColumn("Orders", "paymentExpiresAt", {
+                    type: DataTypes.DATE,
+                    allowNull: true,
+                });
+                console.log("Added paymentExpiresAt column to Orders via QueryInterface");
+            }
+            if (!tableDesc.paymentData) {
+                await queryInterface.addColumn("Orders", "paymentData", {
+                    type: DataTypes.JSON,
+                    allowNull: true,
+                });
+                console.log("Added paymentData column to Orders via QueryInterface");
+            }
         } catch (e) {
             console.log("QueryInterface Orders check skipped:", e.message);
         }
@@ -479,6 +509,7 @@ const initializeDatabase = async () => {
         dbState.lastCheckedAt = new Date().toISOString();
         resolveDatabaseReady();
         scheduleDataRetention();
+        scheduleQrExpirationSweep();
         console.log("✅ Database is ready");
     } catch (error) {
         dbState.ready = false;

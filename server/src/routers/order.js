@@ -11,6 +11,7 @@ const { orderStatusLimiter, paymentLimiter } = require("../middlewares/securityM
 // ==========================================
 router.post("/webhook", paymentLimiter, orderController.handleWebhook);
 router.get("/:orderCode/status", orderStatusLimiter, authMiddleware, orderController.getOrderStatus);
+router.get("/:orderCode/payment-link", paymentLimiter, authMiddleware, orderController.getPaymentLink);
 
 // ==========================================
 // [CLIENT] ROUTES - Khách hàng

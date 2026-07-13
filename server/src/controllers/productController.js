@@ -352,7 +352,80 @@ const updateProduct = async (req, res) => {
         const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "Khong tim thay san pham" });
 
-        await product.update(req.body);
+        const editableFields = [
+            "name",
+            "description",
+            "imageUrl",
+            "images",
+            "category",
+            "material",
+            "color",
+            "brand",
+            "capacity",
+            "warranty",
+            "origin",
+            "dishwasherSafe",
+            "microwaveSafe",
+        ];
+        const updates = {};
+        for (const field of editableFields) {
+            if (Object.prototype.hasOwnProperty.call(req.body, field)) updates[field] = req.body[field];
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, "price")) {
+            const price = Number(req.body.price);
+            if (!Number.isFinite(price) || price < 0) {
+                return res.status(400).json({ message: "Gia san pham khong hop le" });
+            }
+            updates.price = price;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, "stock")) {
+            const stock = Number(req.body.stock);
+            if (!Number.isInteger(stock) || stock < 0) {
+                return res.status(400).json({ message: "Ton kho phai la so nguyen khong am" });
+            }
+            updates.stock = stock;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, "variants")) {
+            if (!Array.isArray(req.body.variants)) {
+                return res.status(400).json({ message: "Danh sach bien the khong hop le" });
+            }
+
+            const variants = [];
+            for (const variant of req.body.variants) {
+                if (!variant || typeof variant !== "object") {
+                    return res.status(400).json({ message: "Du lieu bien the khong hop le" });
+                }
+
+                const variantPrice = Number(variant.price ?? updates.price ?? product.price);
+                const variantStock = Number(variant.stock);
+                if (!Number.isFinite(variantPrice) || variantPrice < 0) {
+                    return res.status(400).json({ message: "Gia bien the khong hop le" });
+                }
+                if (!Number.isInteger(variantStock) || variantStock < 0) {
+                    return res.status(400).json({ message: "Ton kho bien the phai la so nguyen khong am" });
+                }
+
+                variants.push({
+                    variantId: String(variant.variantId || `variant-${Date.now()}-${variants.length}`),
+                    color: String(variant.color || "").trim(),
+                    size: String(variant.size || variant.capacity || "").trim(),
+                    price: variantPrice,
+                    stock: variantStock,
+                    imageUrl: String(variant.imageUrl || "").trim(),
+                });
+            }
+
+            updates.variants = variants;
+            if (variants.length) {
+                updates.stock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+            }
+        }
+
+        await product.update(updates);
+        await product.reload();
         res.status(200).json({ message: "Cap nhat san pham thanh cong", product });
     } catch (error) {
         console.error("updateProduct error:", error);
