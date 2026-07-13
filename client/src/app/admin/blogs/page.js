@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { App, Button, Flex, Image, Popconfirm, Space, Table, Tag, Typography } from "antd";
+import { App, Button, Flex, Image, Popconfirm, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
@@ -81,14 +81,29 @@ export default function AdminBlogPage() {
             key: "action",
             render: (_, record) => (
                 <Space>
-                    <Button type="text" icon={<EditOutlined />} onClick={() => router.push(`/admin/blogs/${record.id}`)} />
+                    <Tooltip title="Chỉnh sửa bài viết">
+                        <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            aria-label="Chỉnh sửa bài viết"
+                            style={{ color: "#f09b90" }}
+                            onClick={() => router.push(`/admin/blogs/${record.id}`)}
+                        />
+                    </Tooltip>
                     <Popconfirm
                         title="Xác nhận xóa?"
                         onConfirm={() => handleDelete(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
                     >
-                        <Button type="text" danger icon={<DeleteOutlined />} />
+                        <Tooltip title="Xóa bài viết">
+                            <Button
+                                type="text"
+                                icon={<DeleteOutlined />}
+                                aria-label="Xóa bài viết"
+                                style={{ color: "#f09b90" }}
+                            />
+                        </Tooltip>
                     </Popconfirm>
                 </Space>
             ),

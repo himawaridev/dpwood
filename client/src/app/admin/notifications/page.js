@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { App, Table, Button, Typography, Tag, Switch, Flex, Popconfirm } from "antd";
+import { App, Table, Button, Typography, Tag, Switch, Flex, Popconfirm, Tooltip } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, FieldTimeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 import NotificationModal from "./components/NotificationModal";
@@ -139,19 +139,30 @@ export default function AdminNotificationsPage() {
             key: "action",
             render: (_, record) => (
                 <Flex gap="small">
-                    <Button
-                        type="primary"
-                        icon={<EditOutlined />}
-                        onClick={() => {
-                            setEditingItem(record);
-                            setIsModalVisible(true);
-                        }}
-                    />
+                    <Tooltip title="Chỉnh sửa thông báo">
+                        <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            aria-label="Chỉnh sửa thông báo"
+                            style={{ color: "#f09b90" }}
+                            onClick={() => {
+                                setEditingItem(record);
+                                setIsModalVisible(true);
+                            }}
+                        />
+                    </Tooltip>
                     <Popconfirm
                         title="Xóa thông báo này?"
                         onConfirm={() => handleDelete(record.id)}
                     >
-                        <Button danger icon={<DeleteOutlined />} />
+                        <Tooltip title="Xóa thông báo">
+                            <Button
+                                type="text"
+                                icon={<DeleteOutlined />}
+                                aria-label="Xóa thông báo"
+                                style={{ color: "#f09b90" }}
+                            />
+                        </Tooltip>
                     </Popconfirm>
                 </Flex>
             ),

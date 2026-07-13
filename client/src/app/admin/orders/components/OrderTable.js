@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Tag, Select, Button, Typography, Modal } from "antd";
+import { Table, Tag, Select, Button, Typography, Modal, Tooltip } from "antd";
 import { EyeOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
@@ -125,9 +125,16 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
             key: "details",
             fixed: "right",
             render: (_, record) => (
-                <Button type="primary" icon={<EyeOutlined />} onClick={() => onViewDetails(record)} size="small">
-                    Xem
-                </Button>
+                <Tooltip title="Xem chi tiết đơn hàng">
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        aria-label="Xem chi tiết đơn hàng"
+                        onClick={() => onViewDetails(record)}
+                        size="small"
+                        style={{ color: "#f09b90" }}
+                    />
+                </Tooltip>
             ),
         },
     ];

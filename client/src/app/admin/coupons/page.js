@@ -176,7 +176,13 @@ export default function AdminCouponsPage() {
             render: (_, record) => (
                 <Space>
                     <Tooltip title="Chỉnh sửa">
-                        <Button type="text" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)} />
+                        <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            aria-label="Chỉnh sửa mã giảm giá"
+                            style={{ color: "#f09b90" }}
+                            onClick={() => handleOpenEdit(record)}
+                        />
                     </Tooltip>
                     <Popconfirm
                         title="Xóa mã giảm giá này?"
@@ -186,7 +192,12 @@ export default function AdminCouponsPage() {
                         cancelText="Hủy"
                     >
                         <Tooltip title="Xóa">
-                            <Button type="text" danger icon={<DeleteOutlined />} />
+                            <Button
+                                type="text"
+                                icon={<DeleteOutlined />}
+                                aria-label="Xóa mã giảm giá"
+                                style={{ color: "#f09b90" }}
+                            />
                         </Tooltip>
                     </Popconfirm>
                 </Space>

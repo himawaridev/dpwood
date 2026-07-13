@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Table, Button, Typography, Image, Flex, Popconfirm, Input, Space, Tag, Upload } from "antd";
+import { Table, Button, Typography, Image, Flex, Popconfirm, Input, Space, Tag, Upload, Tooltip } from "antd";
 import {
     DeleteOutlined,
     DownloadOutlined,
@@ -124,14 +124,29 @@ export default function ProductTable({
             fixed: "right",
             render: (_, record) => (
                 <Flex gap="small">
-                    <Button type="primary" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+                    <Tooltip title="Chỉnh sửa sản phẩm">
+                        <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            aria-label="Chỉnh sửa sản phẩm"
+                            style={{ color: "#f09b90" }}
+                            onClick={() => onEdit(record)}
+                        />
+                    </Tooltip>
                     <Popconfirm
                         title="Xóa sản phẩm này?"
                         onConfirm={() => onDelete(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
                     >
-                        <Button danger icon={<DeleteOutlined />} />
+                        <Tooltip title="Xóa sản phẩm">
+                            <Button
+                                type="text"
+                                icon={<DeleteOutlined />}
+                                aria-label="Xóa sản phẩm"
+                                style={{ color: "#f09b90" }}
+                            />
+                        </Tooltip>
                     </Popconfirm>
                 </Flex>
             ),

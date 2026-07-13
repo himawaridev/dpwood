@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Table, Tag, Button, Popconfirm, Space, Input, Flex, Select } from "antd";
+import { Table, Tag, Button, Popconfirm, Space, Input, Flex, Select, Tooltip } from "antd";
 import { DeleteOutlined, LockOutlined, UnlockOutlined, ReloadOutlined } from "@ant-design/icons";
 
 export default function StatusControlTab({
@@ -70,15 +70,16 @@ export default function StatusControlTab({
                 const isDeleted = !!record.deletedAt;
                 return (
                     <Space>
-                        <Button
-                            type={isBanned ? "primary" : "default"}
-                            danger={!isBanned}
-                            icon={isBanned ? <UnlockOutlined /> : <LockOutlined />}
-                            onClick={() => onToggleBan(record.id)}
-                            disabled={record.role === "root"}
-                        >
-                            {isBanned ? "Mở khóa" : "Khóa"}
-                        </Button>
+                        <Tooltip title={isBanned ? "Mở khóa tài khoản" : "Khóa tài khoản"}>
+                            <Button
+                                type="text"
+                                icon={isBanned ? <UnlockOutlined /> : <LockOutlined />}
+                                aria-label={isBanned ? "Mở khóa tài khoản" : "Khóa tài khoản"}
+                                onClick={() => onToggleBan(record.id)}
+                                disabled={record.role === "root"}
+                                style={{ color: "#f09b90" }}
+                            />
+                        </Tooltip>
                         {isDeleted ? (
                             <Popconfirm
                                 title="Khôi phục tài khoản này?"
@@ -86,11 +87,14 @@ export default function StatusControlTab({
                                 okText="Khôi phục"
                                 cancelText="Hủy"
                             >
-                                <Button
-                                    type="primary"
-                                    style={{ background: "#52c41a" }}
-                                    icon={<ReloadOutlined />}
-                                />
+                                <Tooltip title="Khôi phục tài khoản">
+                                    <Button
+                                        type="text"
+                                        aria-label="Khôi phục tài khoản"
+                                        style={{ color: "#f09b90" }}
+                                        icon={<ReloadOutlined />}
+                                    />
+                                </Tooltip>
                             </Popconfirm>
                         ) : (
                             <Popconfirm
@@ -99,11 +103,15 @@ export default function StatusControlTab({
                                 okText="Xóa"
                                 cancelText="Hủy"
                             >
-                                <Button
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    disabled={record.role === "root"}
-                                />
+                                <Tooltip title="Xóa tài khoản">
+                                    <Button
+                                        type="text"
+                                        aria-label="Xóa tài khoản"
+                                        style={{ color: "#f09b90" }}
+                                        icon={<DeleteOutlined />}
+                                        disabled={record.role === "root"}
+                                    />
+                                </Tooltip>
                             </Popconfirm>
                         )}
                     </Space>

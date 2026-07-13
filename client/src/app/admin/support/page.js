@@ -118,6 +118,7 @@ export default function AdminSupportPage() {
                         type="text"
                         icon={<EyeOutlined />}
                         aria-label="Xem chi tiết ticket"
+                        style={{ color: "#f09b90" }}
                         onClick={() => handleViewDetail(record)}
                     />
                 </Tooltip>
