@@ -179,7 +179,7 @@ export default function AdminProductsPage() {
 
             const normalizedResponse = await api.post("/ai/product-json-import", {
                 products: importProducts,
-                useFreeResources: true,
+                enrichImages: false,
             });
             const normalizedProducts = normalizedResponse.data?.products || [];
             if (!normalizedProducts.length) {
@@ -191,6 +191,15 @@ export default function AdminProductsPage() {
             });
             const savedProducts = savedResponse.data?.products || [];
             message.success(`Đã import ${savedProducts.length} sản phẩm vào kho.`);
+            const missingImages = Number(
+                normalizedResponse.data?.imageCleanup?.productsWithoutProvidedImages || 0,
+            );
+            if (missingImages > 0) {
+                message.warning(
+                    `${missingImages} sản phẩm không có URL ảnh hợp lệ. Bạn có thể bổ sung ảnh khi chỉnh sửa sản phẩm.`,
+                    6,
+                );
+            }
             await fetchProducts();
         } catch (error) {
             message.error(error.response?.data?.message || error.message || "Không thể import file JSON sản phẩm.");

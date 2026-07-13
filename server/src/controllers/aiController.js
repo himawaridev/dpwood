@@ -1459,10 +1459,13 @@ const importProductJsonDrafts = async (req, res) => {
 
         const draftsWithProvidedImages = rawDrafts.map((draft) => sanitizeProductDraft(draft));
         const missingImageDrafts = draftsWithProvidedImages.filter((draft) => !getProductImages(draft).length);
-        const enrichedMissingDrafts = missingImageDrafts.length
+        const shouldEnrichImages = req.body?.enrichImages === true;
+        const enrichLimit = clampNumber(req.body?.enrichLimit, 1, 10, 5);
+        const draftsToEnrich = shouldEnrichImages ? missingImageDrafts.slice(0, enrichLimit) : [];
+        const enrichedMissingDrafts = draftsToEnrich.length
             ? await enrichProductDraftImages(
                   req,
-                  missingImageDrafts,
+                  draftsToEnrich,
                   "imported kitchenware product catalog photo",
                   req.body?.useFreeResources !== false,
               )
@@ -1481,6 +1484,7 @@ const importProductJsonDrafts = async (req, res) => {
             imageCleanup: {
                 overusedUrlsRemoved: excludedUrls.size,
                 productsWithoutProvidedImages: missingImageDrafts.length,
+                productsEnriched: enrichedMissingDrafts.length,
             },
         });
     } catch (error) {

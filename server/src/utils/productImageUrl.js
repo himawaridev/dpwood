@@ -1,6 +1,12 @@
 const LOCAL_HOSTNAMES = new Set(["localhost", "0.0.0.0", "::1", "[::1]"]);
+const BLOCKED_IMAGE_HOST_SUFFIXES = ["istockphoto.com", "gettyimages.com"];
 
-const cleanUrl = (value) => String(value || "").trim();
+const cleanUrl = (value) =>
+    String(value || "")
+        .trim()
+        .replace(/&amp;/gi, "&")
+        .replace(/&#0*38;/gi, "&")
+        .replace(/&#x0*26;/gi, "&");
 
 const isPlaceholderImageUrl = (value) => {
     const url = cleanUrl(value).toLowerCase();
@@ -22,6 +28,13 @@ const isLocalHostname = (hostname) => {
         /^10\./.test(normalized) ||
         /^192\.168\./.test(normalized) ||
         /^172\.(1[6-9]|2\d|3[01])\./.test(normalized)
+    );
+};
+
+const isBlockedImageHostname = (hostname) => {
+    const normalized = cleanUrl(hostname).toLowerCase();
+    return BLOCKED_IMAGE_HOST_SUFFIXES.some(
+        (suffix) => normalized === suffix || normalized.endsWith(`.${suffix}`),
     );
 };
 
@@ -49,7 +62,13 @@ const normalizeProductImageUrl = (value) => {
 
     try {
         const parsed = new URL(unwrapped);
-        if (!["http:", "https:"].includes(parsed.protocol) || isLocalHostname(parsed.hostname)) return "";
+        if (
+            !["http:", "https:"].includes(parsed.protocol) ||
+            isLocalHostname(parsed.hostname) ||
+            isBlockedImageHostname(parsed.hostname)
+        ) {
+            return "";
+        }
         if (parsed.protocol === "http:") parsed.protocol = "https:";
         return parsed.toString();
     } catch (_) {
