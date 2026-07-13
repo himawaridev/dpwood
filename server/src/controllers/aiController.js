@@ -1,5 +1,12 @@
 const fs = require("fs");
 const path = require("path");
+const {
+    isPlaceholderImageUrl,
+    normalizeProductImagePayload,
+    normalizeProductImageUrl,
+    normalizeProductImageUrls,
+    unwrapImageProxyUrl,
+} = require("../utils/productImageUrl");
 const { generateJson } = require("../services/geminiService");
 const Product = require("../models/product");
 const Blog = require("../models/blog");
@@ -89,14 +96,7 @@ const cleanText = (value, fallback = "") => String(value || fallback).trim();
 const cleanBoolean = (value) => value === true || value === "true";
 
 const isGeneratedPlaceholderUrl = (url) => {
-    const cleaned = cleanText(url).toLowerCase();
-    return (
-        !cleaned ||
-        cleaned.includes("/api/ai/product-image-placeholder") ||
-        cleaned.includes("product-image-placeholder?") ||
-        cleaned.includes("placehold.co/") ||
-        cleaned.includes("picsum.photos/")
-    );
+    return isPlaceholderImageUrl(url);
 };
 
 const generateSlug = (title) =>
@@ -713,42 +713,9 @@ const buildImageProxyUrl = (req, url) => {
     return `${getRequestBaseUrl(req)}/api/ai/image-proxy?url=${encodeURIComponent(cleaned)}`;
 };
 
-const unwrapImageProxyUrl = (url) => {
-    const cleaned = cleanText(url);
-    if (!cleaned.includes("/api/ai/image-proxy?url=")) return cleaned;
-
-    try {
-        const parsed = new URL(cleaned);
-        return cleanText(parsed.searchParams.get("url"), cleaned);
-    } catch (_) {
-        const match = cleaned.match(/[?&]url=([^&]+)/);
-        return match ? cleanText(decodeURIComponent(match[1]), cleaned) : cleaned;
-    }
-};
-
 const normalizeProductImagesForStorage = (product) => {
     const { imageSearchQueries, ...productData } = product;
-    const images = Array.isArray(product.images)
-        ? product.images
-              .map((url) => unwrapImageProxyUrl(url))
-              .filter((url) => /^https?:\/\//i.test(url) && !isGeneratedPlaceholderUrl(url))
-        : [];
-    const imageUrl = unwrapImageProxyUrl(product.imageUrl || images[0] || "");
-    const variants = Array.isArray(product.variants)
-        ? product.variants.map((variant) => ({
-              ...variant,
-              imageUrl: isGeneratedPlaceholderUrl(unwrapImageProxyUrl(variant.imageUrl))
-                  ? ""
-                  : unwrapImageProxyUrl(variant.imageUrl),
-          }))
-        : [];
-
-    return {
-        ...productData,
-        imageUrl: isGeneratedPlaceholderUrl(imageUrl) ? images[0] || "" : imageUrl,
-        images,
-        variants,
-    };
+    return normalizeProductImagePayload(productData);
 };
 
 const proxifyProductImages = (req, product, options = {}) => {
@@ -906,7 +873,7 @@ const sanitizeBlogBatchDrafts = (value, imageCandidates = []) => {
     return drafts.map((draft, index) => sanitizeBlogDraft(draft, imageCandidates.slice(index, index + 3)));
 };
 
-const sanitizeProductDraft = (draft, imageCandidates = []) => {
+const sanitizeProductDraft = (draft, imageCandidates = [], options = {}) => {
     const variants = Array.isArray(draft.variants)
         ? draft.variants.slice(0, 12).map((variant, index) => ({
               variantId: `ai-${Date.now()}-${index}`,
@@ -914,15 +881,16 @@ const sanitizeProductDraft = (draft, imageCandidates = []) => {
               size: cleanText(variant.size),
               price: clampNumber(variant.price, 0, 999999999, 0),
               stock: clampNumber(variant.stock, 0, 99999, 0),
-              imageUrl: cleanText(variant.imageUrl),
+              imageUrl: normalizeProductImageUrl(variant.imageUrl),
           }))
         : [];
 
     const category = CATEGORY_VALUES.includes(draft.category) ? draft.category : "cookware";
-    const aiImages = Array.isArray(draft.images)
-        ? draft.images.map((item) => cleanText(item)).filter((item) => /^https?:\/\//i.test(item)).slice(0, 6)
-        : [];
-    const images = imageCandidates.length ? imageCandidates.slice(0, 4) : aiImages;
+    const aiImages = normalizeProductImageUrls(
+        [draft.imageUrl, ...(Array.isArray(draft.images) ? draft.images : [])],
+        options,
+    ).slice(0, 6);
+    const images = imageCandidates.length ? normalizeProductImageUrls(imageCandidates, options).slice(0, 4) : aiImages;
     const imageSearchQueries = []
         .concat(draft.imageSearchQueries || draft.image_search_queries || draft.searchQueries || draft.imageQueries || [])
         .map((item) => buildImageSearchQuery(item))
@@ -952,10 +920,27 @@ const sanitizeProductDraft = (draft, imageCandidates = []) => {
     };
 };
 
-const sanitizeProductBatchDrafts = (value, imageCandidates = []) => {
+const sanitizeProductBatchDrafts = (value, imageCandidates = [], options = {}) => {
     const drafts = Array.isArray(value?.products) ? value.products : Array.isArray(value) ? value : [];
 
-    return drafts.map((draft, index) => sanitizeProductDraft(draft, imageCandidates.slice(index, index + 4)));
+    return drafts.map((draft, index) => sanitizeProductDraft(draft, imageCandidates.slice(index, index + 4), options));
+};
+
+const findOverusedImportImageUrls = (products) => {
+    const usage = new Map();
+    const reuseLimit = Math.max(3, Math.ceil(products.length * 0.1));
+
+    products.forEach((product) => {
+        const productUrls = new Set(
+            normalizeProductImageUrls([
+                product?.imageUrl,
+                ...(Array.isArray(product?.images) ? product.images : []),
+            ]),
+        );
+        productUrls.forEach((url) => usage.set(url, (usage.get(url) || 0) + 1));
+    });
+
+    return new Set([...usage.entries()].filter(([, count]) => count > reuseLimit).map(([url]) => url));
 };
 
 const buildFallbackProductDrafts = (prompt, count = 10) => {
@@ -1458,7 +1443,13 @@ const importProductJsonDrafts = async (req, res) => {
               ? req.body.products
               : [];
         const count = clampNumber(req.body?.limit || payloadProducts.length, 1, 500, payloadProducts.length || 1);
-        const rawDrafts = sanitizeProductBatchDrafts({ products: payloadProducts }).slice(0, count);
+        const importedProducts = payloadProducts.slice(0, count);
+        const excludedUrls = findOverusedImportImageUrls(importedProducts);
+        const rawDrafts = sanitizeProductBatchDrafts(
+            { products: importedProducts },
+            [],
+            { excludedUrls },
+        );
 
         if (!rawDrafts.length) {
             const error = new Error("File JSON khong co san pham hop le de import");
@@ -1482,9 +1473,15 @@ const importProductJsonDrafts = async (req, res) => {
         );
 
         res.status(200).json({
-            message: `Da nap ${drafts.length} san pham tu JSON de duyet.`,
+            message: excludedUrls.size
+                ? `Da nap ${drafts.length} san pham va loai ${excludedUrls.size} anh bi lap qua nhieu de duyet.`
+                : `Da nap ${drafts.length} san pham tu JSON de duyet.`,
             products: drafts,
             created: false,
+            imageCleanup: {
+                overusedUrlsRemoved: excludedUrls.size,
+                productsWithoutProvidedImages: missingImageDrafts.length,
+            },
         });
     } catch (error) {
         console.error("importProductJsonDrafts error:", error.message);

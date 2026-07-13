@@ -406,7 +406,19 @@ export default function LatestProducts() {
     return (
         <main className="webcake-home">
             <section className="webcake-hero">
-                <Carousel autoplay autoplaySpeed={4200} dots draggable pauseOnHover>
+                <Carousel
+                    autoplay
+                    autoplaySpeed={4200}
+                    dots
+                    draggable
+                    pauseOnHover
+                    beforeChange={() => {
+                        const activeElement = document.activeElement;
+                        if (activeElement instanceof HTMLElement && activeElement.closest(".slick-slide")) {
+                            activeElement.blur();
+                        }
+                    }}
+                >
                     {heroProducts.map((slide) => (
                         <div key={slide.key}>
                             <div

@@ -4,6 +4,10 @@ const Wishlist = require("../models/wishlist");
 const AuditLog = require("../models/auditLog");
 const { sequelize } = require("../config/connectSequelize");
 const { Op } = require("sequelize");
+const { normalizeProductImagePayload } = require("../utils/productImageUrl");
+
+const productForResponse = (product) =>
+    normalizeProductImagePayload(product?.toJSON ? product.toJSON() : product);
 
 const normalizeText = (value = "") =>
     String(value)
@@ -95,10 +99,11 @@ const refreshProductRatingSummary = async (product) => {
 
 const getAllProducts = async (req, res) => {
     try {
-        const allProducts = await Product.findAll({
+        const storedProducts = await Product.findAll({
             where: { isActive: true },
             order: [["createdAt", "DESC"]],
         });
+        const allProducts = storedProducts.map(productForResponse);
         const query = req.query.search || req.query.q || "";
         const categories = normalizeListParam(req.query.category);
         const colors = normalizeListParam(req.query.color);
@@ -180,7 +185,7 @@ const getRelatedProducts = async (req, res) => {
             .slice(0, 8)
             .map((item) => item.product);
 
-        res.status(200).json(scored);
+        res.status(200).json(scored.map(productForResponse));
     } catch (error) {
         console.error("getRelatedProducts error:", error);
         res.status(500).json({ message: "Khong the lay san pham lien quan", error: error.message });
@@ -200,7 +205,7 @@ const getMyWishlist = async (req, res) => {
                 id: item.id,
                 productId: item.productId,
                 createdAt: item.createdAt,
-                Product: item.Product,
+                Product: productForResponse(item.Product),
             })),
         );
     } catch (error) {
@@ -243,7 +248,7 @@ const getProductById = async (req, res) => {
         const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "San pham khong ton tai" });
 
-        res.status(200).json(product);
+        res.status(200).json(productForResponse(product));
     } catch (error) {
         console.error("getProductById error:", error);
         res.status(500).json({ message: "Loi may chu", error: error.message });
@@ -322,14 +327,15 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ message: "Ten va gia san pham la bat buoc" });
         }
 
+        const imagePayload = normalizeProductImagePayload({ imageUrl, images, variants });
         const newProduct = await Product.create({
             name,
             description,
             price,
             stock,
-            imageUrl,
-            images,
-            variants,
+            imageUrl: imagePayload.imageUrl,
+            images: imagePayload.images,
+            variants: imagePayload.variants,
             category,
             material,
             color,
@@ -340,7 +346,7 @@ const createProduct = async (req, res) => {
             dishwasherSafe,
             microwaveSafe,
         });
-        res.status(201).json({ message: "Them san pham thanh cong", product: newProduct });
+        res.status(201).json({ message: "Them san pham thanh cong", product: productForResponse(newProduct) });
     } catch (error) {
         console.error("createProduct error:", error);
         res.status(500).json({ message: "Khong the them san pham", error: error.message });
@@ -370,6 +376,20 @@ const updateProduct = async (req, res) => {
         const updates = {};
         for (const field of editableFields) {
             if (Object.prototype.hasOwnProperty.call(req.body, field)) updates[field] = req.body[field];
+        }
+
+        if (
+            Object.prototype.hasOwnProperty.call(req.body, "imageUrl") ||
+            Object.prototype.hasOwnProperty.call(req.body, "images")
+        ) {
+            const imagePayload = normalizeProductImagePayload({
+                imageUrl: Object.prototype.hasOwnProperty.call(req.body, "imageUrl")
+                    ? req.body.imageUrl
+                    : product.imageUrl,
+                images: Object.prototype.hasOwnProperty.call(req.body, "images") ? req.body.images : product.images,
+            });
+            updates.imageUrl = imagePayload.imageUrl;
+            updates.images = imagePayload.images;
         }
 
         if (Object.prototype.hasOwnProperty.call(req.body, "price")) {
@@ -418,7 +438,7 @@ const updateProduct = async (req, res) => {
                 });
             }
 
-            updates.variants = variants;
+            updates.variants = normalizeProductImagePayload({ variants }).variants;
             if (variants.length) {
                 updates.stock = variants.reduce((sum, variant) => sum + variant.stock, 0);
             }
@@ -426,7 +446,7 @@ const updateProduct = async (req, res) => {
 
         await product.update(updates);
         await product.reload();
-        res.status(200).json({ message: "Cap nhat san pham thanh cong", product });
+        res.status(200).json({ message: "Cap nhat san pham thanh cong", product: productForResponse(product) });
     } catch (error) {
         console.error("updateProduct error:", error);
         res.status(500).json({ message: "Khong the cap nhat san pham", error: error.message });
