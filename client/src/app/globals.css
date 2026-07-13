@@ -2205,16 +2205,41 @@ a {
   border-top: 1px solid var(--dp-soft-border);
 }
 
-.dp-product-filter-toggle {
+.dp-product-filter-actions {
   min-height: 48px;
   display: flex;
   align-items: center;
   gap: 8px;
-  white-space: nowrap;
 }
 
-.dp-product-filter-toggle .anticon {
-  color: var(--dp-coral);
+.dp-wishlist-filter-button.ant-btn,
+.dp-filter-icon-button.ant-btn {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: #fff;
+  color: #f09b90;
+  box-shadow: none;
+}
+
+.dp-wishlist-filter-button.ant-btn .anticon {
+  font-size: 24px;
+}
+
+.dp-wishlist-filter-button.ant-btn:not(:disabled):hover,
+.dp-filter-icon-button.ant-btn:not(:disabled):hover {
+  border-color: transparent;
+  background: transparent;
+  color: #f09b90;
+  box-shadow: none;
+}
+
+.dp-wishlist-filter-button.ant-btn:not(:disabled):focus-visible,
+.dp-filter-icon-button.ant-btn:not(:disabled):focus-visible {
+  background: #fff4f2;
+  color: #f09b90;
 }
 
 .dp-product-advanced-filters .ant-input-number-input {
@@ -3642,6 +3667,12 @@ a {
   color: #888;
   font-size: 12px;
   text-transform: uppercase;
+}
+
+.dp-eyebrow .anticon {
+  margin-right: 7px;
+  font-size: 14px;
+  vertical-align: -1px;
 }
 
 .dp-about-contact strong,

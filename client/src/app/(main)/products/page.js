@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, App, Button, Col, Empty, Input, InputNumber, Row, Select, Skeleton, Space, Switch, Typography } from "antd";
+import { Alert, App, Button, Col, Empty, Input, InputNumber, Row, Select, Skeleton, Space, Switch, Tooltip, Typography } from "antd";
 import {
     AppstoreOutlined,
     ClearOutlined,
     HeartFilled,
+    HeartOutlined,
     ReloadOutlined,
     SearchOutlined,
     ShoppingCartOutlined,
@@ -15,7 +16,7 @@ import api from "@/utils/axios";
 import { buildKitchenSearchText, KITCHEN_CATEGORY_OPTIONS, KITCHEN_COLOR_OPTIONS } from "@/utils/kitchenProduct";
 import ProductGrid from "./components/ProductGrid";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const normalizeText = (value = "") =>
     String(value)
@@ -210,19 +211,16 @@ export default function ProductsPage() {
                     }}
                 >
                     <Row gutter={[20, 20]} align="middle">
-                        <Col xs={24} lg={8}>
+                        <Col xs={24}>
                             <Space orientation="vertical" size={4}>
                                 <span className="dp-eyebrow">Cửa hàng</span>
-                                <Title level={1} className="dp-section-title">
-                                    Đồ gia dụng nhà bếp
-                                </Title>
                                 <Text className="dp-muted">
                                     Tìm nồi chảo, dụng cụ bếp, bộ bàn ăn và các sản phẩm tiện ích cho căn bếp.
                                 </Text>
                             </Space>
                         </Col>
-                        <Col xs={24} lg={16}>
-                            <Row gutter={[12, 12]} justify="end">
+                        <Col xs={24}>
+                            <Row gutter={[12, 12]}>
                                 <Col xs={24} md={8}>
                                     <Input
                                         size="large"
@@ -279,8 +277,13 @@ export default function ProductsPage() {
                                             gap: 8,
                                         }}
                                     >
-                                        <Switch checked={onlyInStock} onChange={setOnlyInStock} />
-                                        <Text strong>Còn hàng</Text>
+                                        <Tooltip title={onlyInStock ? "Hiển thị tất cả sản phẩm" : "Chỉ hiển thị sản phẩm còn hàng"}>
+                                            <Switch
+                                                checked={onlyInStock}
+                                                onChange={setOnlyInStock}
+                                                aria-label="Chỉ hiển thị sản phẩm còn hàng"
+                                            />
+                                        </Tooltip>
                                     </div>
                                 </Col>
                             </Row>
@@ -313,7 +316,7 @@ export default function ProductsPage() {
                                     ]}
                                 />
                             </Col>
-                            <Col xs={12} sm={6} lg={3}>
+                            <Col xs={12} sm={12} lg={4}>
                                 <InputNumber
                                     size="large"
                                     min={0}
@@ -328,7 +331,7 @@ export default function ProductsPage() {
                                     style={{ width: "100%" }}
                                 />
                             </Col>
-                            <Col xs={12} sm={6} lg={3}>
+                            <Col xs={12} sm={12} lg={4}>
                                 <InputNumber
                                     size="large"
                                     min={0}
@@ -343,7 +346,7 @@ export default function ProductsPage() {
                                     style={{ width: "100%" }}
                                 />
                             </Col>
-                            <Col xs={12} sm={6} lg={3}>
+                            <Col xs={12} sm={12} lg={4}>
                                 <Select
                                     size="large"
                                     value={minRating}
@@ -357,16 +360,29 @@ export default function ProductsPage() {
                                     ]}
                                 />
                             </Col>
-                            <Col xs={12} sm={6} lg={3}>
-                                <div className="dp-product-filter-toggle">
-                                    <Switch checked={onlyWishlist} onChange={handleWishlistFilterChange} />
-                                    <Text strong><HeartFilled /> Yêu thích</Text>
+                            <Col xs={12} sm={12} lg={4}>
+                                <div className="dp-product-filter-actions">
+                                    <Tooltip title={onlyWishlist ? "Tắt bộ lọc yêu thích" : "Chỉ xem sản phẩm yêu thích"}>
+                                        <Button
+                                            type="text"
+                                            className="dp-wishlist-filter-button"
+                                            icon={onlyWishlist ? <HeartFilled /> : <HeartOutlined />}
+                                            aria-label={onlyWishlist ? "Tắt bộ lọc yêu thích" : "Chỉ xem sản phẩm yêu thích"}
+                                            aria-pressed={onlyWishlist}
+                                            onClick={() => handleWishlistFilterChange(!onlyWishlist)}
+                                        />
+                                    </Tooltip>
+                                    <Tooltip title="Xóa bộ lọc">
+                                        <Button
+                                            type="text"
+                                            size="large"
+                                            className="dp-filter-icon-button"
+                                            icon={<ClearOutlined />}
+                                            aria-label="Xóa bộ lọc"
+                                            onClick={resetFilters}
+                                        />
+                                    </Tooltip>
                                 </div>
-                            </Col>
-                            <Col xs={24} lg={4}>
-                                <Button block size="large" icon={<ClearOutlined />} onClick={resetFilters}>
-                                    Xóa bộ lọc
-                                </Button>
                             </Col>
                         </Row>
                     </div>

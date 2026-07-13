@@ -34,11 +34,10 @@ export default function ClientBlogPage() {
         <div className="dp-page">
             <div className="dp-container">
                 <section style={{ marginBottom: 24 }}>
-                    <span className="dp-eyebrow">Cảm nang DPWOOD</span>
-                    <Title level={1} className="dp-section-title">
-                        <ReadOutlined style={{ color: "var(--dp-primary)", marginRight: 10 }} />
-                        Bài viết & cảm hứng nội thất
-                    </Title>
+                    <span className="dp-eyebrow">
+                        <ReadOutlined />
+                        Cẩm nang DPWOOD
+                    </span>
                     <Paragraph className="dp-muted" style={{ maxWidth: 700, margin: 0 }}>
                         Gợi ý chăm sóc đồ gỗ, phối nội thất và những cập nhật mới từ DPWOOD.
                     </Paragraph>

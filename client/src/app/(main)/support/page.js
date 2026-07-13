@@ -105,11 +105,10 @@ export default function SupportPage() {
         <div className="dp-page">
             <div className="dp-container" style={{ maxWidth: 1100 }}>
                 <section style={{ marginBottom: 22 }}>
-                    <span className="dp-eyebrow">Hỗ trợ khách hàng</span>
-                    <Title level={1} className="dp-section-title">
-                        <CustomerServiceOutlined style={{ color: "var(--dp-primary)", marginRight: 10 }} />
-                        Trung tâm hỗ trợ
-                    </Title>
+                    <span className="dp-eyebrow">
+                        <CustomerServiceOutlined />
+                        Hỗ trợ khách hàng
+                    </span>
                     <Paragraph className="dp-muted" style={{ maxWidth: 700, margin: 0 }}>
                         Gửi yêu cầu liên quan đến đơn hàng, thanh toán, giao nhận hoặc tài khoản. Mọi phản hồi
                         được lưu lại để bạn theo dõi trong cùng một nơi.
