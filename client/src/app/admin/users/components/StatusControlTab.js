@@ -77,7 +77,7 @@ export default function StatusControlTab({
                                 aria-label={isBanned ? "Mở khóa tài khoản" : "Khóa tài khoản"}
                                 onClick={() => onToggleBan(record.id)}
                                 disabled={record.role === "root"}
-                                style={{ color: "#f09b90" }}
+                                className="dp-admin-action-button"
                             />
                         </Tooltip>
                         {isDeleted ? (
@@ -91,7 +91,7 @@ export default function StatusControlTab({
                                     <Button
                                         type="text"
                                         aria-label="Khôi phục tài khoản"
-                                        style={{ color: "#f09b90" }}
+                                        className="dp-admin-action-button"
                                         icon={<ReloadOutlined />}
                                     />
                                 </Tooltip>
@@ -107,7 +107,7 @@ export default function StatusControlTab({
                                     <Button
                                         type="text"
                                         aria-label="Xóa tài khoản"
-                                        style={{ color: "#f09b90" }}
+                                        className="dp-admin-action-button"
                                         icon={<DeleteOutlined />}
                                         disabled={record.role === "root"}
                                     />
@@ -146,9 +146,16 @@ export default function StatusControlTab({
                         ]}
                     />
                 </Space>
-                <Button size="large" onClick={onRefresh} loading={loading}>
-                    Làm mới dữ liệu
-                </Button>
+                <Tooltip title="Làm mới dữ liệu tài khoản">
+                    <Button
+                        type="text"
+                        icon={<ReloadOutlined />}
+                        aria-label="Làm mới dữ liệu tài khoản"
+                        className="dp-admin-action-button"
+                        onClick={onRefresh}
+                        loading={loading}
+                    />
+                </Tooltip>
             </Flex>
             <Table
                 dataSource={filteredUsers}

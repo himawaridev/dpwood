@@ -18,6 +18,7 @@ import {
     Statistic,
     Table,
     Tag,
+    Tooltip as AntTooltip,
     Typography,
 } from "antd";
 import {
@@ -27,6 +28,7 @@ import {
     ClockCircleOutlined,
     DollarOutlined,
     FileTextOutlined,
+    EyeOutlined,
     InboxOutlined,
     ReloadOutlined,
     ShoppingCartOutlined,
@@ -328,9 +330,16 @@ export default function AdminDashboard() {
 
                 <Space wrap>
                     <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
-                    <Button icon={<ReloadOutlined />} onClick={() => fetchDashboardData(true)} loading={data.refreshing}>
-                        Làm mới
-                    </Button>
+                    <AntTooltip title="Làm mới dữ liệu tổng quan">
+                        <Button
+                            type="text"
+                            icon={<ReloadOutlined />}
+                            aria-label="Làm mới dữ liệu tổng quan"
+                            className="dp-admin-action-button"
+                            onClick={() => fetchDashboardData(true)}
+                            loading={data.refreshing}
+                        />
+                    </AntTooltip>
                 </Space>
             </Flex>
 
@@ -342,9 +351,15 @@ export default function AdminDashboard() {
                     title={`${dashboard.lowStockProducts.length} sản phẩm sắp hết hàng`}
                     description="Ưu tiên kiểm tra tồn kho để tránh khách đặt sản phẩm không đủ số lượng."
                     action={
-                        <Button size="small" onClick={() => router.push("/admin/products")}>
-                            Xem sản phẩm
-                        </Button>
+                        <AntTooltip title="Xem sản phẩm tồn kho thấp">
+                            <Button
+                                type="text"
+                                icon={<EyeOutlined />}
+                                aria-label="Xem sản phẩm tồn kho thấp"
+                                className="dp-admin-action-button"
+                                onClick={() => router.push("/admin/products")}
+                            />
+                        </AntTooltip>
                     }
                 />
             )}
@@ -483,18 +498,42 @@ export default function AdminDashboard() {
                 <Col xs={24} lg={8}>
                     <Card title="Lối tắt quản trị" className="dp-admin-quick-card">
                         <div className="dp-admin-quick-actions">
-                            <Button icon={<AppstoreAddOutlined />} onClick={() => router.push("/admin/products")}>
-                                Quản lý sản phẩm
-                            </Button>
-                            <Button icon={<FileTextOutlined />} onClick={() => router.push("/admin/orders")}>
-                                Xử lý đơn hàng
-                            </Button>
-                            <Button icon={<BellOutlined />} onClick={() => router.push("/admin/notifications")}>
-                                Gửi thông báo
-                            </Button>
-                            <Button icon={<TeamOutlined />} onClick={() => router.push("/admin/users")}>
-                                Quản lý người dùng
-                            </Button>
+                            <AntTooltip title="Quản lý sản phẩm">
+                                <Button
+                                    type="text"
+                                    icon={<AppstoreAddOutlined />}
+                                    aria-label="Quản lý sản phẩm"
+                                    className="dp-admin-action-button"
+                                    onClick={() => router.push("/admin/products")}
+                                />
+                            </AntTooltip>
+                            <AntTooltip title="Xử lý đơn hàng">
+                                <Button
+                                    type="text"
+                                    icon={<FileTextOutlined />}
+                                    aria-label="Xử lý đơn hàng"
+                                    className="dp-admin-action-button"
+                                    onClick={() => router.push("/admin/orders")}
+                                />
+                            </AntTooltip>
+                            <AntTooltip title="Gửi thông báo">
+                                <Button
+                                    type="text"
+                                    icon={<BellOutlined />}
+                                    aria-label="Gửi thông báo"
+                                    className="dp-admin-action-button"
+                                    onClick={() => router.push("/admin/notifications")}
+                                />
+                            </AntTooltip>
+                            <AntTooltip title="Quản lý người dùng">
+                                <Button
+                                    type="text"
+                                    icon={<TeamOutlined />}
+                                    aria-label="Quản lý người dùng"
+                                    className="dp-admin-action-button"
+                                    onClick={() => router.push("/admin/users")}
+                                />
+                            </AntTooltip>
                         </div>
                     </Card>
                 </Col>
@@ -550,7 +589,17 @@ export default function AdminDashboard() {
                 <Col xs={24}>
                     <Card
                         title="Đơn hàng gần đây"
-                        extra={<Button type="link" onClick={() => router.push("/admin/orders")}>Xem tất cả</Button>}
+                        extra={
+                            <AntTooltip title="Xem tất cả đơn hàng">
+                                <Button
+                                    type="text"
+                                    icon={<EyeOutlined />}
+                                    aria-label="Xem tất cả đơn hàng"
+                                    className="dp-admin-action-button"
+                                    onClick={() => router.push("/admin/orders")}
+                                />
+                            </AntTooltip>
+                        }
                     >
                         <Table
                             dataSource={data.orders.slice(0, 8)}
@@ -567,7 +616,17 @@ export default function AdminDashboard() {
                 <Col xs={24}>
                     <Card
                         title="Cảnh báo tồn kho"
-                        extra={<Button type="link" onClick={() => router.push("/admin/products")}>Nhập thêm</Button>}
+                        extra={
+                            <AntTooltip title="Quản lý sản phẩm tồn kho">
+                                <Button
+                                    type="text"
+                                    icon={<AppstoreAddOutlined />}
+                                    aria-label="Quản lý sản phẩm tồn kho"
+                                    className="dp-admin-action-button"
+                                    onClick={() => router.push("/admin/products")}
+                                />
+                            </AntTooltip>
+                        }
                     >
                         <Table
                             dataSource={dashboard.lowStockProducts.slice(0, 8)}

@@ -2,13 +2,14 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { App, Button, Carousel, Col, Row, Skeleton, Typography } from "antd";
+import { App, Button, Carousel, Col, Popconfirm, Row, Skeleton, Tooltip, Typography } from "antd";
 import {
     AppstoreOutlined,
     ArrowRightOutlined,
     CheckCircleOutlined,
     ClockCircleOutlined,
     CustomerServiceOutlined,
+    DeleteOutlined,
     GiftOutlined,
     SafetyCertificateOutlined,
     TruckOutlined,
@@ -155,10 +156,13 @@ export default function LatestProducts() {
     const { message } = App.useApp();
     const router = useRouter();
     const [products, setProducts] = useState([]);
+    const [productCategories, setProductCategories] = useState([]);
     const [blogs, setBlogs] = useState([]);
     const [coupons, setCoupons] = useState([]);
     const [claimedCouponIds, setClaimedCouponIds] = useState(new Set());
+    const [couponWalletItems, setCouponWalletItems] = useState([]);
     const [claimingCouponId, setClaimingCouponId] = useState("");
+    const [deletingCouponId, setDeletingCouponId] = useState("");
     const [wishlistIds, setWishlistIds] = useState(new Set());
     const [wishlistLoadingId, setWishlistLoadingId] = useState("");
     const [loading, setLoading] = useState(true);
@@ -170,30 +174,41 @@ export default function LatestProducts() {
             const storedClaimedCoupons = readStoredClaimedCoupons();
             setClaimedCouponIds(storedClaimedCoupons);
 
-            const [productResponse, blogResponse, couponResponse] = await Promise.allSettled([
+            const [productResponse, categoryResponse, blogResponse, couponResponse] = await Promise.allSettled([
                 fetchProductsWithWakeRetry(),
+                api.get("/products/categories", { timeout: 12000 }),
                 api.get("/blogs?public=true", { timeout: 12000 }),
                 api.get("/coupons/active", { timeout: 12000 }),
             ]);
 
             setProducts(productResponse.status === "fulfilled" ? productResponse.value : []);
+            setProductCategories(
+                categoryResponse.status === "fulfilled" ? categoryResponse.value.data || [] : [],
+            );
             setBlogs(blogResponse.status === "fulfilled" ? blogResponse.value.data || [] : []);
-            setCoupons(couponResponse.status === "fulfilled" ? couponResponse.value.data || [] : []);
+            const activeCoupons = couponResponse.status === "fulfilled" ? couponResponse.value.data || [] : [];
 
             if (token) {
                 const [myCouponResponse, wishlistResponse] = await Promise.all([
                     api.get("/coupons/my").catch(() => ({ data: [] })),
                     api.get("/products/wishlist/me").catch(() => ({ data: [] })),
                 ]);
-                const nextClaimedCoupons = new Set([
-                    ...storedClaimedCoupons,
-                    ...getClaimedKeysFromWallet(myCouponResponse.data || []),
-                ]);
+                const nextWalletItems = (myCouponResponse.data || []).filter((item) => item.Coupon);
+                const nextClaimedCoupons = getClaimedKeysFromWallet(nextWalletItems);
+                const mergedCoupons = new Map(activeCoupons.map((coupon) => [String(coupon.id), coupon]));
+                nextWalletItems.forEach((item) => {
+                    mergedCoupons.set(String(item.Coupon.id), item.Coupon);
+                });
+
+                setCoupons([...mergedCoupons.values()]);
+                setCouponWalletItems(nextWalletItems);
                 setClaimedCouponIds(nextClaimedCoupons);
                 writeStoredClaimedCoupons(nextClaimedCoupons);
                 setWishlistIds(new Set((wishlistResponse.data || []).map((item) => String(item.productId))));
             } else {
+                setCoupons(activeCoupons);
                 setClaimedCouponIds(storedClaimedCoupons);
+                setCouponWalletItems([]);
                 setWishlistIds(new Set());
             }
         } finally {
@@ -218,9 +233,18 @@ export default function LatestProducts() {
     const couponSource = useMemo(
         () =>
             [...coupons]
-                .sort((a, b) => new Date(b.createdAt || b.startDate || 0) - new Date(a.createdAt || a.startDate || 0))
+                .sort((a, b) => {
+                    const aSaved = couponWalletItems.some(
+                        (item) => String(item.couponId || item.Coupon?.id) === String(a.id),
+                    );
+                    const bSaved = couponWalletItems.some(
+                        (item) => String(item.couponId || item.Coupon?.id) === String(b.id),
+                    );
+                    if (aSaved !== bSaved) return aSaved ? -1 : 1;
+                    return new Date(b.createdAt || b.startDate || 0) - new Date(a.createdAt || a.startDate || 0);
+                })
                 .slice(0, 3),
-        [coupons],
+        [couponWalletItems, coupons],
     );
     const homepageCouponItems = couponSource;
     const blogSource = blogs.filter((blog) => blog?.title);
@@ -246,8 +270,15 @@ export default function LatestProducts() {
 
     const categoryCards = useMemo(() => {
         const fallbackProducts = products.filter((product) => isUsableCategoryImage(getProductImage(product)));
+        const categoryDefinitions = productCategories.length
+            ? productCategories
+            : KITCHEN_CATEGORY_OPTIONS.map((category) => ({
+                  ...category,
+                  imageUrl: categoryFallbackImages[category.value],
+                  description: categoryDescriptions[category.value],
+              }));
 
-        return KITCHEN_CATEGORY_OPTIONS.map((category, index) => {
+        return categoryDefinitions.map((category, index) => {
             const categoryProducts = products.filter((product) => product.category === category.value);
             const imageProduct =
                 categoryProducts.find((product) => isUsableCategoryImage(getProductImage(product))) ||
@@ -257,16 +288,41 @@ export default function LatestProducts() {
             return {
                 ...category,
                 count: categoryProducts.length,
-                image: categoryFallbackImages[category.value] || categoryImage,
-                fallbackImage: categoryFallbackImages[category.value],
-                description: categoryDescriptions[category.value] || "Khám phá danh mục",
+                image: category.imageUrl || categoryFallbackImages[category.value] || categoryImage,
+                fallbackImage: categoryFallbackImages[category.value] || categoryImage || "/logo.png",
+                description: category.description || categoryDescriptions[category.value] || "Khám phá danh mục",
             };
         }).filter((category) => category.count > 0 && category.image);
-    }, [products]);
+    }, [productCategories, products]);
 
     const goToProduct = (product) => {
         if (!product?.id) return;
         router.push(`/products/${product.id}`);
+    };
+
+    const handleAddToCart = (product) => {
+        if (!product?.id || Number(product.stock || 0) <= 0) return;
+
+        const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+        const cartItemId = product.id;
+        const existingItem = cart.find((item) => (item.cartItemId || item.productId) === cartItemId);
+
+        if (existingItem) {
+            existingItem.quantity = Number(existingItem.quantity || 0) + 1;
+        } else {
+            cart.push({
+                cartItemId,
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                imageUrl: getProductImage(product),
+                quantity: 1,
+            });
+        }
+
+        localStorage.setItem("cart", JSON.stringify(cart));
+        window.dispatchEvent(new Event("cart-updated"));
+        message.success(`Đã thêm ${product.name} vào giỏ hàng.`);
     };
 
     const handleToggleWishlist = async (product) => {
@@ -344,6 +400,8 @@ export default function LatestProducts() {
         try {
             setClaimingCouponId(coupon.id);
             await api.post("/coupons/claim", { couponId: coupon.id });
+            const myCouponResponse = await api.get("/coupons/my");
+            setCouponWalletItems((myCouponResponse.data || []).filter((item) => item.Coupon));
             setClaimedCouponIds((prev) => {
                 const next = new Set([...prev, ...couponClaimKeys]);
                 writeStoredClaimedCoupons(next);
@@ -357,6 +415,7 @@ export default function LatestProducts() {
                 ...readStoredClaimedCoupons(),
                 ...getClaimedKeysFromWallet(myCouponResponse.data || []),
             ]);
+            setCouponWalletItems((myCouponResponse.data || []).filter((item) => item.Coupon));
             setClaimedCouponIds(nextClaimedCoupons);
             writeStoredClaimedCoupons(nextClaimedCoupons);
         } finally {
@@ -364,8 +423,33 @@ export default function LatestProducts() {
         }
     };
 
+    const handleDeleteCoupon = async (coupon, walletItem) => {
+        if (!walletItem?.id) return;
+
+        try {
+            setDeletingCouponId(walletItem.id);
+            await api.delete(`/coupons/my/${walletItem.id}`);
+
+            const removedKeys = new Set(getCouponClaimKeys(coupon));
+            setCouponWalletItems((current) => current.filter((item) => item.id !== walletItem.id));
+            setClaimedCouponIds((current) => {
+                const next = new Set([...current].filter((key) => !removedKeys.has(String(key))));
+                writeStoredClaimedCoupons(next);
+                return next;
+            });
+            message.success(`Đã xóa mã ${coupon.code} khỏi kho.`);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xóa mã giảm giá.");
+        } finally {
+            setDeletingCouponId("");
+        }
+    };
+
     const renderGiftCodeCard = (coupon) => {
         const isCouponClaimed = getCouponClaimKeys(coupon).some((key) => claimedCouponIds.has(key));
+        const walletItem = couponWalletItems.find(
+            (item) => String(item.couponId || item.Coupon?.id) === String(coupon.id),
+        );
 
         return (
             <article className={`webcake-coupon-card ${isCouponClaimed ? "webcake-coupon-card-claimed" : ""}`}>
@@ -390,15 +474,38 @@ export default function LatestProducts() {
                             </span>
                         )}
                     </div>
-                    <Button
-                        type={isCouponClaimed ? "default" : "primary"}
-                        icon={isCouponClaimed ? <CheckCircleOutlined /> : null}
-                        disabled={isCouponClaimed}
-                        loading={claimingCouponId === coupon.id}
-                        onClick={() => handleCouponAction(coupon)}
-                    >
-                        {isCouponClaimed ? "Đã lấy mã" : "Lưu mã"}
-                    </Button>
+                    <div className="dp-coupon-wallet-actions">
+                        <Button
+                            type={isCouponClaimed ? "default" : "primary"}
+                            icon={isCouponClaimed ? <CheckCircleOutlined /> : null}
+                            disabled={isCouponClaimed}
+                            loading={claimingCouponId === coupon.id}
+                            onClick={() => handleCouponAction(coupon)}
+                        >
+                            {isCouponClaimed ? "Đã lấy mã" : "Lưu mã"}
+                        </Button>
+                        {walletItem && (
+                            <Popconfirm
+                                title={`Xóa mã ${coupon.code}?`}
+                                description="Mã sẽ được xóa khỏi kho ưu đãi của bạn."
+                                okText="Xóa"
+                                cancelText="Giữ lại"
+                                okButtonProps={{ danger: true }}
+                                onConfirm={() => handleDeleteCoupon(coupon, walletItem)}
+                            >
+                                <Tooltip title="Xóa mã khỏi kho">
+                                    <Button
+                                        type="text"
+                                        danger
+                                        aria-label={`Xóa mã ${coupon.code} khỏi kho`}
+                                        icon={<DeleteOutlined />}
+                                        loading={deletingCouponId === walletItem.id}
+                                        className="dp-coupon-delete-button"
+                                    />
+                                </Tooltip>
+                            </Popconfirm>
+                        )}
+                    </div>
                 </div>
             </article>
         );
@@ -495,9 +602,9 @@ export default function LatestProducts() {
                                             src={category.image}
                                             alt={category.label}
                                             onError={(event) => {
-                                                if (event.currentTarget.src !== category.fallbackImage) {
-                                                    event.currentTarget.src = category.fallbackImage;
-                                                }
+                                                if (event.currentTarget.dataset.fallbackApplied) return;
+                                                event.currentTarget.dataset.fallbackApplied = "true";
+                                                event.currentTarget.src = category.fallbackImage;
                                             }}
                                         />
                                         <span className="webcake-category-label">
@@ -549,7 +656,7 @@ export default function LatestProducts() {
                                     <ProductCard
                                         product={product}
                                         badge="icon-only"
-                                        onBuyNow={() => goToProduct(product)}
+                                        onBuyNow={handleAddToCart}
                                         onClickDetail={() => goToProduct(product)}
                                         wished={wishlistIds.has(String(product.id))}
                                         wishlistLoading={wishlistLoadingId === String(product.id)}
@@ -611,7 +718,7 @@ export default function LatestProducts() {
                                 <Col xs={12} md={8} lg={6} key={`${product.id}-${index}`}>
                                     <ProductCard
                                         product={product}
-                                        onBuyNow={() => goToProduct(product)}
+                                        onBuyNow={handleAddToCart}
                                         onClickDetail={() => goToProduct(product)}
                                         wished={wishlistIds.has(String(product.id))}
                                         wishlistLoading={wishlistLoadingId === String(product.id)}

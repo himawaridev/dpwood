@@ -121,7 +121,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
             ),
         },
         {
-            title: "Chi tiết",
+            title: "Hành động",
             key: "details",
             fixed: "right",
             render: (_, record) => (
@@ -131,8 +131,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
                         icon={<EyeOutlined />}
                         aria-label="Xem chi tiết đơn hàng"
                         onClick={() => onViewDetails(record)}
-                        size="small"
-                        style={{ color: "#f09b90" }}
+                        className="dp-admin-action-button"
                     />
                 </Tooltip>
             ),

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { App, Typography, Tabs, Input, Space, Button, Badge, Flex } from "antd";
+import { App, Typography, Tabs, Input, Space, Button, Badge, Flex, Tooltip } from "antd";
 import { ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 import OrderTable from "./components/OrderTable";
@@ -134,9 +134,16 @@ export default function AdminOrdersPage() {
                         style={{ width: 260 }}
                         enterButton={<SearchOutlined />}
                     />
-                    <Button icon={<ReloadOutlined />} onClick={fetchOrders} loading={loading}>
-                        Làm mới
-                    </Button>
+                    <Tooltip title="Làm mới danh sách đơn hàng">
+                        <Button
+                            type="text"
+                            icon={<ReloadOutlined />}
+                            aria-label="Làm mới danh sách đơn hàng"
+                            className="dp-admin-action-button"
+                            onClick={fetchOrders}
+                            loading={loading}
+                        />
+                    </Tooltip>
                 </Space>
             </Flex>
 

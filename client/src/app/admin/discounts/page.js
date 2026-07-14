@@ -14,6 +14,7 @@ import {
     Space,
     Table,
     Tag,
+    Tooltip,
     Typography,
 } from "antd";
 import { DeleteOutlined, PlusOutlined, ReloadOutlined, TagOutlined } from "@ant-design/icons";
@@ -121,7 +122,7 @@ export default function AdminDiscountPage() {
             },
         },
         {
-            title: "",
+            title: "Hành động",
             key: "action",
             width: 110,
             render: (_, record) => (
@@ -131,9 +132,14 @@ export default function AdminDiscountPage() {
                     cancelText="Hủy"
                     onConfirm={() => handleDelete(record.id)}
                 >
-                    <Button danger icon={<DeleteOutlined />}>
-                        Xóa
-                    </Button>
+                    <Tooltip title="Xóa mã giảm giá">
+                        <Button
+                            type="text"
+                            icon={<DeleteOutlined />}
+                            aria-label="Xóa mã giảm giá"
+                            className="dp-admin-action-button"
+                        />
+                    </Tooltip>
                 </Popconfirm>
             ),
         },
@@ -151,19 +157,28 @@ export default function AdminDiscountPage() {
                     </Text>
                 </div>
                 <Space wrap>
-                    <Button icon={<ReloadOutlined />} onClick={fetchDiscounts} loading={loading}>
-                        Làm mới
-                    </Button>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => {
-                            form.resetFields();
-                            setIsModalOpen(true);
-                        }}
-                    >
-                        Thêm mã mới
-                    </Button>
+                    <Tooltip title="Làm mới danh sách mã">
+                        <Button
+                            type="text"
+                            icon={<ReloadOutlined />}
+                            aria-label="Làm mới danh sách mã giảm giá"
+                            className="dp-admin-action-button"
+                            onClick={fetchDiscounts}
+                            loading={loading}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Thêm mã giảm giá mới">
+                        <Button
+                            type="text"
+                            icon={<PlusOutlined />}
+                            aria-label="Thêm mã giảm giá mới"
+                            className="dp-admin-action-button"
+                            onClick={() => {
+                                form.resetFields();
+                                setIsModalOpen(true);
+                            }}
+                        />
+                    </Tooltip>
                 </Space>
             </Flex>
 

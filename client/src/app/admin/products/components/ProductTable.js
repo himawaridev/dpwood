@@ -7,6 +7,7 @@ import {
     FireOutlined,
     FileTextOutlined,
     PlusOutlined,
+    PictureOutlined,
     ReloadOutlined,
     SearchOutlined,
     UploadOutlined,
@@ -32,11 +33,12 @@ export default function ProductTable({
     onImportJson,
     onDownloadSample,
     jsonLoading,
+    onManageCategories,
 }) {
     const [searchText, setSearchText] = useState("");
 
     const filteredProducts = products.filter((product) =>
-        `${product.name || ""} ${product.brand || ""} ${product.material || ""} ${product.color || ""} ${getKitchenCategoryLabel(product.category)}`
+        `${product.name || ""} ${product.brand || ""} ${product.material || ""} ${product.color || ""} ${product.categoryLabel || getKitchenCategoryLabel(product.category)}`
             .toLowerCase()
             .includes(searchText.toLowerCase()),
     );
@@ -69,7 +71,7 @@ export default function ProductTable({
                 <Flex vertical gap={4}>
                     <Text strong>{record.name}</Text>
                     <Space size={6} wrap>
-                        <Tag color="pink">{getKitchenCategoryLabel(record.category)}</Tag>
+                        <Tag color="#222">{record.categoryLabel || getKitchenCategoryLabel(record.category)}</Tag>
                         {record.brand && <Tag>{record.brand}</Tag>}
                         {record.material && <Tag>{record.material}</Tag>}
                         {record.color && <Tag color="geekblue">{record.color}</Tag>}
@@ -129,7 +131,7 @@ export default function ProductTable({
                             type="text"
                             icon={<EditOutlined />}
                             aria-label="Chỉnh sửa sản phẩm"
-                            style={{ color: "#f09b90" }}
+                            className="dp-admin-action-button"
                             onClick={() => onEdit(record)}
                         />
                     </Tooltip>
@@ -144,7 +146,7 @@ export default function ProductTable({
                                 type="text"
                                 icon={<DeleteOutlined />}
                                 aria-label="Xóa sản phẩm"
-                                style={{ color: "#f09b90" }}
+                                className="dp-admin-action-button"
                             />
                         </Tooltip>
                     </Popconfirm>
@@ -173,45 +175,81 @@ export default function ProductTable({
                         style={{ width: 280 }}
                         enterButton={<SearchOutlined />}
                     />
-                    <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading}>
-                        Làm mới
-                    </Button>
-                    <Button
-                        icon={<DownloadOutlined />}
-                        onClick={onExportJson}
-                        disabled={loading || !products.length}
-                    >
-                        Xuất JSON
-                    </Button>
-                    <Upload
-                        accept="application/json,.json"
-                        showUploadList={false}
-                        beforeUpload={onImportJson}
-                        disabled={jsonLoading}
-                    >
-                        <Button icon={<UploadOutlined />} loading={jsonLoading}>
-                            Import JSON
-                        </Button>
-                    </Upload>
-                    <Button
-                        icon={<FileTextOutlined />}
-                        onClick={onDownloadSample}
-                        loading={jsonLoading}
-                    >
-                        Tải file mẫu
-                    </Button>
-                    <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={onDeleteAll}
-                        loading={deletingAll}
-                        disabled={loading || !products.length}
-                    >
-                        Xóa tất cả
-                    </Button>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
-                        Thêm mới
-                    </Button>
+                    <Tooltip title="Làm mới danh sách">
+                        <Button
+                            type="text"
+                            icon={<ReloadOutlined />}
+                            aria-label="Làm mới danh sách sản phẩm"
+                            className="dp-admin-action-button"
+                            onClick={onRefresh}
+                            loading={loading}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Quản lý danh mục">
+                        <Button
+                            type="text"
+                            icon={<PictureOutlined />}
+                            aria-label="Quản lý danh mục sản phẩm"
+                            className="dp-admin-action-button"
+                            onClick={onManageCategories}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Xuất sản phẩm ra JSON">
+                        <Button
+                            type="text"
+                            icon={<DownloadOutlined />}
+                            aria-label="Xuất sản phẩm ra JSON"
+                            className="dp-admin-action-button"
+                            onClick={onExportJson}
+                            disabled={loading || !products.length}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Nhập sản phẩm từ JSON">
+                        <Upload
+                            accept="application/json,.json"
+                            showUploadList={false}
+                            beforeUpload={onImportJson}
+                            disabled={jsonLoading}
+                        >
+                            <Button
+                                type="text"
+                                icon={<UploadOutlined />}
+                                aria-label="Nhập sản phẩm từ JSON"
+                                className="dp-admin-action-button"
+                                loading={jsonLoading}
+                            />
+                        </Upload>
+                    </Tooltip>
+                    <Tooltip title="Tải file JSON mẫu">
+                        <Button
+                            type="text"
+                            icon={<FileTextOutlined />}
+                            aria-label="Tải file JSON mẫu"
+                            className="dp-admin-action-button"
+                            onClick={onDownloadSample}
+                            loading={jsonLoading}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Xóa toàn bộ sản phẩm">
+                        <Button
+                            type="text"
+                            icon={<DeleteOutlined />}
+                            aria-label="Xóa toàn bộ sản phẩm"
+                            className="dp-admin-action-button"
+                            onClick={onDeleteAll}
+                            loading={deletingAll}
+                            disabled={loading || !products.length}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Thêm sản phẩm mới">
+                        <Button
+                            type="text"
+                            icon={<PlusOutlined />}
+                            aria-label="Thêm sản phẩm mới"
+                            className="dp-admin-action-button"
+                            onClick={onAdd}
+                        />
+                    </Tooltip>
                 </Space>
             </Flex>
 

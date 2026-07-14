@@ -21,6 +21,7 @@ import {
     Space,
     Switch,
     Tag,
+    Tooltip,
     Typography,
 } from "antd";
 import {
@@ -28,10 +29,13 @@ import {
     CalendarOutlined,
     CheckCircleOutlined,
     CustomerServiceOutlined,
+    DeleteOutlined,
     EditOutlined,
+    EyeOutlined,
     FileTextOutlined,
     RobotOutlined,
     SafetyCertificateOutlined,
+    SaveOutlined,
     StopOutlined,
     ThunderboltOutlined,
 } from "@ant-design/icons";
@@ -238,7 +242,17 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             Blog vừa tạo
                         </Space>
                     }
-                    extra={<Button onClick={() => router.push("/admin/blogs")}>Xem bài viết</Button>}
+                    extra={
+                        <Tooltip title="Xem bài viết">
+                            <Button
+                                type="text"
+                                icon={<EyeOutlined />}
+                                aria-label="Xem bài viết"
+                                className="dp-admin-action-button"
+                                onClick={() => router.push("/admin/blogs")}
+                            />
+                        </Tooltip>
+                    }
                 >
                     <div className="dp-admin-ai-result-list">
                         {createdBlogs.map((blog) => (
@@ -253,9 +267,15 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                     <Tag color={blog.isPublished ? "success" : "default"}>
                                         {blog.isPublished ? "Công khai" : "Bản nháp"}
                                     </Tag>
-                                    <Button type="link" onClick={() => router.push(`/admin/blogs/${blog.id}?from=ai`)}>
-                                        Chỉnh sửa
-                                    </Button>
+                                    <Tooltip title="Chỉnh sửa bài viết">
+                                        <Button
+                                            type="text"
+                                            icon={<EditOutlined />}
+                                            aria-label="Chỉnh sửa bài viết"
+                                            className="dp-admin-action-button"
+                                            onClick={() => router.push(`/admin/blogs/${blog.id}?from=ai`)}
+                                        />
+                                    </Tooltip>
                                 </Space>
                             </div>
                         ))}
@@ -274,10 +294,25 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     }
                     extra={
                         <Space wrap>
-                            <Button onClick={() => setPendingProducts([])}>Xóa bản nháp</Button>
-                            <Button type="primary" loading={productLoading} onClick={handleSavePendingProducts}>
-                                Lưu tất cả
-                            </Button>
+                            <Tooltip title="Xóa toàn bộ bản nháp">
+                                <Button
+                                    type="text"
+                                    icon={<DeleteOutlined />}
+                                    aria-label="Xóa toàn bộ bản nháp"
+                                    className="dp-admin-action-button"
+                                    onClick={() => setPendingProducts([])}
+                                />
+                            </Tooltip>
+                            <Tooltip title="Lưu tất cả sản phẩm">
+                                <Button
+                                    type="text"
+                                    icon={<SaveOutlined />}
+                                    aria-label="Lưu tất cả sản phẩm"
+                                    className="dp-admin-action-button"
+                                    loading={productLoading}
+                                    onClick={handleSavePendingProducts}
+                                />
+                            </Tooltip>
                         </Space>
                     }
                 >
@@ -344,7 +379,17 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             Sản phẩm vừa tạo
                         </Space>
                     }
-                    extra={<Button onClick={() => router.push("/admin/products")}>Xem sản phẩm</Button>}
+                    extra={
+                        <Tooltip title="Xem sản phẩm">
+                            <Button
+                                type="text"
+                                icon={<EyeOutlined />}
+                                aria-label="Xem sản phẩm"
+                                className="dp-admin-action-button"
+                                onClick={() => router.push("/admin/products")}
+                            />
+                        </Tooltip>
+                    }
                 >
                     <div className="dp-admin-ai-result-list">
                         {createdProducts.map((product) => (
@@ -357,9 +402,15 @@ export function AdminAiCenterSection({ section = "blog" }) {
                                 </div>
                                 <Space wrap>
                                     <Tag>{product.category || "kitchen"}</Tag>
-                                    <Button type="link" onClick={() => router.push(`/products/${product.id}`)}>
-                                        Xem
-                                    </Button>
+                                    <Tooltip title="Xem sản phẩm">
+                                        <Button
+                                            type="text"
+                                            icon={<EyeOutlined />}
+                                            aria-label="Xem sản phẩm"
+                                            className="dp-admin-action-button"
+                                            onClick={() => router.push(`/products/${product.id}`)}
+                                        />
+                                    </Tooltip>
                                 </Space>
                             </div>
                         ))}
@@ -376,7 +427,17 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             Kết quả xử lý support
                         </Space>
                     }
-                    extra={<Button onClick={() => router.push("/admin/support")}>Mở yêu cầu hỗ trợ</Button>}
+                    extra={
+                        <Tooltip title="Mở yêu cầu hỗ trợ">
+                            <Button
+                                type="text"
+                                icon={<EyeOutlined />}
+                                aria-label="Mở yêu cầu hỗ trợ"
+                                className="dp-admin-action-button"
+                                onClick={() => router.push("/admin/support")}
+                            />
+                        </Tooltip>
+                    }
                 >
                     <Row gutter={[16, 16]}>
                         <Col xs={24} lg={12}>
@@ -816,12 +877,24 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     </Paragraph>
                 </div>
                 <Space wrap>
-                    <Button icon={<FileTextOutlined />} onClick={() => router.push("/admin/ai/blog")}>
-                        Bài viết AI
-                    </Button>
-                    <Button icon={<CustomerServiceOutlined />} onClick={() => router.push("/admin/ai/support")}>
-                        Hỗ trợ AI
-                    </Button>
+                    <Tooltip title="Bài viết AI">
+                        <Button
+                            type="text"
+                            icon={<FileTextOutlined />}
+                            aria-label="Bài viết AI"
+                            className="dp-admin-action-button"
+                            onClick={() => router.push("/admin/ai/blog")}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Hỗ trợ AI">
+                        <Button
+                            type="text"
+                            icon={<CustomerServiceOutlined />}
+                            aria-label="Hỗ trợ AI"
+                            className="dp-admin-action-button"
+                            onClick={() => router.push("/admin/ai/support")}
+                        />
+                    </Tooltip>
                 </Space>
             </Flex>
 

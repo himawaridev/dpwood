@@ -1,5 +1,6 @@
 import React from "react";
-import { Table, Tag, Input, Button, Flex } from "antd";
+import { Table, Tag, Input, Button, Flex, Tooltip } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 
 export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
     const authLogs = logs.filter((log) =>
@@ -58,9 +59,16 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
                     onSearch={(value) => onFetchLogs(value)}
                     style={{ maxWidth: 400 }}
                 />
-                <Button size="large" onClick={() => onFetchLogs("")} loading={loadingLogs}>
-                    Làm mới log
-                </Button>
+                <Tooltip title="Làm mới lịch sử đăng nhập">
+                    <Button
+                        type="text"
+                        icon={<ReloadOutlined />}
+                        aria-label="Làm mới lịch sử đăng nhập"
+                        className="dp-admin-action-button"
+                        onClick={() => onFetchLogs("")}
+                        loading={loadingLogs}
+                    />
+                </Tooltip>
             </Flex>
             <Table
                 dataSource={authLogs}

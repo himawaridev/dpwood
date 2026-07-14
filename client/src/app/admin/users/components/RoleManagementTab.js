@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Table, Select, Tag, Button, Typography, Input, Flex, Space } from "antd";
+import { Table, Select, Tag, Button, Typography, Input, Flex, Space, Tooltip } from "antd";
+import { ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -52,13 +53,16 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                             }
                             style={{ width: 150 }}
                         />
-                        <Button
-                            type={isDirty ? "primary" : "default"}
-                            disabled={!normalizedDraft || !isDirty}
-                            onClick={() => onUpdatePhone(record.id, normalizedDraft)}
-                        >
-                            Lưu
-                        </Button>
+                        <Tooltip title="Lưu số điện thoại">
+                            <Button
+                                type="text"
+                                icon={<SaveOutlined />}
+                                aria-label="Lưu số điện thoại"
+                                className="dp-admin-action-button"
+                                disabled={!normalizedDraft || !isDirty}
+                                onClick={() => onUpdatePhone(record.id, normalizedDraft)}
+                            />
+                        </Tooltip>
                     </Space.Compact>
                 );
             },
@@ -74,7 +78,7 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
             ),
         },
         {
-            title: "Thay đổi quyền",
+            title: "Hành động",
             key: "action",
             render: (_, record) => (
                 <Select
@@ -119,9 +123,16 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                         ]}
                     />
                 </Space>
-                <Button size="large" onClick={onRefresh} loading={loading}>
-                    Làm mới danh sách
-                </Button>
+                <Tooltip title="Làm mới danh sách người dùng">
+                    <Button
+                        type="text"
+                        icon={<ReloadOutlined />}
+                        aria-label="Làm mới danh sách người dùng"
+                        className="dp-admin-action-button"
+                        onClick={onRefresh}
+                        loading={loading}
+                    />
+                </Tooltip>
             </Flex>
             <Table
                 dataSource={filteredUsers}

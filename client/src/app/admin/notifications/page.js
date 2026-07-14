@@ -144,7 +144,7 @@ export default function AdminNotificationsPage() {
                             type="text"
                             icon={<EditOutlined />}
                             aria-label="Chỉnh sửa thông báo"
-                            style={{ color: "#f09b90" }}
+                            className="dp-admin-action-button"
                             onClick={() => {
                                 setEditingItem(record);
                                 setIsModalVisible(true);
@@ -160,7 +160,7 @@ export default function AdminNotificationsPage() {
                                 type="text"
                                 icon={<DeleteOutlined />}
                                 aria-label="Xóa thông báo"
-                                style={{ color: "#f09b90" }}
+                                className="dp-admin-action-button"
                             />
                         </Tooltip>
                     </Popconfirm>
@@ -175,16 +175,18 @@ export default function AdminNotificationsPage() {
                 <Title level={3} style={{ margin: 0 }}>
                     Quản Lý Thông Báo Hệ Thống
                 </Title>
-                <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                        setEditingItem(null);
-                        setIsModalVisible(true);
-                    }}
-                >
-                    Thêm Mới
-                </Button>
+                <Tooltip title="Thêm thông báo mới">
+                    <Button
+                        type="text"
+                        icon={<PlusOutlined />}
+                        aria-label="Thêm thông báo mới"
+                        className="dp-admin-action-button"
+                        onClick={() => {
+                            setEditingItem(null);
+                            setIsModalVisible(true);
+                        }}
+                    />
+                </Tooltip>
             </Flex>
             <Table
                 dataSource={notifications}

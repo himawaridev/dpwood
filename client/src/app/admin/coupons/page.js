@@ -180,7 +180,7 @@ export default function AdminCouponsPage() {
                             type="text"
                             icon={<EditOutlined />}
                             aria-label="Chỉnh sửa mã giảm giá"
-                            style={{ color: "#f09b90" }}
+                            className="dp-admin-action-button"
                             onClick={() => handleOpenEdit(record)}
                         />
                     </Tooltip>
@@ -196,7 +196,7 @@ export default function AdminCouponsPage() {
                                 type="text"
                                 icon={<DeleteOutlined />}
                                 aria-label="Xóa mã giảm giá"
-                                style={{ color: "#f09b90" }}
+                                className="dp-admin-action-button"
                             />
                         </Tooltip>
                     </Popconfirm>
@@ -216,12 +216,25 @@ export default function AdminCouponsPage() {
                     <Text type="secondary">Các mã đang hoạt động sẽ hiển thị ở trang chủ và kho mã thanh toán.</Text>
                 </div>
                 <Space wrap>
-                    <Button icon={<ReloadOutlined />} onClick={fetchCoupons} loading={loading}>
-                        Làm mới
-                    </Button>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
-                        Tạo mã giảm giá
-                    </Button>
+                    <Tooltip title="Làm mới danh sách mã">
+                        <Button
+                            type="text"
+                            icon={<ReloadOutlined />}
+                            aria-label="Làm mới danh sách mã giảm giá"
+                            className="dp-admin-action-button"
+                            onClick={fetchCoupons}
+                            loading={loading}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Tạo mã giảm giá">
+                        <Button
+                            type="text"
+                            icon={<PlusOutlined />}
+                            aria-label="Tạo mã giảm giá"
+                            className="dp-admin-action-button"
+                            onClick={handleOpenCreate}
+                        />
+                    </Tooltip>
                 </Space>
             </Flex>
 

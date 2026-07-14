@@ -8,7 +8,7 @@ const booleanLabel = (value) => (value ? "Dùng được" : "Không khuyến ngh
 
 export default function ProductKitchenSpecs({ product, selectedVariant }) {
     const specs = [
-        { label: "Danh mục", value: getKitchenCategoryLabel(product.category) },
+        { label: "Danh mục", value: product.categoryLabel || getKitchenCategoryLabel(product.category) },
         { label: "Thương hiệu", value: product.brand },
         { label: "Chất liệu", value: product.material },
         { label: "Màu sắc", value: selectedVariant?.color || product.color },

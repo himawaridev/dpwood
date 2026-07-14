@@ -5,6 +5,7 @@ import { Alert, App, Input, Modal, Typography } from "antd";
 import api from "@/utils/axios";
 import ProductModal from "./components/ProductModal";
 import ProductTable from "./components/ProductTable";
+import CategoryManagerModal from "./components/CategoryManagerModal";
 
 const { Text } = Typography;
 const DELETE_ALL_CONFIRMATION = "XOA TAT CA";
@@ -20,12 +21,20 @@ export default function AdminProductsPage() {
     const [deleteAllConfirmation, setDeleteAllConfirmation] = useState("");
     const [deletingAll, setDeletingAll] = useState(false);
     const [jsonLoading, setJsonLoading] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [facets, setFacets] = useState({ materials: [], colors: [] });
+    const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
 
     const fetchProducts = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await api.get("/products");
-            setProducts(res.data || []);
+            const [productResponse, categoryResponse] = await Promise.all([
+                api.get("/products", { params: { withFacets: true } }),
+                api.get("/products/categories"),
+            ]);
+            setProducts(productResponse.data?.products || []);
+            setFacets(productResponse.data?.facets || { materials: [], colors: [] });
+            setCategories(categoryResponse.data || []);
         } catch {
             message.error("Không thể lấy danh sách sản phẩm");
         } finally {
@@ -47,6 +56,12 @@ export default function AdminProductsPage() {
         setEditingProduct(record);
         setDraftProduct(null);
         setIsModalVisible(true);
+    };
+
+    const handleCreateCategory = async (label) => {
+        const response = await api.post("/products/categories", { label });
+        await fetchProducts();
+        return response.data;
     };
 
     const handleSave = async (values) => {
@@ -269,6 +284,14 @@ export default function AdminProductsPage() {
                 onImportJson={handleImportJson}
                 onDownloadSample={handleDownloadSample}
                 jsonLoading={jsonLoading}
+                onManageCategories={() => setCategoryManagerOpen(true)}
+            />
+
+            <CategoryManagerModal
+                open={categoryManagerOpen}
+                categories={categories}
+                onClose={() => setCategoryManagerOpen(false)}
+                onRefresh={fetchProducts}
             />
 
             <Modal
@@ -315,6 +338,10 @@ export default function AdminProductsPage() {
                 onSave={handleSave}
                 editingProduct={editingProduct}
                 draftProduct={draftProduct}
+                categories={categories}
+                materialOptions={facets.materials || []}
+                colorOptions={facets.colors || []}
+                onCreateCategory={handleCreateCategory}
             />
         </>
     );

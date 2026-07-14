@@ -47,6 +47,7 @@ export default function ProductCard({
     product,
     badge,
     onClickDetail,
+    onBuyNow,
     wished = false,
     onToggleWishlist,
     wishlistLoading = false,
@@ -98,11 +99,24 @@ export default function ProductCard({
                                 )}
                             </span>
                         )}
-                        <span className="webcake-product-actions" aria-hidden="true">
-                            <span><EyeOutlined /></span>
-                            <span><ShoppingCartOutlined /></span>
-                        </span>
                     </button>
+                    <span className="webcake-product-actions">
+                        <Tooltip title="Xem chi tiết">
+                            <button type="button" onClick={onClickDetail} aria-label="Xem chi tiết sản phẩm">
+                                <EyeOutlined />
+                            </button>
+                        </Tooltip>
+                        <Tooltip title={inStock ? "Thêm vào giỏ hàng" : "Sản phẩm đã hết hàng"}>
+                            <button
+                                type="button"
+                                onClick={() => onBuyNow?.(product)}
+                                disabled={!inStock}
+                                aria-label="Thêm sản phẩm vào giỏ hàng"
+                            >
+                                <ShoppingCartOutlined />
+                            </button>
+                        </Tooltip>
+                    </span>
                     {onToggleWishlist && (
                         <Tooltip title={wished ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}>
                             <button
@@ -119,11 +133,13 @@ export default function ProductCard({
                 </div>
             }
         >
-            <Flex vertical align="center" gap={8}>
+            <Flex vertical align="stretch" gap={8}>
                 <button type="button" onClick={onClickDetail} className="webcake-product-name">
                     {product.name}
                 </button>
-                <Text className="webcake-product-category">{getKitchenCategoryLabel(product.category)}</Text>
+                <Text className="webcake-product-category">
+                    {product.categoryLabel || getKitchenCategoryLabel(product.category)}
+                </Text>
                 <Text className="webcake-product-price">{formatCurrency(product.price)}</Text>
                 <div className="webcake-product-rating">
                     <DisplayRatingStars value={rating} />

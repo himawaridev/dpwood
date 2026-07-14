@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, InputNumber, Button, Flex, Typography, Row, Col, Select, Switch, Divider } from "antd";
+import { App, Modal, Form, Input, InputNumber, Button, Flex, Typography, Row, Col, Select as AntSelect, Switch, Divider } from "antd";
 import { MinusCircleOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
 import {
     KITCHEN_CATEGORY_OPTIONS,
@@ -9,9 +9,95 @@ import {
 
 const createVariantId = () => `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-export default function ProductModal({ isVisible, onClose, onSave, editingProduct, draftProduct }) {
+const mergeOptions = (...groups) =>
+    [...new Set(groups.flat().filter(Boolean).map((item) => String(item).trim()).filter(Boolean))];
+
+function CreatableSelect({ options, onAddOption, addLabel, value, onChange, ...selectProps }) {
+    const { message } = App.useApp();
+    const [newOption, setNewOption] = useState("");
+    const [adding, setAdding] = useState(false);
+    const [open, setOpen] = useState(false);
+
+    const handleAdd = async () => {
+        const label = newOption.trim();
+        if (!label) {
+            message.warning(`Vui lòng nhập ${addLabel.toLowerCase()}.`);
+            return;
+        }
+
+        try {
+            setAdding(true);
+            const created = await onAddOption(label);
+            onChange?.(created?.value || label);
+            setNewOption("");
+            setOpen(false);
+        } catch (error) {
+            message.error(error.response?.data?.message || `Không thể thêm ${addLabel.toLowerCase()}.`);
+        } finally {
+            setAdding(false);
+        }
+    };
+
+    return (
+        <Flex gap={8} align="center">
+            <AntSelect
+                {...selectProps}
+                value={value}
+                onChange={onChange}
+                open={open}
+                onOpenChange={setOpen}
+                options={options}
+                style={{ flex: 1, minWidth: 0 }}
+                popupRender={(menu) => (
+                    <>
+                        {menu}
+                        <Divider style={{ margin: "8px 0" }} />
+                        <Flex gap={8} style={{ padding: "0 8px 8px" }}>
+                            <Input
+                                value={newOption}
+                                placeholder={`Nhập ${addLabel.toLowerCase()} mới`}
+                                onChange={(event) => setNewOption(event.target.value)}
+                                onKeyDown={(event) => event.stopPropagation()}
+                                onPressEnter={(event) => {
+                                    event.preventDefault();
+                                    handleAdd();
+                                }}
+                            />
+                            <Button
+                                type="text"
+                                icon={<PlusOutlined />}
+                                loading={adding}
+                                aria-label={`Thêm ${addLabel.toLowerCase()}`}
+                                onClick={handleAdd}
+                            />
+                        </Flex>
+                    </>
+                )}
+            />
+            <Button
+                icon={<PlusOutlined />}
+                aria-label={`Mở phần thêm ${addLabel.toLowerCase()}`}
+                onClick={() => setOpen(true)}
+            />
+        </Flex>
+    );
+}
+
+export default function ProductModal({
+    isVisible,
+    onClose,
+    onSave,
+    editingProduct,
+    draftProduct,
+    categories = [],
+    materialOptions = [],
+    colorOptions = [],
+    onCreateCategory = async (label) => ({ value: label, label }),
+}) {
     const [form] = Form.useForm();
     const [isMounted, setIsMounted] = useState(false);
+    const [dynamicMaterials, setDynamicMaterials] = useState([]);
+    const [dynamicColors, setDynamicColors] = useState([]);
     const watchedVariants = Form.useWatch("variants", form) || [];
     const hasVariants = watchedVariants.length > 0;
     const variantStockTotal = watchedVariants.reduce(
@@ -26,6 +112,17 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
 
     useEffect(() => {
         if (isVisible && isMounted) {
+            setDynamicMaterials(
+                mergeOptions(KITCHEN_MATERIAL_OPTIONS, materialOptions, [editingProduct?.material, draftProduct?.material]),
+            );
+            setDynamicColors(
+                mergeOptions(
+                    KITCHEN_COLOR_OPTIONS,
+                    colorOptions,
+                    [editingProduct?.color, draftProduct?.color],
+                    (editingProduct?.variants || draftProduct?.variants || []).map((variant) => variant?.color),
+                ),
+            );
             if (editingProduct) {
                 const currentImages =
                     editingProduct.images?.length > 0
@@ -53,7 +150,28 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                 });
             }
         }
-    }, [isVisible, editingProduct, draftProduct, form, isMounted]);
+    }, [isVisible, editingProduct, draftProduct, form, isMounted, materialOptions, colorOptions]);
+
+    const categoryOptions = mergeOptions(
+        categories.map((item) => item.value),
+        KITCHEN_CATEGORY_OPTIONS.map((item) => item.value),
+    ).map((value) => ({
+        value,
+        label:
+            categories.find((item) => item.value === value)?.label ||
+            KITCHEN_CATEGORY_OPTIONS.find((item) => item.value === value)?.label ||
+            value,
+    }));
+
+    const addMaterialOption = async (label) => {
+        setDynamicMaterials((current) => mergeOptions(current, [label]));
+        return { value: label, label };
+    };
+
+    const addColorOption = async (label) => {
+        setDynamicColors((current) => mergeOptions(current, [label]));
+        return { value: label, label };
+    };
 
     if (!isMounted) return null;
 
@@ -100,7 +218,13 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                             label="Danh mục"
                             rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
                         >
-                            <Select size="large" options={KITCHEN_CATEGORY_OPTIONS} />
+                            <CreatableSelect
+                                size="large"
+                                showSearch
+                                options={categoryOptions}
+                                addLabel="Danh mục"
+                                onAddOption={onCreateCategory}
+                            />
                         </Form.Item>
                     </Col>
                 </Row>
@@ -163,21 +287,25 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                         </Col>
                         <Col xs={24} md={12}>
                             <Form.Item name="material" label="Chất liệu">
-                                <Select
+                                <CreatableSelect
                                     allowClear
                                     showSearch
                                     placeholder="Chọn chất liệu"
-                                    options={KITCHEN_MATERIAL_OPTIONS.map((item) => ({ value: item, label: item }))}
+                                    options={dynamicMaterials.map((item) => ({ value: item, label: item }))}
+                                    addLabel="Chất liệu"
+                                    onAddOption={addMaterialOption}
                                 />
                             </Form.Item>
                         </Col>
                         <Col xs={24} md={12}>
                             <Form.Item name="color" label="Màu mặc định">
-                                <Select
+                                <CreatableSelect
                                     allowClear
                                     showSearch
                                     placeholder="Chọn màu sắc"
-                                    options={KITCHEN_COLOR_OPTIONS.map((item) => ({ value: item, label: item }))}
+                                    options={dynamicColors.map((item) => ({ value: item, label: item }))}
+                                    addLabel="Màu sắc"
+                                    onAddOption={addColorOption}
                                 />
                             </Form.Item>
                         </Col>
@@ -250,13 +378,15 @@ export default function ProductModal({ isVisible, onClose, onSave, editingProduc
                                                     label="Màu"
                                                     rules={[{ required: true, message: "Chọn màu" }]}
                                                 >
-                                                    <Select
+                                                    <CreatableSelect
                                                         showSearch
                                                         placeholder="Màu"
-                                                        options={KITCHEN_COLOR_OPTIONS.map((item) => ({
+                                                        options={dynamicColors.map((item) => ({
                                                             value: item,
                                                             label: item,
                                                         }))}
+                                                        addLabel="Màu sắc"
+                                                        onAddOption={addColorOption}
                                                     />
                                                 </Form.Item>
                                             </Col>

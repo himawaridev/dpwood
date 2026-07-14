@@ -118,7 +118,7 @@ export default function AdminSupportPage() {
                         type="text"
                         icon={<EyeOutlined />}
                         aria-label="Xem chi tiết ticket"
-                        style={{ color: "#f09b90" }}
+                        className="dp-admin-action-button"
                         onClick={() => handleViewDetail(record)}
                     />
                 </Tooltip>

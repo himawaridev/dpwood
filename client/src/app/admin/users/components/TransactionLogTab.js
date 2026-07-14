@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Table, Tag, Typography, Input, Button, Flex, Select, Space } from "antd";
+import { Table, Tag, Typography, Input, Button, Flex, Select, Space, Tooltip } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -173,9 +174,16 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
                         ]}
                     />
                 </Space>
-                <Button size="large" onClick={() => onFetchLogs("")} loading={loadingLogs}>
-                    Làm mới log
-                </Button>
+                <Tooltip title="Làm mới lịch sử giao dịch">
+                    <Button
+                        type="text"
+                        icon={<ReloadOutlined />}
+                        aria-label="Làm mới lịch sử giao dịch"
+                        className="dp-admin-action-button"
+                        onClick={() => onFetchLogs("")}
+                        loading={loadingLogs}
+                    />
+                </Tooltip>
             </Flex>
             <Table
                 dataSource={transactionLogs}

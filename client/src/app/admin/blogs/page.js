@@ -86,7 +86,7 @@ export default function AdminBlogPage() {
                             type="text"
                             icon={<EditOutlined />}
                             aria-label="Chỉnh sửa bài viết"
-                            style={{ color: "#f09b90" }}
+                            className="dp-admin-action-button"
                             onClick={() => router.push(`/admin/blogs/${record.id}`)}
                         />
                     </Tooltip>
@@ -101,7 +101,7 @@ export default function AdminBlogPage() {
                                 type="text"
                                 icon={<DeleteOutlined />}
                                 aria-label="Xóa bài viết"
-                                style={{ color: "#f09b90" }}
+                                className="dp-admin-action-button"
                             />
                         </Tooltip>
                     </Popconfirm>
@@ -116,9 +116,15 @@ export default function AdminBlogPage() {
                 <Title level={3} style={{ margin: 0 }}>
                     Quản lý cẩm nang / Blog
                 </Title>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push("/admin/blogs/create")}>
-                    Viết bài mới
-                </Button>
+                <Tooltip title="Viết bài mới">
+                    <Button
+                        type="text"
+                        icon={<PlusOutlined />}
+                        aria-label="Viết bài mới"
+                        className="dp-admin-action-button"
+                        onClick={() => router.push("/admin/blogs/create")}
+                    />
+                </Tooltip>
             </Flex>
 
             <Table

@@ -36,6 +36,7 @@ const parsePriceInput = (value = "") => value.replace(/\./g, "").replace(/[^\d]/
 export default function ProductsPage() {
     const { message } = App.useApp();
     const [products, setProducts] = useState([]);
+    const [productCategories, setProductCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState("");
     const [query, setQuery] = useState("");
@@ -58,9 +59,13 @@ export default function ProductsPage() {
         try {
             setLoading(true);
             setErrorMessage("");
-            const res = await api.get("/products", { params: { withFacets: true } });
-            setProducts(res.data?.products || []);
-            setFacets(res.data?.facets || { categories: [], materials: [], colors: [], brands: [] });
+            const [productResponse, categoryResponse] = await Promise.all([
+                api.get("/products", { params: { withFacets: true } }),
+                api.get("/products/categories"),
+            ]);
+            setProducts(productResponse.data?.products || []);
+            setFacets(productResponse.data?.facets || { categories: [], materials: [], colors: [], brands: [] });
+            setProductCategories(categoryResponse.data || []);
         } catch (error) {
             setProducts([]);
             setErrorMessage(error.response?.data?.message || error.message || "Không thể tải sản phẩm.");
@@ -87,7 +92,7 @@ export default function ProductsPage() {
         const nextSearch = new URLSearchParams(window.location.search).get("search");
         if (nextSearch) setQuery(nextSearch);
         const nextCategory = new URLSearchParams(window.location.search).get("category");
-        if (nextCategory && KITCHEN_CATEGORY_OPTIONS.some((item) => item.value === nextCategory)) {
+        if (nextCategory) {
             setCategory(nextCategory);
         }
     }, []);
@@ -237,7 +242,15 @@ export default function ProductsPage() {
                                         value={category}
                                         onChange={setCategory}
                                         style={{ width: "100%" }}
-                                        options={[{ value: "all", label: "Tất cả danh mục" }, ...KITCHEN_CATEGORY_OPTIONS]}
+                                        options={[
+                                            { value: "all", label: "Tất cả danh mục" },
+                                            ...(productCategories.length
+                                                ? productCategories.map((item) => ({
+                                                      value: item.value,
+                                                      label: item.label,
+                                                  }))
+                                                : KITCHEN_CATEGORY_OPTIONS),
+                                        ]}
                                     />
                                 </Col>
                                 <Col xs={24} sm={12} md={4}>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { App, Form, Input, Button, Switch, Typography, Row, Col, Card, Flex, Spin } from "antd";
+import { App, Form, Input, Button, Switch, Typography, Row, Col, Card, Flex, Spin, Tooltip } from "antd";
 import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import api from "@/utils/axios";
@@ -134,25 +134,29 @@ export default function BlogEditorPage() {
         <div>
             <Flex justify="space-between" align="center" style={{ marginBottom: 20 }}>
                 <Flex align="center" gap="small">
-                    <Button
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => router.push(returnPath)}
-                    >
-                        Quay lại
-                    </Button>
+                    <Tooltip title="Quay lại">
+                        <Button
+                            type="text"
+                            icon={<ArrowLeftOutlined />}
+                            aria-label="Quay lại"
+                            className="dp-admin-action-button"
+                            onClick={() => router.push(returnPath)}
+                        />
+                    </Tooltip>
                     <Title level={3} style={{ margin: 0 }}>
                         {isEditMode ? "Chỉnh sửa Bài viết" : "Viết bài mới"}
                     </Title>
                 </Flex>
-                <Button
-                    type="primary"
-                    size="large"
-                    icon={<SaveOutlined />}
-                    loading={loading}
-                    onClick={() => form.submit()}
-                >
-                    {isEditMode ? "Cập nhật thay đổi" : "Xuất bản bài viết"}
-                </Button>
+                <Tooltip title={isEditMode ? "Cập nhật thay đổi" : "Xuất bản bài viết"}>
+                    <Button
+                        type="text"
+                        icon={<SaveOutlined />}
+                        aria-label={isEditMode ? "Cập nhật thay đổi" : "Xuất bản bài viết"}
+                        className="dp-admin-action-button"
+                        loading={loading}
+                        onClick={() => form.submit()}
+                    />
+                </Tooltip>
             </Flex>
 
             {/* 🔴 3. Truyền initialValues={initialData} vào Form */}

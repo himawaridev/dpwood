@@ -2,12 +2,174 @@ const Product = require("../models/product");
 const ProductRating = require("../models/productRating");
 const Wishlist = require("../models/wishlist");
 const AuditLog = require("../models/auditLog");
+const ProductCategory = require("../models/productCategory");
 const { sequelize } = require("../config/connectSequelize");
 const { Op } = require("sequelize");
 const { normalizeProductImagePayload } = require("../utils/productImageUrl");
 
 const productForResponse = (product) =>
     normalizeProductImagePayload(product?.toJSON ? product.toJSON() : product);
+
+const DEFAULT_PRODUCT_CATEGORIES = [
+    {
+        value: "cookware",
+        label: "Nồi & chảo",
+        description: "Nồi, chảo và bộ dụng cụ nấu",
+        imageUrl: "https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=900&q=80",
+        sortOrder: 1,
+    },
+    {
+        value: "tableware",
+        label: "Bàn ăn",
+        description: "Bát, đĩa và bộ bàn ăn",
+        imageUrl: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=900&q=80",
+        sortOrder: 2,
+    },
+    {
+        value: "utensils",
+        label: "Dụng cụ bếp",
+        description: "Dao, muỗng và phụ kiện bếp",
+        imageUrl: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
+        sortOrder: 3,
+    },
+    {
+        value: "storage",
+        label: "Lưu trữ thực phẩm",
+        description: "Hộp, lọ và đồ bảo quản",
+        imageUrl: "https://images.unsplash.com/photo-1606914469633-bd39206ea739?auto=format&fit=crop&w=900&q=80",
+        sortOrder: 4,
+    },
+    {
+        value: "appliances",
+        label: "Gia dụng nhỏ",
+        description: "Thiết bị nhỏ cho căn bếp",
+        imageUrl: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=900&q=80",
+        sortOrder: 5,
+    },
+    {
+        value: "cleaning",
+        label: "Vệ sinh bếp",
+        description: "Dụng cụ vệ sinh tiện lợi",
+        imageUrl: "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=900&q=80",
+        sortOrder: 6,
+    },
+];
+
+const slugifyCategory = (value = "") =>
+    String(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[đĐ]/g, "d")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 100);
+
+const ensureDefaultProductCategories = async () => {
+    await ProductCategory.bulkCreate(DEFAULT_PRODUCT_CATEGORIES, { ignoreDuplicates: true });
+    return ProductCategory.findAll({
+        where: { isActive: true },
+        order: [["sortOrder", "ASC"], ["label", "ASC"]],
+    });
+};
+
+const getProductCategories = async (req, res) => {
+    try {
+        const categories = await ensureDefaultProductCategories();
+        res.status(200).json(categories);
+    } catch (error) {
+        console.error("getProductCategories error:", error);
+        res.status(500).json({ message: "Không thể tải danh mục sản phẩm", error: error.message });
+    }
+};
+
+const createProductCategory = async (req, res) => {
+    try {
+        const label = String(req.body.label || "").trim();
+        const value = slugifyCategory(req.body.value || label);
+        if (!label || !value) {
+            return res.status(400).json({ message: "Tên danh mục không hợp lệ" });
+        }
+
+        const existing = await ProductCategory.findOne({ where: { value } });
+        if (existing) {
+            if (!existing.isActive) {
+                await existing.update({
+                    label,
+                    imageUrl: String(req.body.imageUrl || "").trim() || null,
+                    description: String(req.body.description || "").trim() || null,
+                    isActive: true,
+                });
+                return res.status(200).json(existing);
+            }
+            return res.status(409).json({ message: "Danh mục này đã tồn tại" });
+        }
+
+        const maxSortOrder = (await ProductCategory.max("sortOrder")) || 0;
+        const category = await ProductCategory.create({
+            value,
+            label,
+            imageUrl: String(req.body.imageUrl || "").trim() || null,
+            description: String(req.body.description || "").trim() || null,
+            sortOrder: Number.isInteger(Number(req.body.sortOrder))
+                ? Number(req.body.sortOrder)
+                : Number(maxSortOrder) + 1,
+        });
+        res.status(201).json(category);
+    } catch (error) {
+        console.error("createProductCategory error:", error);
+        res.status(500).json({ message: "Không thể tạo danh mục", error: error.message });
+    }
+};
+
+const updateProductCategory = async (req, res) => {
+    try {
+        const category = await ProductCategory.findByPk(req.params.id);
+        if (!category) return res.status(404).json({ message: "Không tìm thấy danh mục" });
+
+        const label = String(req.body.label ?? category.label).trim();
+        if (!label) return res.status(400).json({ message: "Tên danh mục không được để trống" });
+
+        await category.update({
+            label,
+            imageUrl:
+                req.body.imageUrl !== undefined
+                    ? String(req.body.imageUrl || "").trim() || null
+                    : category.imageUrl,
+            description:
+                req.body.description !== undefined
+                    ? String(req.body.description || "").trim() || null
+                    : category.description,
+            sortOrder:
+                req.body.sortOrder !== undefined ? Number(req.body.sortOrder) || 0 : category.sortOrder,
+        });
+        res.status(200).json(category);
+    } catch (error) {
+        console.error("updateProductCategory error:", error);
+        res.status(500).json({ message: "Không thể cập nhật danh mục", error: error.message });
+    }
+};
+
+const deleteProductCategory = async (req, res) => {
+    try {
+        const category = await ProductCategory.findByPk(req.params.id);
+        if (!category) return res.status(404).json({ message: "Không tìm thấy danh mục" });
+
+        const productCount = await Product.count({ where: { category: category.value, isActive: true } });
+        if (productCount > 0) {
+            return res.status(409).json({
+                message: `Danh mục đang có ${productCount} sản phẩm nên chưa thể xóa`,
+            });
+        }
+
+        await category.update({ isActive: false });
+        res.status(200).json({ message: "Đã xóa danh mục" });
+    } catch (error) {
+        console.error("deleteProductCategory error:", error);
+        res.status(500).json({ message: "Không thể xóa danh mục", error: error.message });
+    }
+};
 
 const normalizeText = (value = "") =>
     String(value)
@@ -103,7 +265,15 @@ const getAllProducts = async (req, res) => {
             where: { isActive: true },
             order: [["createdAt", "DESC"]],
         });
-        const allProducts = storedProducts.map(productForResponse);
+        const categoryRows = await ensureDefaultProductCategories();
+        const categoryLabels = new Map(categoryRows.map((item) => [item.value, item.label]));
+        const allProducts = storedProducts.map((product) => {
+            const normalized = productForResponse(product);
+            return {
+                ...normalized,
+                categoryLabel: categoryLabels.get(normalized.category) || normalized.category,
+            };
+        });
         const query = req.query.search || req.query.q || "";
         const categories = normalizeListParam(req.query.category);
         const colors = normalizeListParam(req.query.color);
@@ -248,7 +418,13 @@ const getProductById = async (req, res) => {
         const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "San pham khong ton tai" });
 
-        res.status(200).json(productForResponse(product));
+        const category = await ProductCategory.findOne({
+            where: { value: product.category, isActive: true },
+        });
+        res.status(200).json({
+            ...productForResponse(product),
+            categoryLabel: category?.label || product.category,
+        });
     } catch (error) {
         console.error("getProductById error:", error);
         res.status(500).json({ message: "Loi may chu", error: error.message });
@@ -509,6 +685,10 @@ const deleteAllProducts = async (req, res) => {
 };
 
 module.exports = {
+    getProductCategories,
+    createProductCategory,
+    updateProductCategory,
+    deleteProductCategory,
     getAllProducts,
     getProductById,
     getRelatedProducts,

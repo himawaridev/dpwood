@@ -23,6 +23,7 @@ const Coupon = require("./models/coupon");
 const UserCoupon = require("./models/userCoupon");
 const ProductRating = require("./models/productRating");
 const Wishlist = require("./models/wishlist");
+require("./models/productCategory");
 
 // Routers
 const authRoutes = require("./routers/auth");
