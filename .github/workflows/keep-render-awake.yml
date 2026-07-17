@@ -2,7 +2,8 @@ name: Keep Render API Awake
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # Avoid round minutes because GitHub reports higher scheduler load there.
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -10,15 +11,19 @@ permissions:
 
 concurrency:
   group: keep-render-awake
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
       - name: Ping DPWOOD backend health endpoint
         run: |
-          curl --fail --silent --show-error \
-            --retry 3 --retry-delay 10 --max-time 90 \
-            "https://dpwood.onrender.com/api/health?deep=true"
+          response=$(curl --fail --silent --show-error \
+            --retry 4 --retry-all-errors --retry-delay 8 \
+            --connect-timeout 20 --max-time 90 \
+            --header "Accept: application/json" \
+            "https://dpwood.onrender.com/api/health")
+          echo "$response"
+          echo "$response" | jq -e '.ok == true and (.timestamp | type == "string")' > /dev/null
