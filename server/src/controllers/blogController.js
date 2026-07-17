@@ -153,6 +153,19 @@ const deleteBlog = async (req, res) => {
     }
 };
 
+const deleteAllBlogs = async (req, res) => {
+    try {
+        const deletedCount = await Blog.destroy({ where: {} });
+        res.status(200).json({
+            message: `Đã xóa ${deletedCount} bài viết`,
+            deletedCount,
+        });
+    } catch (error) {
+        console.error("Lỗi deleteAllBlogs:", error);
+        res.status(500).json({ message: "Lỗi xóa tất cả bài viết", error: error.message });
+    }
+};
+
 const getBlogById = async (req, res) => {
     try {
         const blog = await Blog.findByPk(req.params.id);
@@ -207,4 +220,13 @@ const addComment = async (req, res) => {
     }
 };
 
-module.exports = { getAllBlogs, getBlogBySlug, createBlog, updateBlog, deleteBlog, getBlogById, addComment };
+module.exports = {
+    getAllBlogs,
+    getBlogBySlug,
+    createBlog,
+    updateBlog,
+    deleteBlog,
+    deleteAllBlogs,
+    getBlogById,
+    addComment,
+};

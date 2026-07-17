@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { App, Button, Flex, Image, Popconfirm, Space, Table, Tag, Tooltip, Typography } from "antd";
+import { App, Flex, Image, Popconfirm, Space, Table, Tag, Typography } from "antd";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
+import AdminIconButton from "@/components/ui/AdminIconButton";
+import AdminDeleteAllButton from "@/components/ui/AdminDeleteAllButton";
 
 const { Title, Text } = Typography;
 
@@ -13,6 +15,7 @@ export default function AdminBlogPage() {
     const router = useRouter();
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [deleteAllLoading, setDeleteAllLoading] = useState(false);
 
     const fetchBlogs = useCallback(async () => {
         try {
@@ -37,6 +40,20 @@ export default function AdminBlogPage() {
             fetchBlogs();
         } catch {
             message.error("Không thể xóa bài viết");
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        try {
+            setDeleteAllLoading(true);
+            const response = await api.delete("/blogs/admin/all");
+            setBlogs([]);
+            message.success(response.data?.message || "Đã xóa tất cả bài viết");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xóa tất cả bài viết");
+            throw error;
+        } finally {
+            setDeleteAllLoading(false);
         }
     };
 
@@ -81,29 +98,18 @@ export default function AdminBlogPage() {
             key: "action",
             render: (_, record) => (
                 <Space>
-                    <Tooltip title="Chỉnh sửa bài viết">
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            aria-label="Chỉnh sửa bài viết"
-                            className="dp-admin-action-button"
-                            onClick={() => router.push(`/admin/blogs/${record.id}`)}
-                        />
-                    </Tooltip>
+                    <AdminIconButton
+                        label="Chỉnh sửa bài viết"
+                        icon={<EditOutlined />}
+                        onClick={() => router.push(`/admin/blogs/${record.id}`)}
+                    />
                     <Popconfirm
                         title="Xác nhận xóa?"
                         onConfirm={() => handleDelete(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
                     >
-                        <Tooltip title="Xóa bài viết">
-                            <Button
-                                type="text"
-                                icon={<DeleteOutlined />}
-                                aria-label="Xóa bài viết"
-                                className="dp-admin-action-button"
-                            />
-                        </Tooltip>
+                        <AdminIconButton label="Xóa bài viết" icon={<DeleteOutlined />} />
                     </Popconfirm>
                 </Space>
             ),
@@ -116,15 +122,19 @@ export default function AdminBlogPage() {
                 <Title level={3} style={{ margin: 0 }}>
                     Quản lý cẩm nang / Blog
                 </Title>
-                <Tooltip title="Viết bài mới">
-                    <Button
-                        type="text"
+                <Space>
+                    <AdminDeleteAllButton
+                        entityLabel="bài viết"
+                        count={blogs.length}
+                        loading={deleteAllLoading}
+                        onConfirm={handleDeleteAll}
+                    />
+                    <AdminIconButton
+                        label="Viết bài mới"
                         icon={<PlusOutlined />}
-                        aria-label="Viết bài mới"
-                        className="dp-admin-action-button"
                         onClick={() => router.push("/admin/blogs/create")}
                     />
-                </Tooltip>
+                </Space>
             </Flex>
 
             <Table

@@ -16,6 +16,12 @@ router.get("/:slug", blogController.getBlogBySlug);
 // ==========================================
 router.post("/", authMiddleware, roleMiddleware("admin", "root"), blogController.createBlog);
 router.put("/:id", authMiddleware, roleMiddleware("admin", "root"), blogController.updateBlog);
+router.delete(
+    "/admin/all",
+    authMiddleware,
+    roleMiddleware("admin", "root"),
+    blogController.deleteAllBlogs,
+);
 router.delete("/:id", authMiddleware, roleMiddleware("admin", "root"), blogController.deleteBlog);
 router.get(
     "/admin-get/:id",
