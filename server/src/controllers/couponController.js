@@ -3,6 +3,7 @@ const { sequelize } = require("../config/connectSequelize");
 const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
 const Order = require("../models/order");
+const Discount = require("../models/discount");
 const { syncLegacyDiscountsToCoupons } = require("../services/couponSyncService");
 
 // ==========================================
@@ -125,6 +126,26 @@ const deleteCoupon = async (req, res) => {
         res.status(200).json({ message: "Đã xóa mã giảm giá" });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+const deleteAllCoupons = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const deletedCount = await Coupon.count({ transaction });
+
+        await UserCoupon.destroy({ where: {}, transaction });
+        await Coupon.destroy({ where: {}, transaction });
+        await Discount.destroy({ where: {}, transaction });
+        await transaction.commit();
+
+        res.status(200).json({
+            message: `Đã xóa ${deletedCount} mã giảm giá`,
+            deletedCount,
+        });
+    } catch (error) {
+        await transaction.rollback();
+        res.status(500).json({ message: "Lỗi khi xóa tất cả mã giảm giá", error: error.message });
     }
 };
 
@@ -325,6 +346,7 @@ module.exports = {
     getAllCoupons,
     updateCoupon,
     deleteCoupon,
+    deleteAllCoupons,
     getActiveCoupons,
     claimCoupon,
     getMyCoupons,

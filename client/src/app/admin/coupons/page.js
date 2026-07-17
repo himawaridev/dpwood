@@ -17,20 +17,23 @@ import {
     Popconfirm,
     Typography,
     Card,
-    Tooltip,
     Flex,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, GiftOutlined, ReloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "@/utils/axios";
+import AdminIconButton from "@/components/ui/AdminIconButton";
+import AdminDeleteAllButton from "@/components/ui/AdminDeleteAllButton";
+import { formatNumber } from "@/utils/formatters";
 
 const { Title, Text } = Typography;
 
-const formatVnd = (value) => `${new Intl.NumberFormat("vi-VN").format(Number(value || 0))} đ`;
+const formatVnd = (value) => `${formatNumber(value)} đ`;
 
 export default function AdminCouponsPage() {
     const [coupons, setCoupons] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [deleteAllLoading, setDeleteAllLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingCoupon, setEditingCoupon] = useState(null);
     const [form] = Form.useForm();
@@ -113,6 +116,20 @@ export default function AdminCouponsPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        try {
+            setDeleteAllLoading(true);
+            const response = await api.delete("/coupons/admin/all");
+            setCoupons([]);
+            message.success(response.data?.message || "Đã xóa tất cả mã giảm giá");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xóa tất cả mã giảm giá");
+            throw error;
+        } finally {
+            setDeleteAllLoading(false);
+        }
+    };
+
     const getStatusTag = (coupon) => {
         const now = new Date();
         const expiry = new Date(coupon.expiryDate);
@@ -175,15 +192,12 @@ export default function AdminCouponsPage() {
             fixed: "right",
             render: (_, record) => (
                 <Space>
-                    <Tooltip title="Chỉnh sửa">
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            aria-label="Chỉnh sửa mã giảm giá"
-                            className="dp-admin-action-button"
-                            onClick={() => handleOpenEdit(record)}
-                        />
-                    </Tooltip>
+                    <AdminIconButton
+                        label="Chỉnh sửa mã giảm giá"
+                        tooltip="Chỉnh sửa"
+                        icon={<EditOutlined />}
+                        onClick={() => handleOpenEdit(record)}
+                    />
                     <Popconfirm
                         title="Xóa mã giảm giá này?"
                         description="Hành động này không thể hoàn tác"
@@ -191,14 +205,7 @@ export default function AdminCouponsPage() {
                         okText="Xóa"
                         cancelText="Hủy"
                     >
-                        <Tooltip title="Xóa">
-                            <Button
-                                type="text"
-                                icon={<DeleteOutlined />}
-                                aria-label="Xóa mã giảm giá"
-                                className="dp-admin-action-button"
-                            />
-                        </Tooltip>
+                        <AdminIconButton label="Xóa mã giảm giá" tooltip="Xóa" icon={<DeleteOutlined />} />
                     </Popconfirm>
                 </Space>
             ),
@@ -216,25 +223,24 @@ export default function AdminCouponsPage() {
                     <Text type="secondary">Các mã đang hoạt động sẽ hiển thị ở trang chủ và kho mã thanh toán.</Text>
                 </div>
                 <Space wrap>
-                    <Tooltip title="Làm mới danh sách mã">
-                        <Button
-                            type="text"
-                            icon={<ReloadOutlined />}
-                            aria-label="Làm mới danh sách mã giảm giá"
-                            className="dp-admin-action-button"
-                            onClick={fetchCoupons}
-                            loading={loading}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Tạo mã giảm giá">
-                        <Button
-                            type="text"
-                            icon={<PlusOutlined />}
-                            aria-label="Tạo mã giảm giá"
-                            className="dp-admin-action-button"
-                            onClick={handleOpenCreate}
-                        />
-                    </Tooltip>
+                    <AdminDeleteAllButton
+                        entityLabel="mã giảm giá"
+                        count={coupons.length}
+                        loading={deleteAllLoading}
+                        onConfirm={handleDeleteAll}
+                    />
+                    <AdminIconButton
+                        label="Làm mới danh sách mã giảm giá"
+                        tooltip="Làm mới danh sách mã"
+                        icon={<ReloadOutlined />}
+                        onClick={fetchCoupons}
+                        loading={loading}
+                    />
+                    <AdminIconButton
+                        label="Tạo mã giảm giá"
+                        icon={<PlusOutlined />}
+                        onClick={handleOpenCreate}
+                    />
                 </Space>
             </Flex>
 

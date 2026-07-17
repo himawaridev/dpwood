@@ -40,6 +40,12 @@ router.put(
     couponController.updateCoupon,
 );
 router.delete(
+    "/admin/all",
+    authMiddleware,
+    roleMiddleware("root", "admin"),
+    couponController.deleteAllCoupons,
+);
+router.delete(
     "/admin/:id",
     authMiddleware,
     roleMiddleware("root", "admin"),
