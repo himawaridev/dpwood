@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { App, Modal, Form, Input, InputNumber, Button, Flex, Typography, Row, Col, Select as AntSelect, Switch, Divider } from "antd";
 import { MinusCircleOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
 import {
-    KITCHEN_CATEGORY_OPTIONS,
     KITCHEN_COLOR_OPTIONS,
     KITCHEN_MATERIAL_OPTIONS,
 } from "@/utils/kitchenProduct";
@@ -130,7 +129,7 @@ export default function ProductModal({
                         : [editingProduct.imageUrl].filter(Boolean);
 
                 form.setFieldsValue({
-                    category: "cookware",
+                    sold: 0,
                     dishwasherSafe: false,
                     microwaveSafe: false,
                     ...editingProduct,
@@ -141,7 +140,7 @@ export default function ProductModal({
                 form.resetFields();
                 const draftImages = draftProduct?.images?.length > 0 ? draftProduct.images : [""];
                 form.setFieldsValue({
-                    category: "cookware",
+                    sold: 0,
                     dishwasherSafe: false,
                     microwaveSafe: false,
                     ...(draftProduct || {}),
@@ -152,15 +151,9 @@ export default function ProductModal({
         }
     }, [isVisible, editingProduct, draftProduct, form, isMounted, materialOptions, colorOptions]);
 
-    const categoryOptions = mergeOptions(
-        categories.map((item) => item.value),
-        KITCHEN_CATEGORY_OPTIONS.map((item) => item.value),
-    ).map((value) => ({
-        value,
-        label:
-            categories.find((item) => item.value === value)?.label ||
-            KITCHEN_CATEGORY_OPTIONS.find((item) => item.value === value)?.label ||
-            value,
+    const categoryOptions = categories.map((item) => ({
+        value: item.value,
+        label: item.label || item.value,
     }));
 
     const addMaterialOption = async (label) => {
@@ -237,7 +230,7 @@ export default function ProductModal({
                 </Form.Item>
 
                 <Row gutter={16}>
-                    <Col xs={24} sm={12}>
+                    <Col xs={24} md={8}>
                         <Form.Item
                             name="price"
                             label="Giá mặc định (VND)"
@@ -253,7 +246,7 @@ export default function ProductModal({
                             />
                         </Form.Item>
                     </Col>
-                    <Col xs={24} sm={12}>
+                    <Col xs={24} md={8}>
                         <Form.Item
                             name="stock"
                             extra={
@@ -270,6 +263,21 @@ export default function ProductModal({
                                 min={0}
                                 precision={0}
                                 disabled={hasVariants}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Form.Item
+                            name="sold"
+                            label="Số lượng đã bán"
+                            extra="Dữ liệu bán trước đây. Hệ thống sẽ tiếp tục tự tăng khi phát sinh đơn hàng và giảm khi đơn bị hủy."
+                            rules={[{ required: true, message: "Nhập số lượng đã bán" }]}
+                        >
+                            <InputNumber
+                                size="large"
+                                style={{ width: "100%" }}
+                                min={0}
+                                precision={0}
                             />
                         </Form.Item>
                     </Col>
@@ -325,13 +333,23 @@ export default function ProductModal({
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item name="dishwasherSafe" valuePropName="checked" label="Máy rửa chén">
-                                <Switch checkedChildren="Dùng được" unCheckedChildren="Không" />
+                            <Form.Item
+                                name="dishwasherSafe"
+                                valuePropName="checked"
+                                label="An toàn với máy rửa chén"
+                                extra="Bật khi nhà sản xuất xác nhận sản phẩm có thể rửa bằng máy mà không biến dạng, bong lớp phủ hoặc giảm độ bền."
+                            >
+                                <Switch checkedChildren="Có" unCheckedChildren="Không" />
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item name="microwaveSafe" valuePropName="checked" label="Lò vi sóng">
-                                <Switch checkedChildren="Dùng được" unCheckedChildren="Không" />
+                            <Form.Item
+                                name="microwaveSafe"
+                                valuePropName="checked"
+                                label="An toàn với lò vi sóng"
+                                extra="Bật khi sản phẩm được phép hâm nóng trong lò vi sóng. Không áp dụng cho kim loại và không đồng nghĩa với dùng được trong lò nướng."
+                            >
+                                <Switch checkedChildren="Có" unCheckedChildren="Không" />
                             </Form.Item>
                         </Col>
                     </Row>

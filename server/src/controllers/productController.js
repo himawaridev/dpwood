@@ -10,51 +10,6 @@ const { normalizeProductImagePayload } = require("../utils/productImageUrl");
 const productForResponse = (product) =>
     normalizeProductImagePayload(product?.toJSON ? product.toJSON() : product);
 
-const DEFAULT_PRODUCT_CATEGORIES = [
-    {
-        value: "cookware",
-        label: "Nồi & chảo",
-        description: "Nồi, chảo và bộ dụng cụ nấu",
-        imageUrl: "https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=900&q=80",
-        sortOrder: 1,
-    },
-    {
-        value: "tableware",
-        label: "Bàn ăn",
-        description: "Bát, đĩa và bộ bàn ăn",
-        imageUrl: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=900&q=80",
-        sortOrder: 2,
-    },
-    {
-        value: "utensils",
-        label: "Dụng cụ bếp",
-        description: "Dao, muỗng và phụ kiện bếp",
-        imageUrl: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
-        sortOrder: 3,
-    },
-    {
-        value: "storage",
-        label: "Lưu trữ thực phẩm",
-        description: "Hộp, lọ và đồ bảo quản",
-        imageUrl: "https://images.unsplash.com/photo-1606914469633-bd39206ea739?auto=format&fit=crop&w=900&q=80",
-        sortOrder: 4,
-    },
-    {
-        value: "appliances",
-        label: "Gia dụng nhỏ",
-        description: "Thiết bị nhỏ cho căn bếp",
-        imageUrl: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=900&q=80",
-        sortOrder: 5,
-    },
-    {
-        value: "cleaning",
-        label: "Vệ sinh bếp",
-        description: "Dụng cụ vệ sinh tiện lợi",
-        imageUrl: "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=900&q=80",
-        sortOrder: 6,
-    },
-];
-
 const slugifyCategory = (value = "") =>
     String(value)
         .normalize("NFD")
@@ -66,17 +21,15 @@ const slugifyCategory = (value = "") =>
         .replace(/^-+|-+$/g, "")
         .slice(0, 100);
 
-const ensureDefaultProductCategories = async () => {
-    await ProductCategory.bulkCreate(DEFAULT_PRODUCT_CATEGORIES, { ignoreDuplicates: true });
-    return ProductCategory.findAll({
+const getActiveProductCategories = () =>
+    ProductCategory.findAll({
         where: { isActive: true },
         order: [["sortOrder", "ASC"], ["label", "ASC"]],
     });
-};
 
 const getProductCategories = async (req, res) => {
     try {
-        const categories = await ensureDefaultProductCategories();
+        const categories = await getActiveProductCategories();
         res.status(200).json(categories);
     } catch (error) {
         console.error("getProductCategories error:", error);
@@ -265,7 +218,7 @@ const getAllProducts = async (req, res) => {
             where: { isActive: true },
             order: [["createdAt", "DESC"]],
         });
-        const categoryRows = await ensureDefaultProductCategories();
+        const categoryRows = await getActiveProductCategories();
         const categoryLabels = new Map(categoryRows.map((item) => [item.value, item.label]));
         const allProducts = storedProducts.map((product) => {
             const normalized = productForResponse(product);
@@ -486,6 +439,7 @@ const createProduct = async (req, res) => {
             description,
             price,
             stock,
+            sold,
             imageUrl,
             images,
             variants,
@@ -503,12 +457,18 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ message: "Ten va gia san pham la bat buoc" });
         }
 
+        const soldQuantity = sold === undefined || sold === null || sold === "" ? 0 : Number(sold);
+        if (!Number.isInteger(soldQuantity) || soldQuantity < 0) {
+            return res.status(400).json({ message: "So luong da ban phai la so nguyen khong am" });
+        }
+
         const imagePayload = normalizeProductImagePayload({ imageUrl, images, variants });
         const newProduct = await Product.create({
             name,
             description,
             price,
             stock,
+            sold: soldQuantity,
             imageUrl: imagePayload.imageUrl,
             images: imagePayload.images,
             variants: imagePayload.variants,
@@ -582,6 +542,14 @@ const updateProduct = async (req, res) => {
                 return res.status(400).json({ message: "Ton kho phai la so nguyen khong am" });
             }
             updates.stock = stock;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, "sold")) {
+            const sold = Number(req.body.sold);
+            if (!Number.isInteger(sold) || sold < 0) {
+                return res.status(400).json({ message: "So luong da ban phai la so nguyen khong am" });
+            }
+            updates.sold = sold;
         }
 
         if (Object.prototype.hasOwnProperty.call(req.body, "variants")) {

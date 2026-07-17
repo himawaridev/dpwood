@@ -11,12 +11,9 @@ import {
     TruckOutlined,
 } from "@ant-design/icons";
 import { getProductSalesStats } from "@/utils/productStats";
+import { formatCurrency } from "@/utils/formatters";
 
 const { Title, Text, Paragraph } = Typography;
-
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
-
 
 const getVariantSize = (variant = {}) => variant.size || variant.capacity || "Tiêu chuẩn";
 

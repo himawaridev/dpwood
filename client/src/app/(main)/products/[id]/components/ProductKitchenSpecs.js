@@ -15,8 +15,8 @@ export default function ProductKitchenSpecs({ product, selectedVariant }) {
         { label: "Kích cỡ / dung tích", value: selectedVariant?.size || selectedVariant?.capacity || product.capacity },
         { label: "Xuất xứ", value: product.origin },
         { label: "Bảo hành", value: product.warranty },
-        { label: "Máy rửa chén", value: booleanLabel(product.dishwasherSafe) },
-        { label: "Lò vi sóng", value: booleanLabel(product.microwaveSafe) },
+        { label: "An toàn với máy rửa chén", value: booleanLabel(product.dishwasherSafe) },
+        { label: "An toàn với lò vi sóng", value: booleanLabel(product.microwaveSafe) },
     ].filter((item) => item.value);
 
     if (!specs.length) return null;

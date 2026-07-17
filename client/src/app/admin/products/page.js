@@ -137,6 +137,7 @@ export default function AdminProductsPage() {
                 description: product.description || "",
                 price: Number(product.price || 0),
                 stock: Number(product.stock || 0),
+                sold: Number(product.sold || 0),
                 imageUrl: images[0] || "",
                 images,
                 variants: (Array.isArray(product.variants) ? product.variants : []).map((variant) => ({

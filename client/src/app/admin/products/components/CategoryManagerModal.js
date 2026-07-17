@@ -13,10 +13,10 @@ import {
     Modal,
     Popconfirm,
     Row,
-    Tooltip,
     Typography,
 } from "antd";
 import { DeleteOutlined, PlusOutlined, SaveOutlined } from "@ant-design/icons";
+import AdminIconButton from "@/components/ui/AdminIconButton";
 import api from "@/utils/axios";
 
 const { Text, Title } = Typography;
@@ -185,16 +185,13 @@ export default function CategoryManagerModal({ open, categories, onClose, onRefr
                                     />
                                 </div>
                                 <Flex gap={4}>
-                                    <Tooltip title="Lưu danh mục">
-                                        <Button
-                                            type="text"
-                                            icon={<SaveOutlined />}
-                                            aria-label={`Lưu danh mục ${category.label}`}
-                                            loading={savingId === category.id}
-                                            onClick={() => handleSave(category)}
-                                            className="dp-admin-action-button"
-                                        />
-                                    </Tooltip>
+                                    <AdminIconButton
+                                        label={`Lưu danh mục ${category.label}`}
+                                        tooltip="Lưu danh mục"
+                                        icon={<SaveOutlined />}
+                                        loading={savingId === category.id}
+                                        onClick={() => handleSave(category)}
+                                    />
                                     <Popconfirm
                                         title={`Xóa danh mục ${category.label}?`}
                                         description="Chỉ có thể xóa danh mục chưa chứa sản phẩm."
@@ -202,14 +199,11 @@ export default function CategoryManagerModal({ open, categories, onClose, onRefr
                                         cancelText="Hủy"
                                         onConfirm={() => handleDelete(category)}
                                     >
-                                        <Tooltip title="Xóa danh mục">
-                                            <Button
-                                                type="text"
-                                                icon={<DeleteOutlined />}
-                                                aria-label={`Xóa danh mục ${category.label}`}
-                                                className="dp-admin-action-button"
-                                            />
-                                        </Tooltip>
+                                        <AdminIconButton
+                                            label={`Xóa danh mục ${category.label}`}
+                                            tooltip="Xóa danh mục"
+                                            icon={<DeleteOutlined />}
+                                        />
                                     </Popconfirm>
                                 </Flex>
                             </div>
