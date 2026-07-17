@@ -1,6 +1,9 @@
 import React from "react";
-import { Table, Tag, Input, Button, Flex, Tooltip } from "antd";
+import { Table, Tag, Input, Flex } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
+import AdminIconButton from "@/components/ui/AdminIconButton";
+import { getActivityActionMeta } from "@/utils/activityLog";
+import { formatDateTime } from "@/utils/formatters";
 
 export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
     const authLogs = logs.filter((log) =>
@@ -8,23 +11,8 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
     );
 
     const getActionTag = (action) => {
-        const normalizedAction = action?.toUpperCase();
-        switch (normalizedAction) {
-            case "LOGIN":
-                return <Tag color="green">Đăng nhập</Tag>;
-            case "LOGOUT":
-                return <Tag color="volcano">Đăng xuất</Tag>;
-            case "REGISTER":
-                return <Tag color="gold">Đăng ký</Tag>;
-            case "BAN":
-                return <Tag color="red">Khóa tài khoản</Tag>;
-            case "UNBAN":
-                return <Tag color="success">Mở khóa</Tag>;
-            case "ROLE_CHANGE":
-                return <Tag color="purple">Phân quyền</Tag>;
-            default:
-                return <Tag color="default">{normalizedAction}</Tag>;
-        }
+        const meta = getActivityActionMeta(action);
+        return <Tag color={meta.color}>{meta.label}</Tag>;
     };
 
     const columns = [
@@ -32,7 +20,7 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
             title: "Thời gian",
             dataIndex: "createdAt",
             key: "createdAt",
-            render: (date) => new Date(date).toLocaleString("vi-VN"),
+            render: formatDateTime,
         },
         {
             title: "Email người dùng",
@@ -59,16 +47,12 @@ export default function AuthLogTab({ logs, loadingLogs, onFetchLogs }) {
                     onSearch={(value) => onFetchLogs(value)}
                     style={{ maxWidth: 400 }}
                 />
-                <Tooltip title="Làm mới lịch sử đăng nhập">
-                    <Button
-                        type="text"
-                        icon={<ReloadOutlined />}
-                        aria-label="Làm mới lịch sử đăng nhập"
-                        className="dp-admin-action-button"
-                        onClick={() => onFetchLogs("")}
-                        loading={loadingLogs}
-                    />
-                </Tooltip>
+                <AdminIconButton
+                    label="Làm mới lịch sử đăng nhập"
+                    icon={<ReloadOutlined />}
+                    onClick={() => onFetchLogs("")}
+                    loading={loadingLogs}
+                />
             </Flex>
             <Table
                 dataSource={authLogs}

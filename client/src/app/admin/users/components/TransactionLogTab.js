@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Table, Tag, Typography, Input, Button, Flex, Select, Space, Tooltip } from "antd";
+import { Table, Tag, Typography, Input, Flex, Select, Space } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
+import AdminIconButton from "@/components/ui/AdminIconButton";
+import { getActivityActionMeta } from "@/utils/activityLog";
+import { formatDateTime } from "@/utils/formatters";
 
 const { Text } = Typography;
 
@@ -50,34 +53,12 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
     }, [actionFilter, logs, searchText]);
 
     const getCleanNote = (action) => {
-        switch (action) {
-            case "ORDER_CREATED":
-                return "Khách hàng tạo đơn mới";
-            case "PAYMENT_RECEIVED":
-                return "Hệ thống xác nhận nhận tiền tự động";
-            case "ADMIN_UPDATE_ORDER":
-                return "Quản trị viên cập nhật trạng thái đơn";
-            case "ORDER_CANCELED":
-                return "Hủy đơn hàng và hoàn lại tồn kho";
-            default:
-                return "Cập nhật hệ thống";
-        }
+        return getActivityActionMeta(action).note;
     };
 
     const getActionTag = (action) => {
-        const normalizedAction = action?.toUpperCase();
-        switch (normalizedAction) {
-            case "ORDER_CREATED":
-                return <Tag color="blue">Tạo đơn hàng</Tag>;
-            case "PAYMENT_RECEIVED":
-                return <Tag color="cyan">Thanh toán</Tag>;
-            case "ORDER_CANCELED":
-                return <Tag color="magenta">Hủy đơn</Tag>;
-            case "ADMIN_UPDATE_ORDER":
-                return <Tag color="purple">QTV cập nhật</Tag>;
-            default:
-                return <Tag color="default">{normalizedAction}</Tag>;
-        }
+        const meta = getActivityActionMeta(action);
+        return <Tag color={meta.color}>{meta.label}</Tag>;
     };
 
     const columns = [
@@ -85,7 +66,7 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
             title: "Thời gian",
             dataIndex: "createdAt",
             key: "createdAt",
-            render: (date) => new Date(date).toLocaleString("vi-VN"),
+            render: formatDateTime,
         },
         {
             title: "Email giao dịch",
@@ -174,16 +155,12 @@ export default function TransactionLogTab({ logs, loadingLogs, onFetchLogs }) {
                         ]}
                     />
                 </Space>
-                <Tooltip title="Làm mới lịch sử giao dịch">
-                    <Button
-                        type="text"
-                        icon={<ReloadOutlined />}
-                        aria-label="Làm mới lịch sử giao dịch"
-                        className="dp-admin-action-button"
-                        onClick={() => onFetchLogs("")}
-                        loading={loadingLogs}
-                    />
-                </Tooltip>
+                <AdminIconButton
+                    label="Làm mới lịch sử giao dịch"
+                    icon={<ReloadOutlined />}
+                    onClick={() => onFetchLogs("")}
+                    loading={loadingLogs}
+                />
             </Flex>
             <Table
                 dataSource={transactionLogs}

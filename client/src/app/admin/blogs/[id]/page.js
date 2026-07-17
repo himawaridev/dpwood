@@ -1,9 +1,10 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { App, Form, Input, Button, Switch, Typography, Row, Col, Card, Flex, Spin, Tooltip } from "antd";
+import { App, Form, Input, Switch, Typography, Row, Col, Card, Flex, Spin } from "antd";
 import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import api from "@/utils/axios";
+import AdminIconButton from "@/components/ui/AdminIconButton";
 import dynamic from "next/dynamic";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
@@ -134,29 +135,21 @@ export default function BlogEditorPage() {
         <div>
             <Flex justify="space-between" align="center" style={{ marginBottom: 20 }}>
                 <Flex align="center" gap="small">
-                    <Tooltip title="Quay lại">
-                        <Button
-                            type="text"
-                            icon={<ArrowLeftOutlined />}
-                            aria-label="Quay lại"
-                            className="dp-admin-action-button"
-                            onClick={() => router.push(returnPath)}
-                        />
-                    </Tooltip>
+                    <AdminIconButton
+                        label="Quay lại"
+                        icon={<ArrowLeftOutlined />}
+                        onClick={() => router.push(returnPath)}
+                    />
                     <Title level={3} style={{ margin: 0 }}>
                         {isEditMode ? "Chỉnh sửa Bài viết" : "Viết bài mới"}
                     </Title>
                 </Flex>
-                <Tooltip title={isEditMode ? "Cập nhật thay đổi" : "Xuất bản bài viết"}>
-                    <Button
-                        type="text"
-                        icon={<SaveOutlined />}
-                        aria-label={isEditMode ? "Cập nhật thay đổi" : "Xuất bản bài viết"}
-                        className="dp-admin-action-button"
-                        loading={loading}
-                        onClick={() => form.submit()}
-                    />
-                </Tooltip>
+                <AdminIconButton
+                    label={isEditMode ? "Cập nhật thay đổi" : "Xuất bản bài viết"}
+                    icon={<SaveOutlined />}
+                    loading={loading}
+                    onClick={() => form.submit()}
+                />
             </Flex>
 
             {/* 🔴 3. Truyền initialValues={initialData} vào Form */}

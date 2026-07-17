@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     App,
-    Button,
     DatePicker,
     Flex,
     Form,
@@ -14,12 +13,12 @@ import {
     Space,
     Table,
     Tag,
-    Tooltip,
     Typography,
 } from "antd";
 import { DeleteOutlined, PlusOutlined, ReloadOutlined, TagOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "@/utils/axios";
+import AdminIconButton from "@/components/ui/AdminIconButton";
 
 const { Title, Text } = Typography;
 
@@ -132,14 +131,7 @@ export default function AdminDiscountPage() {
                     cancelText="Hủy"
                     onConfirm={() => handleDelete(record.id)}
                 >
-                    <Tooltip title="Xóa mã giảm giá">
-                        <Button
-                            type="text"
-                            icon={<DeleteOutlined />}
-                            aria-label="Xóa mã giảm giá"
-                            className="dp-admin-action-button"
-                        />
-                    </Tooltip>
+                    <AdminIconButton label="Xóa mã giảm giá" icon={<DeleteOutlined />} />
                 </Popconfirm>
             ),
         },
@@ -157,28 +149,21 @@ export default function AdminDiscountPage() {
                     </Text>
                 </div>
                 <Space wrap>
-                    <Tooltip title="Làm mới danh sách mã">
-                        <Button
-                            type="text"
-                            icon={<ReloadOutlined />}
-                            aria-label="Làm mới danh sách mã giảm giá"
-                            className="dp-admin-action-button"
-                            onClick={fetchDiscounts}
-                            loading={loading}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Thêm mã giảm giá mới">
-                        <Button
-                            type="text"
-                            icon={<PlusOutlined />}
-                            aria-label="Thêm mã giảm giá mới"
-                            className="dp-admin-action-button"
-                            onClick={() => {
-                                form.resetFields();
-                                setIsModalOpen(true);
-                            }}
-                        />
-                    </Tooltip>
+                    <AdminIconButton
+                        label="Làm mới danh sách mã giảm giá"
+                        tooltip="Làm mới danh sách mã"
+                        icon={<ReloadOutlined />}
+                        onClick={fetchDiscounts}
+                        loading={loading}
+                    />
+                    <AdminIconButton
+                        label="Thêm mã giảm giá mới"
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                            form.resetFields();
+                            setIsModalOpen(true);
+                        }}
+                    />
                 </Space>
             </Flex>
 

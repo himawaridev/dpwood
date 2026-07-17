@@ -1,8 +1,9 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { App, Table, Tag, Select, Typography, Flex, Button, Tooltip } from "antd";
+import { App, Table, Tag, Select, Typography, Flex } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
+import AdminIconButton from "@/components/ui/AdminIconButton";
 
 // Nhúng file Ngăn kéo (Drawer) từ thư mục components
 import TicketDetailDrawer from "./components/TicketDetailDrawer";
@@ -113,15 +114,11 @@ export default function AdminSupportPage() {
             title: "Hành động",
             key: "action",
             render: (_, record) => (
-                <Tooltip title="Xem chi tiết ticket">
-                    <Button
-                        type="text"
-                        icon={<EyeOutlined />}
-                        aria-label="Xem chi tiết ticket"
-                        className="dp-admin-action-button"
-                        onClick={() => handleViewDetail(record)}
-                    />
-                </Tooltip>
+                <AdminIconButton
+                    label="Xem chi tiết ticket"
+                    icon={<EyeOutlined />}
+                    onClick={() => handleViewDetail(record)}
+                />
             ),
         },
     ];

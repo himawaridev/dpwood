@@ -1,29 +1,11 @@
 import React from "react";
-import { Modal, Descriptions, Typography, Tag, Image, Button } from "antd";
+import { Modal, Descriptions, Typography, Image, Button } from "antd";
+import { formatCurrency } from "@/utils/formatters";
+import OrderStatusTag from "@/components/order/OrderStatusTag";
 
 const { Title, Text } = Typography;
 
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
-
 export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) {
-    const renderStatusTag = (status) => {
-        switch (status) {
-            case "PENDING":
-                return <Tag color="warning">Chờ xử lý</Tag>;
-            case "PAID":
-                return <Tag color="processing">Đã thanh toán</Tag>;
-            case "SHIPPING":
-                return <Tag color="blue">Đang giao hàng</Tag>;
-            case "COMPLETED":
-                return <Tag color="success">Hoàn thành</Tag>;
-            case "CANCELED":
-                return <Tag color="error">Đã hủy</Tag>;
-            default:
-                return <Tag>{status}</Tag>;
-        }
-    };
-
     const getModalDescriptionItems = () => [
         {
             key: "1",
@@ -62,7 +44,7 @@ export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) 
                                 #{selectedOrder.orderCode}
                             </Text>
                         </div>
-                        <div>{renderStatusTag(selectedOrder.status)}</div>
+                        <div><OrderStatusTag status={selectedOrder.status} /></div>
                     </div>
 
                     <Descriptions

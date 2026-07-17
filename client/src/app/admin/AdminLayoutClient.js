@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
 import { Layout, Menu, Button, Dropdown, Avatar, theme } from "antd";
@@ -18,6 +17,7 @@ import {
     GiftOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import api from "@/utils/axios";
 
 const { Header, Sider, Content } = Layout;
@@ -151,9 +151,12 @@ export default function AdminLayout({ children }) {
                         overflow: "hidden",
                     }}
                 >
-                    <img
+                    <Image
                         src="/logo.png"
                         alt="DPWOOD Admin"
+                        width={40}
+                        height={40}
+                        priority
                         style={{
                             height: collapsed ? 28 : 40,
                             objectFit: "contain",

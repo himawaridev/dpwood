@@ -28,12 +28,10 @@ import {
     GiftOutlined,
 } from "@ant-design/icons";
 import api from "@/utils/axios";
+import { formatCurrency } from "@/utils/formatters";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
-
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 
 const formatCouponValue = (coupon) => {
     if (coupon.discountType === "percent") return `-${Number(coupon.discountValue)}%`;

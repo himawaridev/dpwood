@@ -5,11 +5,9 @@ import { App, Table, Tag, Button, Typography, Modal, Empty, Alert, Descriptions,
 import { CloseCircleOutlined, EyeOutlined, QrcodeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 import PaymentQRModal from "@/app/(main)/cart/components/PaymentQRModal";
+import { formatCurrency } from "@/utils/formatters";
 
 const { Text, Title } = Typography;
-
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 
 const getProductImage = (product) => {
     if (!product) return null;

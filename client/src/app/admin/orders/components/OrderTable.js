@@ -1,41 +1,20 @@
 import React from "react";
-import { Table, Tag, Select, Button, Typography, Modal, Tooltip } from "antd";
+import { Table, Tag, Select, Typography, Modal } from "antd";
 import { EyeOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import AdminIconButton from "@/components/ui/AdminIconButton";
+import OrderStatusTag from "@/components/order/OrderStatusTag";
+import { formatCurrency, formatDateTime } from "@/utils/formatters";
+import { getOrderStatusMeta, ORDER_STATUS_OPTIONS } from "@/utils/orderStatus";
 
 const { Text } = Typography;
 
-const STATUS_LABELS = {
-    PENDING: "Chờ xử lý",
-    PAID: "Đã thanh toán",
-    SHIPPING: "Đang giao",
-    COMPLETED: "Hoàn thành",
-    CANCELED: "Hủy đơn",
-};
-
 export default function OrderTable({ orders, loading, onStatusChange, onViewDetails }) {
-    const renderStatusTag = (status) => {
-        switch (status) {
-            case "PENDING":
-                return <Tag color="warning">Chờ xử lý</Tag>;
-            case "PAID":
-                return <Tag color="processing">Đã thanh toán</Tag>;
-            case "SHIPPING":
-                return <Tag color="blue">Đang giao hàng</Tag>;
-            case "COMPLETED":
-                return <Tag color="success">Hoàn thành</Tag>;
-            case "CANCELED":
-                return <Tag color="error">Đã hủy</Tag>;
-            default:
-                return <Tag>{status}</Tag>;
-        }
-    };
-
     const handleStatusSelect = (record, newStatus) => {
         const isDangerous = newStatus === "CANCELED" || record.status === "CANCELED" || record.status === "COMPLETED";
 
         if (isDangerous) {
-            const fromLabel = STATUS_LABELS[record.status] || record.status;
-            const toLabel = STATUS_LABELS[newStatus] || newStatus;
+            const fromLabel = getOrderStatusMeta(record.status).optionLabel;
+            const toLabel = getOrderStatusMeta(newStatus).optionLabel;
 
             Modal.confirm({
                 title: "Xác nhận thay đổi trạng thái",
@@ -81,14 +60,14 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
         {
             title: "Ngày đặt",
             dataIndex: "createdAt",
-            render: (date) => new Date(date).toLocaleString("vi-VN"),
+            render: formatDateTime,
         },
         {
             title: "Tổng tiền",
             dataIndex: "totalAmount",
             render: (price) => (
                 <Text type="danger" strong>
-                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price || 0)}
+                    {formatCurrency(price)}
                 </Text>
             ),
         },
@@ -100,7 +79,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
         {
             title: "Trạng thái",
             dataIndex: "status",
-            render: (status) => renderStatusTag(status),
+            render: (status) => <OrderStatusTag status={status} />,
         },
         {
             title: "Cập nhật",
@@ -110,13 +89,7 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
                     value={record.status}
                     style={{ width: 140 }}
                     onChange={(value) => handleStatusSelect(record, value)}
-                    options={[
-                        { value: "PENDING", label: "Chờ xử lý" },
-                        { value: "PAID", label: "Đã thanh toán" },
-                        { value: "SHIPPING", label: "Đang giao" },
-                        { value: "COMPLETED", label: "Hoàn thành" },
-                        { value: "CANCELED", label: "Hủy đơn" },
-                    ]}
+                    options={ORDER_STATUS_OPTIONS}
                 />
             ),
         },
@@ -125,15 +98,11 @@ export default function OrderTable({ orders, loading, onStatusChange, onViewDeta
             key: "details",
             fixed: "right",
             render: (_, record) => (
-                <Tooltip title="Xem chi tiết đơn hàng">
-                    <Button
-                        type="text"
-                        icon={<EyeOutlined />}
-                        aria-label="Xem chi tiết đơn hàng"
-                        onClick={() => onViewDetails(record)}
-                        className="dp-admin-action-button"
-                    />
-                </Tooltip>
+                <AdminIconButton
+                    label="Xem chi tiết đơn hàng"
+                    icon={<EyeOutlined />}
+                    onClick={() => onViewDetails(record)}
+                />
             ),
         },
     ];

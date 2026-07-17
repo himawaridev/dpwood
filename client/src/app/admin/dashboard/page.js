@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Alert,
     App,
-    Button,
     Card,
     Col,
     Empty,
@@ -18,7 +17,6 @@ import {
     Statistic,
     Table,
     Tag,
-    Tooltip as AntTooltip,
     Typography,
 } from "antd";
 import {
@@ -50,63 +48,19 @@ import {
     YAxis,
 } from "recharts";
 import api from "@/utils/axios";
+import AdminIconButton from "@/components/ui/AdminIconButton";
 import { getProductSalesStats } from "@/utils/productStats";
+import { formatCurrency } from "@/utils/formatters";
+import {
+    buildDashboardData,
+    compactNumber,
+    getOrderAmount,
+    normalizeStatus,
+    PERIOD_OPTIONS,
+    STATUS_META,
+} from "./dashboardUtils";
 
 const { Title, Text, Paragraph } = Typography;
-
-const PERIOD_OPTIONS = [
-    { label: "7 ngày", value: 7 },
-    { label: "30 ngày", value: 30 },
-    { label: "90 ngày", value: 90 },
-    { label: "Tất cả", value: "all" },
-];
-
-const STATUS_META = {
-    PENDING: { label: "Chờ xử lý", color: "gold", chartColor: "#f5b544" },
-    PAID: { label: "Đã thanh toán", color: "green", chartColor: "#22a06b" },
-    SHIPPING: { label: "Đang giao", color: "blue", chartColor: "#4f8cff" },
-    COMPLETED: { label: "Hoàn thành", color: "success", chartColor: "#15a46b" },
-    CANCELED: { label: "Đã hủy", color: "red", chartColor: "#e5484d" },
-};
-
-const SUCCESS_STATUSES = new Set(["PAID", "SHIPPING", "COMPLETED"]);
-const FINAL_STATUSES = new Set(["COMPLETED", "CANCELED"]);
-
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(
-        Number(value || 0),
-    );
-
-const compactNumber = (value) =>
-    new Intl.NumberFormat("vi-VN", {
-        notation: "compact",
-        compactDisplay: "short",
-        maximumFractionDigits: 1,
-    }).format(Number(value || 0));
-
-const normalizeStatus = (status = "") => String(status || "").toUpperCase();
-const getOrderAmount = (order) => Number(order?.totalAmount ?? order?.totalPrice ?? 0);
-
-const isInsidePeriod = (dateValue, period) => {
-    if (period === "all") return true;
-    if (!dateValue) return false;
-
-    const date = new Date(dateValue);
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - Number(period) + 1);
-
-    return date >= start;
-};
-
-const makeDateLabels = (period) => {
-    const days = period === "all" ? 30 : Number(period);
-    return Array.from({ length: days }, (_, index) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (days - 1 - index));
-        return date.toLocaleDateString("vi-VN");
-    });
-};
 
 export default function AdminDashboard() {
     const { message } = App.useApp();
@@ -120,8 +74,9 @@ export default function AdminDashboard() {
         refreshing: false,
     });
 
-    const fetchDashboardData = async (silent = false) => {
+    const fetchDashboardData = useCallback(async (silent = false) => {
         try {
+            await Promise.resolve();
             setData((prev) => ({ ...prev, loading: !silent && prev.orders.length === 0, refreshing: silent }));
             const results = await Promise.allSettled([
                 api.get("/products"),
@@ -145,78 +100,14 @@ export default function AdminDashboard() {
             message.error("Không thể tải dữ liệu tổng quan.");
             setData((prev) => ({ ...prev, loading: false, refreshing: false }));
         }
-    };
+    }, [message]);
 
     useEffect(() => {
-        fetchDashboardData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        const timer = window.setTimeout(() => fetchDashboardData(), 0);
+        return () => window.clearTimeout(timer);
+    }, [fetchDashboardData]);
 
-    const dashboard = useMemo(() => {
-        const ordersInPeriod = data.orders.filter((order) => isInsidePeriod(order.createdAt, period));
-        const paidOrders = ordersInPeriod.filter((order) => SUCCESS_STATUSES.has(normalizeStatus(order.status)));
-        const pendingOrders = ordersInPeriod.filter((order) => normalizeStatus(order.status) === "PENDING");
-        const canceledOrders = ordersInPeriod.filter((order) => normalizeStatus(order.status) === "CANCELED");
-        const activeUsers = data.users.filter((user) => !user.deletedAt);
-        const lowStockProducts = data.products
-            .filter((product) => Number(product.stock || 0) <= 10)
-            .sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0));
-        const topProducts = [...data.products]
-            .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
-            .slice(0, 8);
-        const hotProducts = data.products.filter((product) => getProductSalesStats(product).isHot);
-
-        const revenue = paidOrders.reduce((sum, order) => sum + getOrderAmount(order), 0);
-        const averageOrderValue = paidOrders.length ? revenue / paidOrders.length : 0;
-        const completionBase = ordersInPeriod.filter((order) => !FINAL_STATUSES.has(normalizeStatus(order.status))).length;
-        const processedOrders = ordersInPeriod.filter((order) => FINAL_STATUSES.has(normalizeStatus(order.status))).length;
-        const processingRate = ordersInPeriod.length ? Math.round((processedOrders / ordersInPeriod.length) * 100) : 0;
-
-        const chartLabels = makeDateLabels(period);
-        const chartMap = chartLabels.reduce((map, label) => {
-            map[label] = { date: label.slice(0, 5), revenue: 0, orders: 0 };
-            return map;
-        }, {});
-
-        ordersInPeriod.forEach((order) => {
-            const key = new Date(order.createdAt).toLocaleDateString("vi-VN");
-            if (!chartMap[key]) return;
-            chartMap[key].orders += 1;
-            if (SUCCESS_STATUSES.has(normalizeStatus(order.status))) {
-                chartMap[key].revenue += getOrderAmount(order);
-            }
-        });
-
-        const statusMap = ordersInPeriod.reduce((map, order) => {
-            const status = normalizeStatus(order.status) || "UNKNOWN";
-            map[status] = (map[status] || 0) + 1;
-            return map;
-        }, {});
-
-        const statusData = Object.entries(statusMap).map(([status, value]) => ({
-            status,
-            name: STATUS_META[status]?.label || status,
-            value,
-            color: STATUS_META[status]?.chartColor || "#8c8c8c",
-        }));
-
-        return {
-            ordersInPeriod,
-            paidOrders,
-            pendingOrders,
-            canceledOrders,
-            activeUsers,
-            lowStockProducts,
-            topProducts,
-            hotProducts,
-            revenue,
-            averageOrderValue,
-            processingRate,
-            remainingWorkCount: completionBase,
-            chartData: Object.values(chartMap),
-            statusData,
-        };
-    }, [data.orders, data.products, data.users, period]);
+    const dashboard = useMemo(() => buildDashboardData(data, period), [data, period]);
 
     const recentOrderColumns = [
         {
@@ -330,16 +221,12 @@ export default function AdminDashboard() {
 
                 <Space wrap>
                     <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
-                    <AntTooltip title="Làm mới dữ liệu tổng quan">
-                        <Button
-                            type="text"
-                            icon={<ReloadOutlined />}
-                            aria-label="Làm mới dữ liệu tổng quan"
-                            className="dp-admin-action-button"
-                            onClick={() => fetchDashboardData(true)}
-                            loading={data.refreshing}
-                        />
-                    </AntTooltip>
+                    <AdminIconButton
+                        label="Làm mới dữ liệu tổng quan"
+                        icon={<ReloadOutlined />}
+                        onClick={() => fetchDashboardData(true)}
+                        loading={data.refreshing}
+                    />
                 </Space>
             </Flex>
 
@@ -351,15 +238,11 @@ export default function AdminDashboard() {
                     title={`${dashboard.lowStockProducts.length} sản phẩm sắp hết hàng`}
                     description="Ưu tiên kiểm tra tồn kho để tránh khách đặt sản phẩm không đủ số lượng."
                     action={
-                        <AntTooltip title="Xem sản phẩm tồn kho thấp">
-                            <Button
-                                type="text"
-                                icon={<EyeOutlined />}
-                                aria-label="Xem sản phẩm tồn kho thấp"
-                                className="dp-admin-action-button"
-                                onClick={() => router.push("/admin/products")}
-                            />
-                        </AntTooltip>
+                        <AdminIconButton
+                            label="Xem sản phẩm tồn kho thấp"
+                            icon={<EyeOutlined />}
+                            onClick={() => router.push("/admin/products")}
+                        />
                     }
                 />
             )}
@@ -498,42 +381,26 @@ export default function AdminDashboard() {
                 <Col xs={24} lg={8}>
                     <Card title="Lối tắt quản trị" className="dp-admin-quick-card">
                         <div className="dp-admin-quick-actions">
-                            <AntTooltip title="Quản lý sản phẩm">
-                                <Button
-                                    type="text"
-                                    icon={<AppstoreAddOutlined />}
-                                    aria-label="Quản lý sản phẩm"
-                                    className="dp-admin-action-button"
-                                    onClick={() => router.push("/admin/products")}
-                                />
-                            </AntTooltip>
-                            <AntTooltip title="Xử lý đơn hàng">
-                                <Button
-                                    type="text"
-                                    icon={<FileTextOutlined />}
-                                    aria-label="Xử lý đơn hàng"
-                                    className="dp-admin-action-button"
-                                    onClick={() => router.push("/admin/orders")}
-                                />
-                            </AntTooltip>
-                            <AntTooltip title="Gửi thông báo">
-                                <Button
-                                    type="text"
-                                    icon={<BellOutlined />}
-                                    aria-label="Gửi thông báo"
-                                    className="dp-admin-action-button"
-                                    onClick={() => router.push("/admin/notifications")}
-                                />
-                            </AntTooltip>
-                            <AntTooltip title="Quản lý người dùng">
-                                <Button
-                                    type="text"
-                                    icon={<TeamOutlined />}
-                                    aria-label="Quản lý người dùng"
-                                    className="dp-admin-action-button"
-                                    onClick={() => router.push("/admin/users")}
-                                />
-                            </AntTooltip>
+                            <AdminIconButton
+                                label="Quản lý sản phẩm"
+                                icon={<AppstoreAddOutlined />}
+                                onClick={() => router.push("/admin/products")}
+                            />
+                            <AdminIconButton
+                                label="Xử lý đơn hàng"
+                                icon={<FileTextOutlined />}
+                                onClick={() => router.push("/admin/orders")}
+                            />
+                            <AdminIconButton
+                                label="Gửi thông báo"
+                                icon={<BellOutlined />}
+                                onClick={() => router.push("/admin/notifications")}
+                            />
+                            <AdminIconButton
+                                label="Quản lý người dùng"
+                                icon={<TeamOutlined />}
+                                onClick={() => router.push("/admin/users")}
+                            />
                         </div>
                     </Card>
                 </Col>
@@ -590,15 +457,11 @@ export default function AdminDashboard() {
                     <Card
                         title="Đơn hàng gần đây"
                         extra={
-                            <AntTooltip title="Xem tất cả đơn hàng">
-                                <Button
-                                    type="text"
-                                    icon={<EyeOutlined />}
-                                    aria-label="Xem tất cả đơn hàng"
-                                    className="dp-admin-action-button"
-                                    onClick={() => router.push("/admin/orders")}
-                                />
-                            </AntTooltip>
+                            <AdminIconButton
+                                label="Xem tất cả đơn hàng"
+                                icon={<EyeOutlined />}
+                                onClick={() => router.push("/admin/orders")}
+                            />
                         }
                     >
                         <Table
@@ -617,15 +480,11 @@ export default function AdminDashboard() {
                     <Card
                         title="Cảnh báo tồn kho"
                         extra={
-                            <AntTooltip title="Quản lý sản phẩm tồn kho">
-                                <Button
-                                    type="text"
-                                    icon={<AppstoreAddOutlined />}
-                                    aria-label="Quản lý sản phẩm tồn kho"
-                                    className="dp-admin-action-button"
-                                    onClick={() => router.push("/admin/products")}
-                                />
-                            </AntTooltip>
+                            <AdminIconButton
+                                label="Quản lý sản phẩm tồn kho"
+                                icon={<AppstoreAddOutlined />}
+                                onClick={() => router.push("/admin/products")}
+                            />
                         }
                     >
                         <Table

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Table, Tag, Button, Popconfirm, Space, Input, Flex, Select, Tooltip } from "antd";
+import { Table, Tag, Popconfirm, Space, Input, Flex, Select } from "antd";
 import { DeleteOutlined, LockOutlined, UnlockOutlined, ReloadOutlined } from "@ant-design/icons";
+import AdminIconButton from "@/components/ui/AdminIconButton";
+import { formatDateTime } from "@/utils/formatters";
 
 export default function StatusControlTab({
     users,
@@ -36,7 +38,7 @@ export default function StatusControlTab({
             title: "Ngày đăng ký",
             dataIndex: "createdAt",
             key: "createdAt",
-            render: (date) => new Date(date).toLocaleString("vi-VN"),
+            render: formatDateTime,
         },
         {
             title: "Xác minh email",
@@ -70,16 +72,12 @@ export default function StatusControlTab({
                 const isDeleted = !!record.deletedAt;
                 return (
                     <Space>
-                        <Tooltip title={isBanned ? "Mở khóa tài khoản" : "Khóa tài khoản"}>
-                            <Button
-                                type="text"
-                                icon={isBanned ? <UnlockOutlined /> : <LockOutlined />}
-                                aria-label={isBanned ? "Mở khóa tài khoản" : "Khóa tài khoản"}
-                                onClick={() => onToggleBan(record.id)}
-                                disabled={record.role === "root"}
-                                className="dp-admin-action-button"
-                            />
-                        </Tooltip>
+                        <AdminIconButton
+                            label={isBanned ? "Mở khóa tài khoản" : "Khóa tài khoản"}
+                            icon={isBanned ? <UnlockOutlined /> : <LockOutlined />}
+                            onClick={() => onToggleBan(record.id)}
+                            disabled={record.role === "root"}
+                        />
                         {isDeleted ? (
                             <Popconfirm
                                 title="Khôi phục tài khoản này?"
@@ -87,14 +85,7 @@ export default function StatusControlTab({
                                 okText="Khôi phục"
                                 cancelText="Hủy"
                             >
-                                <Tooltip title="Khôi phục tài khoản">
-                                    <Button
-                                        type="text"
-                                        aria-label="Khôi phục tài khoản"
-                                        className="dp-admin-action-button"
-                                        icon={<ReloadOutlined />}
-                                    />
-                                </Tooltip>
+                                <AdminIconButton label="Khôi phục tài khoản" icon={<ReloadOutlined />} />
                             </Popconfirm>
                         ) : (
                             <Popconfirm
@@ -103,15 +94,11 @@ export default function StatusControlTab({
                                 okText="Xóa"
                                 cancelText="Hủy"
                             >
-                                <Tooltip title="Xóa tài khoản">
-                                    <Button
-                                        type="text"
-                                        aria-label="Xóa tài khoản"
-                                        className="dp-admin-action-button"
-                                        icon={<DeleteOutlined />}
-                                        disabled={record.role === "root"}
-                                    />
-                                </Tooltip>
+                                <AdminIconButton
+                                    label="Xóa tài khoản"
+                                    icon={<DeleteOutlined />}
+                                    disabled={record.role === "root"}
+                                />
                             </Popconfirm>
                         )}
                     </Space>
@@ -146,16 +133,12 @@ export default function StatusControlTab({
                         ]}
                     />
                 </Space>
-                <Tooltip title="Làm mới dữ liệu tài khoản">
-                    <Button
-                        type="text"
-                        icon={<ReloadOutlined />}
-                        aria-label="Làm mới dữ liệu tài khoản"
-                        className="dp-admin-action-button"
-                        onClick={onRefresh}
-                        loading={loading}
-                    />
-                </Tooltip>
+                <AdminIconButton
+                    label="Làm mới dữ liệu tài khoản"
+                    icon={<ReloadOutlined />}
+                    onClick={onRefresh}
+                    loading={loading}
+                />
             </Flex>
             <Table
                 dataSource={filteredUsers}

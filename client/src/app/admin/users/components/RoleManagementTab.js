@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Table, Select, Tag, Button, Typography, Input, Flex, Space, Tooltip } from "antd";
+import { Table, Select, Tag, Typography, Input, Flex, Space } from "antd";
 import { ReloadOutlined, SaveOutlined } from "@ant-design/icons";
+import AdminIconButton from "@/components/ui/AdminIconButton";
 
 const { Text } = Typography;
 
@@ -53,16 +54,12 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                             }
                             style={{ width: 150 }}
                         />
-                        <Tooltip title="Lưu số điện thoại">
-                            <Button
-                                type="text"
-                                icon={<SaveOutlined />}
-                                aria-label="Lưu số điện thoại"
-                                className="dp-admin-action-button"
-                                disabled={!normalizedDraft || !isDirty}
-                                onClick={() => onUpdatePhone(record.id, normalizedDraft)}
-                            />
-                        </Tooltip>
+                        <AdminIconButton
+                            label="Lưu số điện thoại"
+                            icon={<SaveOutlined />}
+                            disabled={!normalizedDraft || !isDirty}
+                            onClick={() => onUpdatePhone(record.id, normalizedDraft)}
+                        />
                     </Space.Compact>
                 );
             },
@@ -123,16 +120,12 @@ export default function RoleManagementTab({ users, loading, onRefresh, onChangeR
                         ]}
                     />
                 </Space>
-                <Tooltip title="Làm mới danh sách người dùng">
-                    <Button
-                        type="text"
-                        icon={<ReloadOutlined />}
-                        aria-label="Làm mới danh sách người dùng"
-                        className="dp-admin-action-button"
-                        onClick={onRefresh}
-                        loading={loading}
-                    />
-                </Tooltip>
+                <AdminIconButton
+                    label="Làm mới danh sách người dùng"
+                    icon={<ReloadOutlined />}
+                    onClick={onRefresh}
+                    loading={loading}
+                />
             </Flex>
             <Table
                 dataSource={filteredUsers}

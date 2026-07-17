@@ -1,11 +1,9 @@
 import React from "react";
 import { Modal, Descriptions, Divider, Table, Flex, Typography, Tag, Alert } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
+import { formatCurrency } from "@/utils/formatters";
 
 const { Title, Text } = Typography;
-
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 
 export default function ConfirmOrderModal({
     isConfirmModalVisible,
