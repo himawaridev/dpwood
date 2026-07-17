@@ -177,7 +177,7 @@ export default function BlogEditorPage() {
                                 ]}
                             >
                                 <Input
-                                    placeholder="VD: 5 xu hướng thiết kế nội thất 2026..."
+                                    placeholder="VD: 5 kinh nghiệm chọn đồ gia dụng nhà bếp..."
                                     size="large"
                                 />
                             </Form.Item>

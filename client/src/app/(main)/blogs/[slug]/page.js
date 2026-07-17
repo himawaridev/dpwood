@@ -20,7 +20,7 @@ export async function generateMetadata({ params }) {
             },
         };
     } catch {
-        return { title: "Cẩm nang nội thất" };
+        return { title: "Cẩm nang nhà bếp" };
     }
 }
 

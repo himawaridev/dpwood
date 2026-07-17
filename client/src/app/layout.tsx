@@ -16,28 +16,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://dpwood.store"),
   title: {
-    default: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
+    default: "DPWOOD Store - Đồ Gia Dụng Nhà Bếp",
     template: "%s | DPWOOD Store",
   },
   description:
-    "Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.",
+    "Mua sắm nồi chảo, dụng cụ bếp, bộ bàn ăn, hộp bảo quản và đồ gia dụng tiện ích tại DPWOOD.",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
   },
   openGraph: {
-    title: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
+    title: "DPWOOD Store - Đồ Gia Dụng Nhà Bếp",
     description:
-      "Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.",
+      "Nồi chảo, dụng cụ bếp, bộ bàn ăn, hộp bảo quản và sản phẩm tiện ích cho căn bếp hiện đại.",
     url: "https://dpwood.store",
     siteName: "DPWOOD",
     images: [
       {
-        url: "https://dpwood.store/linkbanner.png",
+        url: "/dpwood-kitchen-social.png",
         width: 1200,
         height: 630,
-        alt: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
+        alt: "Đồ gia dụng nhà bếp tại DPWOOD Store",
       },
     ],
     locale: "vi_VN",
@@ -45,10 +49,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DPWOOD Store - Nội Thất Gỗ Cao Cấp",
+    title: "DPWOOD Store - Đồ Gia Dụng Nhà Bếp",
     description:
-      "Cửa hàng nội thất và các sản phẩm từ gỗ cao cấp. Thiết kế sang trọng, chất lượng bền bỉ.",
-    images: ["https://dpwood.store/linkbanner.png"],
+      "Nồi chảo, dụng cụ bếp, bộ bàn ăn, hộp bảo quản và sản phẩm tiện ích cho căn bếp hiện đại.",
+    images: ["/dpwood-kitchen-social.png"],
   },
 };
 

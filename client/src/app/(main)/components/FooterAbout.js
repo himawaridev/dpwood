@@ -18,7 +18,7 @@ export default function FooterAbout() {
                     marginBottom: 16,
                 }}
             >
-                DPWOOD là thương hiệu nội thất gỗ cao cấp, mang đến các giải pháp không gian sống
+                DPWOOD cung cấp đồ gia dụng nhà bếp, dụng cụ nấu ăn và sản phẩm tiện ích
                 hiện đại, tinh tế và bền vững. Chúng tôi cam kết chất lượng trên từng sản phẩm.
             </Text>
             <Flex gap="middle">

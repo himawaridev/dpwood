@@ -19,7 +19,7 @@ export default function TrustBadges({ isMobile }) {
         {
             icon: <SafetyCertificateOutlined style={{ fontSize: 28, color: "#52c41a" }} />,
             title: "Cam kết chất lượng",
-            desc: "Gỗ nhập khẩu chính hãng 100%",
+            desc: "Thông tin sản phẩm rõ ràng, minh bạch",
         },
         {
             icon: <CustomerServiceOutlined style={{ fontSize: 28, color: "#fa8c16" }} />,
@@ -29,7 +29,7 @@ export default function TrustBadges({ isMobile }) {
         {
             icon: <AppstoreOutlined style={{ fontSize: 28, color: "#722ed1" }} />,
             title: "Đa dạng mẫu mã",
-            desc: "Hơn 500+ sản phẩm gỗ cao cấp",
+            desc: "Sản phẩm gia dụng được chọn lọc",
         },
     ];
 

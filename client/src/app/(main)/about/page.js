@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
     title: "Về DPWOOD",
-    description: "Thông tin về cửa hàng đồ gỗ và gia dụng nhà bếp DPWOOD.",
+    description: "Thông tin về cửa hàng đồ gia dụng nhà bếp DPWOOD.",
 };
 
 export default function AboutPage() {
@@ -13,7 +13,7 @@ export default function AboutPage() {
                     <span className="dp-eyebrow">VỀ CỬA HÀNG</span>
                     <h1>DPWOOD</h1>
                     <p>
-                        DPWOOD là website bán đồ gỗ và gia dụng nhà bếp, tập trung vào thông tin sản phẩm rõ ràng,
+                        DPWOOD là website bán đồ gia dụng nhà bếp, tập trung vào thông tin sản phẩm rõ ràng,
                         lựa chọn biến thể thuận tiện và quy trình mua hàng có thể theo dõi.
                     </p>
                 </header>

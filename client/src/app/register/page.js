@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { App, Button, Card, Divider, Form, Input, Typography } from "antd";
 import { LockOutlined, MailOutlined, PhoneOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import api from "@/utils/axios";
+import { waitForAuthLoading } from "@/utils/authLoading";
 
 const { Title, Text, Paragraph } = Typography;
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -15,6 +16,8 @@ const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 export default function RegisterPage() {
     const { message } = App.useApp();
     const router = useRouter();
+    const [submitting, setSubmitting] = useState(false);
+    const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
     useEffect(() => {
         if (window.location.hostname === "127.0.0.1") {
@@ -38,21 +41,33 @@ export default function RegisterPage() {
     };
 
     const onFinish = async (values) => {
+        if (submitting) return;
+        const startedAt = Date.now();
+
         try {
+            setSubmitting(true);
             const response = await api.post("/auth/register", values);
             message.success(response.data?.message || "Đăng ký thành công. Vui lòng kiểm tra email.");
             router.push("/login");
         } catch (error) {
+            await waitForAuthLoading(startedAt);
             message.error(error.response?.data?.message || "Đăng ký thất bại.");
+            setSubmitting(false);
         }
     };
 
     const onGoogleSuccess = async (credentialResponse) => {
+        if (googleSubmitting) return;
+        const startedAt = Date.now();
+
         try {
+            setGoogleSubmitting(true);
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
             handleLoginSuccess(response.data);
         } catch (error) {
+            await waitForAuthLoading(startedAt);
             message.error(error.response?.data?.message || "Đăng ký bằng Google thất bại.");
+            setGoogleSubmitting(false);
         }
     };
 
@@ -77,7 +92,7 @@ export default function RegisterPage() {
                         <Text className="dp-muted">Hoàn tất thông tin để tạo tài khoản mua sắm.</Text>
                     </div>
 
-                    <Form layout="vertical" onFinish={onFinish} className="dp-auth-form">
+                    <Form layout="vertical" onFinish={onFinish} className="dp-auth-form" disabled={submitting || googleSubmitting}>
                         <div className="dp-auth-register-grid">
                             <Form.Item
                                 label="Họ và tên"
@@ -129,8 +144,15 @@ export default function RegisterPage() {
                             <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhập mật khẩu" />
                         </Form.Item>
 
-                        <Button type="primary" htmlType="submit" size="large" block icon={<UserAddOutlined />}>
-                            Đăng ký
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            size="large"
+                            block
+                            icon={<UserAddOutlined />}
+                            loading={submitting}
+                        >
+                            {submitting ? "Đang đăng ký" : "Đăng ký"}
                         </Button>
 
                         <Divider plain>Hoặc đăng ký nhanh bằng</Divider>
@@ -146,6 +168,7 @@ export default function RegisterPage() {
                                         text="signup_with"
                                         shape="rectangular"
                                     />
+                                    {googleSubmitting && <Text className="dp-auth-note">Đang xác thực tài khoản Google...</Text>}
                                 </div>
                             </GoogleOAuthProvider>
                         ) : (

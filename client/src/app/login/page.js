@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import api from "@/utils/axios";
+import { waitForAuthLoading } from "@/utils/authLoading";
 
 const { Title, Text, Paragraph } = Typography;
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -24,6 +25,8 @@ export default function LoginPage() {
     const [unverifiedLogin, setUnverifiedLogin] = useState("");
     const [resendingVerification, setResendingVerification] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
+    const [submitting, setSubmitting] = useState(false);
+    const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
     useEffect(() => {
         if (window.location.hostname === "127.0.0.1") {
@@ -58,7 +61,11 @@ export default function LoginPage() {
     };
 
     const onFinish = async (values) => {
+        if (submitting) return;
+        const startedAt = Date.now();
+
         try {
+            setSubmitting(true);
             setUnverifiedLogin("");
             setResendCooldown(0);
             const response = await api.post("/auth/login", {
@@ -67,11 +74,13 @@ export default function LoginPage() {
             });
             handleLoginSuccess(response.data);
         } catch (error) {
+            await waitForAuthLoading(startedAt);
             const errorMessage = error.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại.";
             if (error.response?.status === 403 && /verified|activate|xac minh|kích hoạt/i.test(errorMessage)) {
                 setUnverifiedLogin(values.login);
             }
             message.error(errorMessage);
+            setSubmitting(false);
         }
     };
 
@@ -93,11 +102,17 @@ export default function LoginPage() {
     };
 
     const onGoogleSuccess = async (credentialResponse) => {
+        if (googleSubmitting) return;
+        const startedAt = Date.now();
+
         try {
+            setGoogleSubmitting(true);
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
             handleLoginSuccess(response.data);
         } catch (error) {
+            await waitForAuthLoading(startedAt);
             message.error(error.response?.data?.message || "Đăng nhập bằng Google thất bại.");
+            setGoogleSubmitting(false);
         }
     };
 
@@ -133,7 +148,7 @@ export default function LoginPage() {
                         <Text className="dp-muted">Chào mừng bạn quay lại DPWOOD.</Text>
                     </div>
 
-                    <Form layout="vertical" onFinish={onFinish} className="dp-auth-form">
+                    <Form layout="vertical" onFinish={onFinish} className="dp-auth-form" disabled={submitting || googleSubmitting}>
                         {unverifiedLogin && (
                             <Alert
                                 type="warning"
@@ -183,8 +198,15 @@ export default function LoginPage() {
                             <Link href="/forgot-password">Quên mật khẩu?</Link>
                         </div>
 
-                        <Button type="primary" htmlType="submit" size="large" block icon={<LoginOutlined />}>
-                            Đăng nhập
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            size="large"
+                            block
+                            icon={<LoginOutlined />}
+                            loading={submitting}
+                        >
+                            {submitting ? "Đang đăng nhập" : "Đăng nhập"}
                         </Button>
 
                         <Divider plain>Hoặc đăng nhập bằng</Divider>
@@ -200,6 +222,7 @@ export default function LoginPage() {
                                         text="signin_with"
                                         shape="rectangular"
                                     />
+                                    {googleSubmitting && <Text className="dp-auth-note">Đang xác thực tài khoản Google...</Text>}
                                 </div>
                             </GoogleOAuthProvider>
                         ) : (

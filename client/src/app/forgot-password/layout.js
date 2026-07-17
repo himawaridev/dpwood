@@ -4,7 +4,7 @@ export const metadata = {
     openGraph: {
         title: 'Quên Mật Khẩu - DPWOOD Store',
         description: 'Khôi phục mật khẩu tài khoản DPWOOD Store.',
-        images: [{ url: 'https://dpwood.store/linkbanner.png', width: 1200, height: 630 }],
+        images: [{ url: 'https://dpwood.store/dpwood-kitchen-social.png', width: 1200, height: 630 }],
     },
 };
 

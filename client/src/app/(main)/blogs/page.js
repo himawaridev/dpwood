@@ -39,7 +39,7 @@ export default function ClientBlogPage() {
                         Cẩm nang DPWOOD
                     </span>
                     <Paragraph className="dp-muted" style={{ maxWidth: 700, margin: 0 }}>
-                        Gợi ý chăm sóc đồ gỗ, phối nội thất và những cập nhật mới từ DPWOOD.
+                        Kinh nghiệm chọn, sử dụng và chăm sóc đồ gia dụng cho căn bếp hiện đại.
                     </Paragraph>
                 </section>
 
@@ -90,7 +90,7 @@ export default function ClientBlogPage() {
                                         {blog.title}
                                     </Title>
                                     <Paragraph className="dp-muted dp-blog-card-summary" ellipsis={{ rows: 2 }}>
-                                        {blog.summary || "Khám phá thêm câu chuyện và kinh nghiệm nội thất."}
+                                        {blog.summary || "Khám phá kinh nghiệm lựa chọn và sử dụng đồ gia dụng nhà bếp."}
                                     </Paragraph>
                                     <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
                                         <Space size={6}>
