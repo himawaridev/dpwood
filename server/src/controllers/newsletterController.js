@@ -7,6 +7,8 @@ const User = require("../models/user");
 const Coupon = require("../models/coupon");
 const sendEmail = require("../utils/sendEmail");
 const {
+    generateAccountMarketingHtml,
+    generateMarketingHtml,
     generateNewsletterVerificationHtml,
     generateNewsletterWelcomeHtml,
 } = require("../templates/emailTemplates");
@@ -369,6 +371,36 @@ const sendCampaign = async (req, res) => {
     }
 };
 
+const previewCampaign = async (req, res) => {
+    try {
+        const audience = req.body.audience === "subscribers" ? "subscribers" : "verified_users";
+        const subject = String(req.body.subject || "").trim().slice(0, 180);
+        const preview = String(req.body.preview || "").trim().slice(0, 240);
+        const contentHtml = sanitizeCampaignHtml(req.body.contentHtml);
+        if (!subject || !contentHtml) {
+            return res.status(400).json({ message: "Tiêu đề và nội dung email là bắt buộc" });
+        }
+
+        const html = audience === "subscribers"
+            ? generateMarketingHtml({
+                title: subject,
+                preview,
+                contentHtml,
+                unsubscribeUrl: `${frontendUrl()}/newsletter/unsubscribe/demo-preview`,
+            })
+            : generateAccountMarketingHtml({
+                title: subject,
+                preview,
+                contentHtml,
+                recipientName: String(req.body.recipientName || "Khách hàng DPWOOD").trim().slice(0, 120),
+            });
+
+        return res.status(200).json({ html });
+    } catch (error) {
+        return res.status(500).json({ message: "Không thể tạo bản xem trước email", error: error.message });
+    }
+};
+
 const getCampaigns = async (req, res) => {
     try {
         const page = Math.max(Number(req.query.page) || 1, 1);
@@ -445,6 +477,7 @@ module.exports = {
     unsubscribe,
     getVerifiedRecipients,
     getSubscribers,
+    previewCampaign,
     sendCampaign,
     getCampaigns,
     cancelCampaign,

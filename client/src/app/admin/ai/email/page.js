@@ -21,12 +21,14 @@ import {
 import {
     ArrowRightOutlined,
     CheckOutlined,
+    EyeOutlined,
     MailOutlined,
     RobotOutlined,
     TeamOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
+import EmailPreviewModal from "@/components/admin/EmailPreviewModal";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -53,6 +55,7 @@ export default function AdminAiEmailPage() {
     const [form] = Form.useForm();
     const [draft, setDraft] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
     const [recipientMode, setRecipientMode] = useState("verified_all");
     const [pickerOpen, setPickerOpen] = useState(false);
     const [loadingUsers, setLoadingUsers] = useState(false);
@@ -75,6 +78,7 @@ export default function AdminAiEmailPage() {
                     search: userSearch || undefined,
                     role: userRole || undefined,
                 },
+                authRequired: true,
             });
             setUsers(response.data?.users || []);
             setUserTotal(Number(response.data?.total || 0));
@@ -122,10 +126,14 @@ export default function AdminAiEmailPage() {
         if (!validateRecipients()) return;
         try {
             setLoading(true);
-            const response = await api.post("/ai/email-draft", {
-                ...values,
-                audience: recipientOptions.find((item) => item.value === recipientMode)?.label,
-            });
+            const response = await api.post(
+                "/ai/email-draft",
+                {
+                    ...values,
+                    audience: recipientOptions.find((item) => item.value === recipientMode)?.label,
+                },
+                { authRequired: true },
+            );
             const nextDraft = response.data?.draft;
             if (!nextDraft) throw new Error("AI không trả về bản nháp hợp lệ");
             setDraft(nextDraft);
@@ -260,9 +268,14 @@ export default function AdminAiEmailPage() {
                     <Card
                         title="Bản nháp email"
                         extra={draft ? (
-                            <Button type="primary" icon={<ArrowRightOutlined />} onClick={useDraft}>
-                                Chuyển sang trình gửi
-                            </Button>
+                            <Space wrap>
+                                <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
+                                    Xem bản gửi
+                                </Button>
+                                <Button type="primary" icon={<ArrowRightOutlined />} onClick={useDraft}>
+                                    Chuyển sang trình gửi
+                                </Button>
+                            </Space>
                         ) : null}
                     >
                         {draft ? (
@@ -362,6 +375,16 @@ export default function AdminAiEmailPage() {
                     }}
                 />
             </Modal>
+
+            <EmailPreviewModal
+                open={previewOpen}
+                onClose={() => setPreviewOpen(false)}
+                subject={draft?.subject}
+                preview={draft?.preview}
+                contentHtml={draft?.contentHtml}
+                audience={recipientMode === "subscribers_all" ? "subscribers" : "verified_users"}
+                recipientName={selectedUsers[0]?.name}
+            />
         </div>
     );
 }

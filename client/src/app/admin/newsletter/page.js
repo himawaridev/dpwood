@@ -21,6 +21,7 @@ import {
     Typography,
 } from "antd";
 import {
+    EyeOutlined,
     MailOutlined,
     ReloadOutlined,
     RobotOutlined,
@@ -32,6 +33,7 @@ import {
 import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
 import AdminIconButton from "@/components/ui/AdminIconButton";
+import EmailPreviewModal from "@/components/admin/EmailPreviewModal";
 import { formatDateTime } from "@/utils/formatters";
 
 const { Title, Text } = Typography;
@@ -85,6 +87,7 @@ export default function AdminNewsletterPage() {
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
     const [sending, setSending] = useState(false);
     const [composerOpen, setComposerOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
     const [campaign, setCampaign] = useState({ audience: "verified_users", target: "all", recipient: null });
 
     const fetchUsers = useCallback(async () => {
@@ -97,6 +100,7 @@ export default function AdminNewsletterPage() {
                     search: userSearch || undefined,
                     role: userRole || undefined,
                 },
+                authRequired: true,
             });
             setUsers(response.data?.users || []);
             setUserStats(response.data?.stats || {});
@@ -118,6 +122,7 @@ export default function AdminNewsletterPage() {
                     search: subscriberSearch || undefined,
                     status: subscriberStatus || undefined,
                 },
+                authRequired: true,
             });
             setSubscribers(response.data?.subscribers || []);
             setSubscriberStats(response.data?.stats || {});
@@ -138,6 +143,7 @@ export default function AdminNewsletterPage() {
                     limit: 20,
                     status: campaignStatus || undefined,
                 },
+                authRequired: true,
             });
             setCampaigns(response.data?.campaigns || []);
             setCampaignTotal(Number(response.data?.total || 0));
@@ -203,14 +209,18 @@ export default function AdminNewsletterPage() {
     const executeSend = async (values) => {
         try {
             setSending(true);
-            const response = await api.post("/newsletter/admin/send", {
-                ...values,
-                audience: campaign.audience,
-                target: campaign.target,
-                userId: campaign.audience === "verified_users" ? campaign.recipient?.id : undefined,
-                userIds: campaign.target === "selected" ? selectedUserIds : undefined,
-                subscriberId: campaign.audience === "subscribers" ? campaign.recipient?.id : undefined,
-            });
+            const response = await api.post(
+                "/newsletter/admin/send",
+                {
+                    ...values,
+                    audience: campaign.audience,
+                    target: campaign.target,
+                    userId: campaign.audience === "verified_users" ? campaign.recipient?.id : undefined,
+                    userIds: campaign.target === "selected" ? selectedUserIds : undefined,
+                    subscriberId: campaign.audience === "subscribers" ? campaign.recipient?.id : undefined,
+                },
+                { authRequired: true },
+            );
             message.success(response.data?.message || "Đã tạo chiến dịch email");
             setComposerOpen(false);
             form.resetFields();
@@ -239,6 +249,15 @@ export default function AdminNewsletterPage() {
         });
     };
 
+    const openEmailPreview = async () => {
+        try {
+            await form.validateFields(["subject", "contentHtml"]);
+            setPreviewOpen(true);
+        } catch {
+            message.warning("Hãy nhập tiêu đề và nội dung trước khi xem bản gửi");
+        }
+    };
+
     const sendPendingWelcome = () => {
         modal.confirm({
             title: "Gửi thư chào mừng còn thiếu?",
@@ -248,7 +267,11 @@ export default function AdminNewsletterPage() {
             onOk: async () => {
                 try {
                     setSending(true);
-                    const response = await api.post("/newsletter/admin/send-welcome");
+                    const response = await api.post(
+                        "/newsletter/admin/send-welcome",
+                        undefined,
+                        { authRequired: true },
+                    );
                     message.success(response.data?.message || "Đã hoàn tất gửi thư chào mừng");
                     fetchSubscribers();
                 } catch (error) {
@@ -270,7 +293,11 @@ export default function AdminNewsletterPage() {
             okButtonProps: { danger: true },
             onOk: async () => {
                 try {
-                    await api.post(`/newsletter/admin/campaigns/${record.id}/cancel`);
+                    await api.post(
+                        `/newsletter/admin/campaigns/${record.id}/cancel`,
+                        undefined,
+                        { authRequired: true },
+                    );
                     message.success("Đã hủy chiến dịch email");
                     await fetchCampaigns();
                 } catch (error) {
@@ -616,11 +643,22 @@ export default function AdminNewsletterPage() {
                     >
                         <TextArea rows={12} />
                     </Form.Item>
-                    <Flex justify="end">
+                    <Flex justify="end" gap={10} wrap="wrap">
+                        <AdminIconButton label="Xem bản gửi" icon={<EyeOutlined />} onClick={openEmailPreview} />
                         <AdminIconButton label="Gửi email" icon={<SendOutlined />} loading={sending} htmlType="submit" />
                     </Flex>
                 </Form>
             </Modal>
+
+            <EmailPreviewModal
+                open={previewOpen}
+                onClose={() => setPreviewOpen(false)}
+                subject={form.getFieldValue("subject")}
+                preview={form.getFieldValue("preview")}
+                contentHtml={form.getFieldValue("contentHtml")}
+                audience={campaign.audience}
+                recipientName={campaign.recipient?.name}
+            />
         </div>
     );
 }

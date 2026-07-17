@@ -135,8 +135,8 @@ export default function LatestProducts() {
 
             if (token) {
                 const [myCouponResponse, wishlistResponse] = await Promise.all([
-                    api.get("/coupons/my").catch(() => ({ data: [] })),
-                    api.get("/products/wishlist/me").catch(() => ({ data: [] })),
+                    api.get("/coupons/my", { authRequired: true }).catch(() => ({ data: [] })),
+                    api.get("/products/wishlist/me", { authRequired: true }).catch(() => ({ data: [] })),
                 ]);
                 const nextWalletItems = (myCouponResponse.data || []).filter((item) => item.Coupon);
                 const nextClaimedCoupons = getClaimedKeysFromWallet(nextWalletItems);
@@ -255,7 +255,11 @@ export default function LatestProducts() {
 
         try {
             setWishlistLoadingId(String(product.id));
-            const response = await api.post(`/products/${product.id}/wishlist`);
+            const response = await api.post(
+                `/products/${product.id}/wishlist`,
+                undefined,
+                { authRequired: true },
+            );
             setWishlistIds((current) => {
                 const next = new Set(current);
                 if (response.data?.wished) next.add(String(product.id));
@@ -327,8 +331,8 @@ export default function LatestProducts() {
 
         try {
             setClaimingCouponId(coupon.id);
-            await api.post("/coupons/claim", { couponId: coupon.id });
-            const myCouponResponse = await api.get("/coupons/my");
+            await api.post("/coupons/claim", { couponId: coupon.id }, { authRequired: true });
+            const myCouponResponse = await api.get("/coupons/my", { authRequired: true });
             setCouponWalletItems((myCouponResponse.data || []).filter((item) => item.Coupon));
             setClaimedCouponIds((prev) => {
                 const next = new Set([...prev, ...couponClaimKeys]);
@@ -338,7 +342,7 @@ export default function LatestProducts() {
             message.success(`Đã lấy mã ${coupon.code}`);
         } catch (error) {
             message.warning(error.response?.data?.message || `Đã sao chép mã ${coupon.code}`);
-            const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
+            const myCouponResponse = await api.get("/coupons/my", { authRequired: true }).catch(() => ({ data: [] }));
             const nextClaimedCoupons = new Set([
                 ...readStoredClaimedCoupons(),
                 ...getClaimedKeysFromWallet(myCouponResponse.data || []),
@@ -356,7 +360,7 @@ export default function LatestProducts() {
 
         try {
             setDeletingCouponId(walletItem.id);
-            await api.delete(`/coupons/my/${walletItem.id}`);
+            await api.delete(`/coupons/my/${walletItem.id}`, { authRequired: true });
 
             const removedKeys = new Set(getCouponClaimKeys(coupon));
             setCouponWalletItems((current) => current.filter((item) => item.id !== walletItem.id));

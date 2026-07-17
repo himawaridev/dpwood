@@ -17,7 +17,7 @@ export const useCoupons = () => {
 
             const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
             if (token) {
-                const myRes = await api.get("/coupons/my");
+                const myRes = await api.get("/coupons/my", { authRequired: true });
                 const ids = new Set(myRes.data.map((uc) => uc.couponId));
                 setClaimedIds(ids);
             }

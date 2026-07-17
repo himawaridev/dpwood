@@ -53,7 +53,7 @@ export default function Navbar() {
         setCartCount(cart.reduce((total, item) => total + Number(item.quantity || 0), 0));
 
         if (token) {
-            api.get("/products/wishlist/me")
+            api.get("/products/wishlist/me", { authRequired: true })
                 .then((response) => {
                     if (localStorage.getItem("token") === token) {
                         setWishlistCount((response.data || []).length);

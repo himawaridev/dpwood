@@ -93,7 +93,7 @@ export default function CartTable({
         const fetchSavedCoupons = async () => {
             try {
                 setIsVoucherLoading(true);
-                const response = await api.get("/coupons/my");
+                const response = await api.get("/coupons/my", { authRequired: true });
                 setSavedCoupons(
                     (response.data || [])
                         .filter((item) => item.Coupon && !item.isUsed)
@@ -152,7 +152,7 @@ export default function CartTable({
 
         try {
             setDeletingVoucherId(voucher.userCouponId);
-            await api.delete(`/coupons/my/${voucher.userCouponId}`);
+            await api.delete(`/coupons/my/${voucher.userCouponId}`, { authRequired: true });
             setSavedCoupons((current) =>
                 current.filter((item) => item.userCouponId !== voucher.userCouponId),
             );

@@ -89,7 +89,7 @@ export default function GiftCodesPage() {
             const activeCoupons = couponResponse.data || [];
 
             if (token) {
-                const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
+                const myCouponResponse = await api.get("/coupons/my", { authRequired: true }).catch(() => ({ data: [] }));
                 const nextWalletItems = (myCouponResponse.data || []).filter((item) => item.Coupon);
                 const nextClaimedCoupons = getClaimedKeysFromWallet(nextWalletItems);
                 const mergedCoupons = new Map(activeCoupons.map((coupon) => [String(coupon.id), coupon]));
@@ -156,8 +156,8 @@ export default function GiftCodesPage() {
 
         try {
             setClaimingCouponId(coupon.id);
-            await api.post("/coupons/claim", { couponId: coupon.id });
-            const myCouponResponse = await api.get("/coupons/my");
+            await api.post("/coupons/claim", { couponId: coupon.id }, { authRequired: true });
+            const myCouponResponse = await api.get("/coupons/my", { authRequired: true });
             setWalletItems((myCouponResponse.data || []).filter((item) => item.Coupon));
             setClaimedCouponIds((prev) => {
                 const next = new Set([...prev, ...couponClaimKeys]);
@@ -167,7 +167,7 @@ export default function GiftCodesPage() {
             message.success(`Đã lấy mã ${coupon.code}`);
         } catch (error) {
             message.warning(error.response?.data?.message || `Đã sao chép mã ${coupon.code}`);
-            const myCouponResponse = await api.get("/coupons/my").catch(() => ({ data: [] }));
+            const myCouponResponse = await api.get("/coupons/my", { authRequired: true }).catch(() => ({ data: [] }));
             const nextClaimedCoupons = new Set([
                 ...readStoredClaimedCoupons(),
                 ...getClaimedKeysFromWallet(myCouponResponse.data || []),
@@ -184,7 +184,7 @@ export default function GiftCodesPage() {
 
         try {
             setDeletingWalletId(walletItem.id);
-            await api.delete(`/coupons/my/${walletItem.id}`);
+            await api.delete(`/coupons/my/${walletItem.id}`, { authRequired: true });
 
             const couponKeys = new Set(getCouponClaimKeys(coupon));
             setWalletItems((current) => current.filter((item) => item.id !== walletItem.id));

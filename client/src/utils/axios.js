@@ -27,6 +27,66 @@ const storage = {
     },
 };
 
+const AUTH_KEYS = ["token", "refreshToken", "userName", "userRole", "avatarUrl"];
+const AUTH_ENDPOINT_PATTERN = /\/auth\/(login|register|google|refresh|forgot-password|resend-verification)/;
+let refreshPromise = null;
+let redirectingToLogin = false;
+
+const clearAuthSession = () => {
+    AUTH_KEYS.forEach((key) => storage.remove(key));
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("auth-session-changed"));
+};
+
+const redirectToLogin = () => {
+    if (typeof window === "undefined" || redirectingToLogin || window.location.pathname === "/login") return;
+    redirectingToLogin = true;
+    storage.redirect("/login");
+};
+
+const getTokenExpiry = (token) => {
+    try {
+        const payload = token.split(".")[1];
+        if (!payload) return null;
+        const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+        const decoded = JSON.parse(window.atob(padded));
+        return Number(decoded.exp || 0) * 1000 || null;
+    } catch {
+        return null;
+    }
+};
+
+const tokenNeedsRefresh = (token) => {
+    if (typeof window === "undefined") return false;
+    const expiresAt = getTokenExpiry(token);
+    return expiresAt !== null && expiresAt <= Date.now() + 30_000;
+};
+
+const refreshAccessToken = async () => {
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = (async () => {
+        const refreshToken = storage.get("refreshToken");
+        if (!refreshToken) throw new Error("Không có refresh token");
+        const response = await axios.post(`${getBaseURL()}/auth/refresh`, { refreshToken });
+        const newToken = response.data?.token;
+        if (!newToken) throw new Error("Máy chủ không trả về access token mới");
+        storage.set("token", newToken);
+        return newToken;
+    })();
+
+    try {
+        return await refreshPromise;
+    } finally {
+        refreshPromise = null;
+    }
+};
+
+const expireSession = () => {
+    clearAuthSession();
+    redirectToLogin();
+};
+
 const api = axios.create({
     baseURL: getBaseURL(),
     headers: {
@@ -35,8 +95,19 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(
-    (config) => {
-        const token = storage.get("token");
+    async (config) => {
+        let token = storage.get("token");
+        const isAuthEndpoint = AUTH_ENDPOINT_PATTERN.test(String(config.url || ""));
+
+        if (config.authRequired && !isAuthEndpoint && (!token || tokenNeedsRefresh(token))) {
+            try {
+                token = await refreshAccessToken();
+            } catch (refreshError) {
+                expireSession();
+                return Promise.reject(new axios.CanceledError(refreshError.message || "Phiên đăng nhập đã hết hạn"));
+            }
+        }
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -68,28 +139,17 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+        const isAuthEndpoint = AUTH_ENDPOINT_PATTERN.test(String(originalRequest?.url || ""));
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
             originalRequest._retry = true;
 
             try {
-                const refreshToken = storage.get("refreshToken");
-                if (!refreshToken) throw new Error("Không có refresh token");
-
-                const res = await axios.post(`${getBaseURL()}/auth/refresh`, { refreshToken });
-                const newToken = res.data.token;
-
-                storage.set("token", newToken);
+                const newToken = await refreshAccessToken();
+                originalRequest.headers = originalRequest.headers || {};
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
-
                 return api(originalRequest);
             } catch (refreshError) {
-                storage.remove("token");
-                storage.remove("refreshToken");
-                storage.remove("userName");
-                storage.remove("userRole");
-                storage.remove("avatarUrl");
-                storage.redirect("/login");
-
+                expireSession();
                 return Promise.reject(refreshError);
             }
         }

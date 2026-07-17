@@ -64,7 +64,7 @@ export default function ProductsPage() {
     useEffect(() => {
         if (!localStorage.getItem("token")) return;
 
-        api.get("/products/wishlist/me")
+        api.get("/products/wishlist/me", { authRequired: true })
             .then((res) => {
                 setWishlistIds(new Set((res.data || []).map((item) => String(item.productId))));
             })
@@ -108,7 +108,11 @@ export default function ProductsPage() {
 
         try {
             setWishlistLoadingId(String(product.id));
-            const res = await api.post(`/products/${product.id}/wishlist`);
+            const res = await api.post(
+                `/products/${product.id}/wishlist`,
+                undefined,
+                { authRequired: true },
+            );
             setWishlistIds((current) => {
                 const next = new Set(current);
                 if (res.data?.wished) next.add(String(product.id));
