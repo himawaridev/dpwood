@@ -975,6 +975,21 @@ a {
   gap: 10px;
 }
 
+@keyframes dp-boot-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dp-boot-loader-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid #ebebeb;
+  border-top-color: var(--dp-primary);
+  border-radius: 50%;
+  animation: dp-boot-loader-spin 650ms linear infinite;
+}
+
 .dp-admin-quick-actions .ant-btn {
   justify-content: center;
   font-weight: 800;
@@ -1743,6 +1758,10 @@ a {
   background: #fff5f3 !important;
 }
 
+.webcake-icon-button.ant-btn.is-active {
+  color: var(--dp-coral);
+}
+
 .webcake-account-slot {
   display: inline-flex;
   align-items: center;
@@ -1985,6 +2004,7 @@ a {
 
 .webcake-category-card {
   width: 100%;
+  aspect-ratio: 380 / 424;
   border: 0;
   padding: 0;
   background: transparent;
@@ -2006,8 +2026,9 @@ a {
 
 .webcake-category-card img {
   width: 100%;
-  aspect-ratio: 380 / 424;
+  height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
   transition: transform 550ms ease;
 }
@@ -2461,27 +2482,6 @@ a {
   opacity: 1 !important;
 }
 
-.webcake-coupon-all-action {
-  display: flex;
-  justify-content: center;
-  margin-top: 26px;
-}
-
-.webcake-coupon-all-action .ant-btn {
-  height: 42px;
-  min-width: 168px;
-  border-radius: 0;
-  border-color: #222;
-  color: #222;
-  font-weight: 800;
-}
-
-.webcake-coupon-all-action .ant-btn:hover,
-.webcake-coupon-all-action .ant-btn:focus {
-  border-color: #f09b90 !important;
-  color: #f09b90 !important;
-}
-
 .webcake-coupon-slide {
   height: 100%;
   padding: 0 12px;
@@ -2496,10 +2496,6 @@ a {
 
 .webcake-coupon-mobile-item {
   min-width: 0;
-}
-
-.webcake-coupon-view-all {
-  display: none;
 }
 
 .webcake-coupon-card {
@@ -3222,13 +3218,27 @@ a {
   text-align: center;
 }
 
-.webcake-view-all .ant-btn {
+.webcake-view-all .ant-btn,
+.webcake-view-all-button {
   height: 46px;
   padding: 0 30px;
-  border-radius: 999px;
-  border-color: #222;
+  border-radius: 0;
+  border: 1px solid #222;
   color: #222;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-weight: 700;
+  text-decoration: none;
+}
+
+.webcake-view-all .ant-btn:hover,
+.webcake-view-all .ant-btn:focus-visible,
+.webcake-view-all-button:hover,
+.webcake-view-all-button:focus-visible {
+  border-color: #f09b90;
+  color: #f09b90;
 }
 
 .webcake-testimonial {
@@ -4025,6 +4035,13 @@ a {
     padding: 0 4px;
   }
 
+  .webcake-utility-group .webcake-icon-button.ant-btn {
+    width: 30px;
+    min-width: 30px;
+    height: 32px;
+    min-height: 32px;
+  }
+
   .webcake-account-button {
     width: 40px;
     min-width: 40px;
@@ -4161,29 +4178,6 @@ a {
 
   .webcake-coupon-mobile-item {
     width: 100%;
-  }
-
-  .webcake-coupon-view-all {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 42px;
-    border-radius: 0;
-    border-color: #222;
-    background: #fff;
-    color: #222;
-    font-weight: 800;
-  }
-
-  .webcake-coupon-view-all:hover,
-  .webcake-coupon-view-all:focus {
-    border-color: #f09b90 !important;
-    color: #f09b90 !important;
-  }
-
-  .webcake-coupon-all-action {
-    display: none;
   }
 
   .webcake-coupon-card {
@@ -4385,6 +4379,41 @@ a {
 }
 
 @media (max-width: 480px) {
+  .webcake-navbar.ant-layout-header {
+    padding: 0 8px;
+  }
+
+  .webcake-brand {
+    width: 120px;
+    min-width: 120px;
+    gap: 6px;
+  }
+
+  .webcake-brand-logo {
+    height: 40px;
+    max-width: 44px;
+  }
+
+  .webcake-brand-text {
+    font-size: 17px;
+  }
+
+  .webcake-nav-actions {
+    gap: 4px;
+  }
+
+  .webcake-account-button,
+  .webcake-login-button.ant-btn {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .webcake-nav-actions > .webcake-icon-button.ant-btn {
+    width: 30px;
+    min-width: 30px;
+  }
+
   .dp-section-title.ant-typography {
     font-size: 26px;
     line-height: 1.2;
@@ -4435,5 +4464,16 @@ a {
 
   .dp-profile-stat-card .ant-statistic-content {
     font-size: 22px;
+  }
+}
+
+@media (max-width: 360px) {
+  .webcake-brand {
+    width: 52px;
+    min-width: 52px;
+  }
+
+  .webcake-brand-text {
+    display: none;
   }
 }

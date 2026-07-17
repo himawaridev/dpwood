@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import React from "react";
+import Image from "next/image";
 import { Card, Flex, Tooltip, Typography } from "antd";
 import {
     EyeOutlined,
@@ -12,11 +12,9 @@ import {
 } from "@ant-design/icons";
 import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
+import { formatCurrency } from "@/utils/formatters";
 
 const { Text } = Typography;
-
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 
 const getRatingValue = (product) => {
     const explicitRating = Number(product.rating ?? product.averageRating ?? product.rate);
@@ -76,7 +74,13 @@ export default function ProductCard({
                 <div className="webcake-product-media">
                     <button type="button" className="webcake-product-image" onClick={onClickDetail}>
                         {image ? (
-                            <img alt={product.name || "Sản phẩm nhà bếp DPWOOD"} src={image} />
+                            <Image
+                                alt={product.name || "Sản phẩm nhà bếp DPWOOD"}
+                                src={image}
+                                width={700}
+                                height={700}
+                                unoptimized
+                            />
                         ) : (
                             <span className="webcake-product-image-placeholder">DPWOOD</span>
                         )}

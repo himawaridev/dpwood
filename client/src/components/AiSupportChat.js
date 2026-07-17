@@ -1,10 +1,11 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useMemo, useRef, useState } from "react";
 import { App, Avatar, Button, Drawer, Flex, Input, Tag, Typography } from "antd";
 import { RobotOutlined, SendOutlined, UserOutlined } from "@ant-design/icons";
+import Image from "next/image";
 import api from "@/utils/axios";
+import { formatCurrency } from "@/utils/formatters";
 
 const { Text } = Typography;
 
@@ -23,9 +24,6 @@ const isProductAdviceRequest = (value) => {
         .toLowerCase();
     return /\b(san pham|goi y|tu van|nen mua|so sanh|noi|chao|dao|thot|bat|dia|bep|am|may|chat lieu|dung tich|thuong hieu)\b/.test(normalized);
 };
-
-const formatCurrency = (value) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 
 const welcomeMessage = {
     role: "assistant",
@@ -152,7 +150,13 @@ export default function AiSupportChat({ onOpenChange }) {
                                                         onClick={() => { window.location.href = `/products/${product.id}`; }}
                                                     >
                                                         {product.imageUrl ? (
-                                                            <img src={product.imageUrl} alt={product.name} />
+                                                            <Image
+                                                                src={product.imageUrl}
+                                                                alt={product.name}
+                                                                width={48}
+                                                                height={48}
+                                                                unoptimized
+                                                            />
                                                         ) : (
                                                             <span className="dp-ai-product-placeholder">DP</span>
                                                         )}

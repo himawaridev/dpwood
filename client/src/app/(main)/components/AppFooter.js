@@ -83,7 +83,7 @@ export default function AppFooter() {
                 </Row>
 
                 <div className="webcake-footer-bottom">
-                    <span>Bản quyền thuộc về DPWOOD | Thiết kế tham khảo Pancake Việt Nam</span>
+                    <span>Bản quyền thuộc về DPWOOD</span>
                     <span>dpwood.store</span>
                 </div>
             </div>

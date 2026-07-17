@@ -1,8 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Layout, Menu, Button, Badge, Avatar, Dropdown, Drawer, Grid } from "antd";
+import { Layout, Menu, Button, Badge, Avatar, Dropdown, Drawer, Grid, Tooltip } from "antd";
 import {
     ShoppingCartOutlined,
     GiftOutlined,
@@ -12,8 +11,11 @@ import {
     TeamOutlined,
     MenuOutlined,
     SearchOutlined,
+    HeartFilled,
+    HeartOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import api from "@/utils/axios";
 
 const { Header } = Layout;
@@ -33,6 +35,7 @@ export default function Navbar() {
         avatarUrl: "",
     });
     const [cartCount, setCartCount] = useState(0);
+    const [wishlistCount, setWishlistCount] = useState(0);
 
     const loadUserData = () => {
         const token = localStorage.getItem("token");
@@ -48,15 +51,29 @@ export default function Navbar() {
             avatarUrl: avatar || "",
         });
         setCartCount(cart.reduce((total, item) => total + Number(item.quantity || 0), 0));
+
+        if (token) {
+            api.get("/products/wishlist/me")
+                .then((response) => {
+                    if (localStorage.getItem("token") === token) {
+                        setWishlistCount((response.data || []).length);
+                    }
+                })
+                .catch(() => setWishlistCount(0));
+        } else {
+            setWishlistCount(0);
+        }
     };
 
     useEffect(() => {
         loadUserData();
         window.addEventListener("storage", loadUserData);
         window.addEventListener("cart-updated", loadUserData);
+        window.addEventListener("wishlist-updated", loadUserData);
         return () => {
             window.removeEventListener("storage", loadUserData);
             window.removeEventListener("cart-updated", loadUserData);
+            window.removeEventListener("wishlist-updated", loadUserData);
         };
     }, [pathname]);
 
@@ -74,6 +91,7 @@ export default function Navbar() {
         } finally {
             localStorage.clear();
             setAuthState({ isAuth: false, userName: "", userRole: "", avatarUrl: "" });
+            setWishlistCount(0);
             window.dispatchEvent(new Event("cart-updated"));
             goTo("/login");
         }
@@ -120,7 +138,7 @@ export default function Navbar() {
 
     const brand = (
         <button type="button" onClick={() => goTo("/")} className="webcake-brand">
-            <img src="/logo.png" alt="DPWOOD Store" className="webcake-brand-logo" />
+            <Image src="/logo.png" alt="DPWOOD Store" className="webcake-brand-logo" width={64} height={56} priority />
             <span className="webcake-brand-text">DPWOOD</span>
         </button>
     );
@@ -166,6 +184,24 @@ export default function Navbar() {
                     icon={<GiftOutlined />}
                     onClick={() => goTo("/gift-codes")}
                 />
+                <Tooltip title="Sản phẩm yêu thích">
+                    <Badge count={wishlistCount} size="small" offset={[1, 1]}>
+                        <Button
+                            type="text"
+                            aria-label="Sản phẩm yêu thích"
+                            className={`webcake-icon-button ${wishlistCount > 0 ? "is-active" : ""}`}
+                            icon={wishlistCount > 0 ? <HeartFilled /> : <HeartOutlined />}
+                            onClick={() => {
+                                if (!authState.isAuth) {
+                                    goTo("/login");
+                                    return;
+                                }
+                                window.dispatchEvent(new Event("wishlist-filter-requested"));
+                                goTo("/products?wishlist=true");
+                            }}
+                        />
+                    </Badge>
+                </Tooltip>
                 <Badge count={cartCount} size="small" offset={[1, 1]}>
                     <Button
                         type="text"

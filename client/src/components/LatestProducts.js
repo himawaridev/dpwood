@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -8,78 +7,24 @@ import {
     ArrowRightOutlined,
     CheckCircleOutlined,
     ClockCircleOutlined,
-    CustomerServiceOutlined,
     DeleteOutlined,
     GiftOutlined,
-    SafetyCertificateOutlined,
-    TruckOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import ProductCard from "@/app/(main)/products/components/ProductCard";
+import Image from "next/image";
 import api from "@/utils/axios";
-import { getKitchenCategoryLabel, KITCHEN_CATEGORY_OPTIONS } from "@/utils/kitchenProduct";
+import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
+import { addCatalogProductToCart } from "@/utils/cartStorage";
+import { getProductImage } from "@/utils/productImages";
+import HomeServiceStrip from "@/components/home/HomeServiceStrip";
+import HomeProductSection from "@/components/home/HomeProductSection";
+import HomeViewAllLink from "@/components/home/HomeViewAllLink";
 
 const { Title, Text, Paragraph } = Typography;
 
-const serviceItems = [
-    { key: "delivery", icon: <TruckOutlined />, title: "Giao hàng nhanh", desc: "Đóng gói an toàn cho đồ bếp" },
-    { key: "return", icon: <SafetyCertificateOutlined />, title: "Đổi trả 7 ngày", desc: "Hỗ trợ khi sản phẩm lỗi" },
-    { key: "discount", icon: <GiftOutlined />, title: "Ưu đãi thành viên", desc: "Lưu mã và dùng khi thanh toán" },
-    { key: "support", icon: <CustomerServiceOutlined />, title: "Tư vấn bếp", desc: "Hỗ trợ chọn sản phẩm phù hợp" },
-];
-
-function ProductSkeletonGrid({ count = 8 }) {
-    return (
-        <Row gutter={[30, 36]}>
-            {Array.from({ length: count }).map((_, index) => (
-                <Col xs={12} md={8} lg={6} key={index}>
-                    <div className="webcake-product-skeleton">
-                        <Skeleton.Image active className="webcake-product-skeleton-image" />
-                        <Skeleton active paragraph={{ rows: 2 }} />
-                    </div>
-                </Col>
-            ))}
-        </Row>
-    );
-}
-function ProductEmptyState({ onRetry }) {
-    return (
-        <div className="webcake-empty-products">
-            <Title level={4}>Chưa tải được sản phẩm</Title>
-            <Paragraph>
-                Máy chủ có thể đang khởi động sau thời gian không sử dụng. Vui lòng thử tải lại dữ liệu.
-            </Paragraph>
-            <Button type="primary" onClick={onRetry}>
-                Tải lại sản phẩm
-            </Button>
-        </div>
-    );
-}
-
-const getProductImage = (product) =>
-    product?.imageUrl || (Array.isArray(product?.images) && product.images[0]);
-
 const isUsableCategoryImage = (url = "") =>
     /^https?:\/\//i.test(url) && !url.includes("4kwallpapers.com") && !url.includes("thumbs_2t");
-
-const categoryFallbackImages = {
-    cookware: "https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=900&q=80",
-    tableware: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=900&q=80",
-    utensils: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
-    storage: "https://images.unsplash.com/photo-1606914469633-bd39206ea739?auto=format&fit=crop&w=900&q=80",
-    appliances: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=900&q=80",
-    cleaning: "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=900&q=80",
-};
-
-const categoryDescriptions = {
-    cookware: "Nồi, chảo và bộ dụng cụ nấu",
-    tableware: "Bát, đĩa và set bàn ăn",
-    utensils: "Dao, muỗng và phụ kiện bếp",
-    storage: "Hộp, lọ và đồ bảo quản",
-    appliances: "Thiết bị nhỏ cho căn bếp",
-    cleaning: "Dụng cụ vệ sinh tiện lợi",
-};
 
 const formatCompactCurrency = (value) => {
     const numberValue = Number(value || 0);
@@ -261,7 +206,7 @@ export default function LatestProducts() {
                     title: product.name || "DPWOOD Kitchen",
                     copy:
                         product.description ||
-                        `${getKitchenCategoryLabel(product.category)} được chọn lọc cho căn bếp gọn gàng, tiện dụng và bền đẹp.`,
+                        `${product.categoryLabel || getKitchenCategoryLabel(product.category)} được chọn lọc cho căn bếp gọn gàng, tiện dụng và bền đẹp.`,
                     image: getProductImage(product),
                     price: Number(product.price || 0),
                 })),
@@ -269,30 +214,24 @@ export default function LatestProducts() {
     );
 
     const categoryCards = useMemo(() => {
-        const fallbackProducts = products.filter((product) => isUsableCategoryImage(getProductImage(product)));
-        const categoryDefinitions = productCategories.length
-            ? productCategories
-            : KITCHEN_CATEGORY_OPTIONS.map((category) => ({
-                  ...category,
-                  imageUrl: categoryFallbackImages[category.value],
-                  description: categoryDescriptions[category.value],
-              }));
-
-        return categoryDefinitions.map((category, index) => {
+        return productCategories.map((category) => {
             const categoryProducts = products.filter((product) => product.category === category.value);
-            const imageProduct =
-                categoryProducts.find((product) => isUsableCategoryImage(getProductImage(product))) ||
-                fallbackProducts[index % Math.max(fallbackProducts.length, 1)];
+            const imageProduct = categoryProducts.find((product) =>
+                isUsableCategoryImage(getProductImage(product)),
+            );
             const categoryImage = getProductImage(imageProduct);
 
             return {
                 ...category,
                 count: categoryProducts.length,
-                image: category.imageUrl || categoryFallbackImages[category.value] || categoryImage,
-                fallbackImage: categoryFallbackImages[category.value] || categoryImage || "/logo.png",
-                description: category.description || categoryDescriptions[category.value] || "Khám phá danh mục",
+                image: category.imageUrl || categoryImage || "/logo.png",
+                fallbackImage:
+                    categoryImage && categoryImage !== category.imageUrl
+                        ? categoryImage
+                        : "/logo.png",
+                description: category.description || "Khám phá danh mục",
             };
-        }).filter((category) => category.count > 0 && category.image);
+        });
     }, [productCategories, products]);
 
     const goToProduct = (product) => {
@@ -303,25 +242,7 @@ export default function LatestProducts() {
     const handleAddToCart = (product) => {
         if (!product?.id || Number(product.stock || 0) <= 0) return;
 
-        const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-        const cartItemId = product.id;
-        const existingItem = cart.find((item) => (item.cartItemId || item.productId) === cartItemId);
-
-        if (existingItem) {
-            existingItem.quantity = Number(existingItem.quantity || 0) + 1;
-        } else {
-            cart.push({
-                cartItemId,
-                productId: product.id,
-                name: product.name,
-                price: product.price,
-                imageUrl: getProductImage(product),
-                quantity: 1,
-            });
-        }
-
-        localStorage.setItem("cart", JSON.stringify(cart));
-        window.dispatchEvent(new Event("cart-updated"));
+        addCatalogProductToCart(product, getProductImage(product));
         message.success(`Đã thêm ${product.name} vào giỏ hàng.`);
     };
 
@@ -341,6 +262,7 @@ export default function LatestProducts() {
                 else next.delete(String(product.id));
                 return next;
             });
+            window.dispatchEvent(new Event("wishlist-updated"));
             message.success(response.data?.wished ? "Đã thêm vào yêu thích." : "Đã bỏ khỏi yêu thích.");
         } catch (error) {
             message.error(error.response?.data?.message || "Không thể cập nhật yêu thích.");
@@ -361,7 +283,13 @@ export default function LatestProducts() {
                     className="webcake-blog-image"
                     onClick={() => router.push(blog.slug ? `/blogs/${blog.slug}` : "/blogs")}
                 >
-                    <img src={blog.thumbnail} alt={blog.title || "DPWOOD blog"} />
+                    <Image
+                        src={blog.thumbnail}
+                        alt={blog.title || "DPWOOD blog"}
+                        width={740}
+                        height={500}
+                        unoptimized
+                    />
                 </button>
             )}
             <Text className="webcake-blog-date">{blog.date || "DPWOOD"}</Text>
@@ -590,7 +518,7 @@ export default function LatestProducts() {
                         </Row>
                     ) : (
                         <Row gutter={[30, 30]}>
-                            {categoryCards.map((category) => (
+                            {categoryCards.slice(0, 6).map((category) => (
                                 <Col xs={24} sm={12} lg={8} key={category.value}>
                                     <button
                                         type="button"
@@ -598,9 +526,12 @@ export default function LatestProducts() {
                                         onClick={() => goToCategory(category.value)}
                                         aria-label={`Xem danh mục ${category.label}`}
                                     >
-                                        <img
+                                        <Image
                                             src={category.image}
                                             alt={category.label}
+                                            width={760}
+                                            height={848}
+                                            unoptimized
                                             onError={(event) => {
                                                 if (event.currentTarget.dataset.fallbackApplied) return;
                                                 event.currentTarget.dataset.fallbackApplied = "true";
@@ -618,64 +549,32 @@ export default function LatestProducts() {
                             ))}
                         </Row>
                     )}
-                </div>
-            </section>
-
-            <section className="webcake-services">
-                <div className="webcake-container">
-                    <Row gutter={[24, 24]}>
-                        {serviceItems.map((item) => (
-                            <Col xs={12} lg={6} key={item.key}>
-                                <div className="webcake-service-item">
-                                    <span className="webcake-service-icon">{item.icon}</span>
-                                    <div>
-                                        <Text strong>{item.title}</Text>
-                                        <Text type="secondary">{item.desc}</Text>
-                                    </div>
-                                </div>
-                            </Col>
-                        ))}
-                    </Row>
-                </div>
-            </section>
-
-            <section className="webcake-section">
-                <div className="webcake-container">
-                    <div className="webcake-section-head">
-                        <Title level={2} className="webcake-section-title">
-                            Bán chạy
-                        </Title>
-                    </div>
-
-                    {loading ? (
-                        <ProductSkeletonGrid />
-                    ) : bestSellerProducts.length ? (
-                        <Row gutter={[30, 36]}>
-                            {bestSellerProducts.map((product) => (
-                                <Col xs={12} md={8} lg={6} key={product.id}>
-                                    <ProductCard
-                                        product={product}
-                                        badge="icon-only"
-                                        onBuyNow={handleAddToCart}
-                                        onClickDetail={() => goToProduct(product)}
-                                        wished={wishlistIds.has(String(product.id))}
-                                        wishlistLoading={wishlistLoadingId === String(product.id)}
-                                        onToggleWishlist={handleToggleWishlist}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-                    ) : (
-                        <ProductEmptyState onRetry={fetchHomepageData} />
+                    {!loading && categoryCards.length > 6 && (
+                        <HomeViewAllLink
+                            href="/products"
+                            label="XEM TẤT CẢ DANH MỤC"
+                            icon={<AppstoreOutlined />}
+                        />
                     )}
-
-                    <div className="webcake-view-all">
-                        <Button icon={<AppstoreOutlined />} onClick={() => router.push("/products")}>
-                            XEM TẤT CẢ SẢN PHẨM
-                        </Button>
-                    </div>
                 </div>
             </section>
+
+            <HomeServiceStrip />
+
+            <HomeProductSection
+                title="Bán chạy"
+                products={bestSellerProducts}
+                loading={loading}
+                wrapHeading
+                badge="icon-only"
+                wishlistIds={wishlistIds}
+                wishlistLoadingId={wishlistLoadingId}
+                onAddToCart={handleAddToCart}
+                onOpenProduct={goToProduct}
+                onToggleWishlist={handleToggleWishlist}
+                onRetry={fetchHomepageData}
+                viewAllHref="/products"
+            />
 
             {couponSource.length > 0 && (
                 <section className="webcake-coupon-section" id="special-offers">
@@ -689,49 +588,32 @@ export default function LatestProducts() {
                                     {renderGiftCodeCard(coupon)}
                                 </div>
                             ))}
-                            {couponSource.length > 1 && (
-                                <Button
-                                    className="webcake-coupon-view-all"
-                                    onClick={() => router.push("/gift-codes")}
-                                >
-                                    Xem tất cả mã
-                                </Button>
-                            )}
                         </div>
-                        <div className="webcake-coupon-all-action">
-                            <Button onClick={() => router.push("/gift-codes")}>Xem tất cả mã</Button>
-                        </div>
+                        {couponSource.length > 1 && (
+                            <HomeViewAllLink
+                                href="/gift-codes"
+                                label="XEM TẤT CẢ MÃ"
+                                icon={<GiftOutlined />}
+                            />
+                        )}
                     </div>
                 </section>
             )}
 
-            <section className="webcake-section webcake-catalog-section">
-                <div className="webcake-container">
-                    <Title level={2} className="webcake-section-title">
-                        Sản phẩm đồ bếp
-                    </Title>
-                    {loading ? (
-                        <ProductSkeletonGrid count={12} />
-                    ) : catalogProducts.length ? (
-                        <Row gutter={[30, 36]}>
-                            {catalogProducts.map((product, index) => (
-                                <Col xs={12} md={8} lg={6} key={`${product.id}-${index}`}>
-                                    <ProductCard
-                                        product={product}
-                                        onBuyNow={handleAddToCart}
-                                        onClickDetail={() => goToProduct(product)}
-                                        wished={wishlistIds.has(String(product.id))}
-                                        wishlistLoading={wishlistLoadingId === String(product.id)}
-                                        onToggleWishlist={handleToggleWishlist}
-                                    />
-                                </Col>
-                            ))}
-                        </Row>
-                    ) : (
-                        <ProductEmptyState onRetry={fetchHomepageData} />
-                    )}
-                </div>
-            </section>
+            <HomeProductSection
+                title="Sản phẩm đồ bếp"
+                products={catalogProducts}
+                loading={loading}
+                skeletonCount={12}
+                className="webcake-catalog-section"
+                wishlistIds={wishlistIds}
+                wishlistLoadingId={wishlistLoadingId}
+                onAddToCart={handleAddToCart}
+                onOpenProduct={goToProduct}
+                onToggleWishlist={handleToggleWishlist}
+                onRetry={fetchHomepageData}
+                viewAllHref="/products"
+            />
 
             <div className="webcake-container">
                 <div className="webcake-section-divider" aria-hidden="true" />
@@ -750,11 +632,11 @@ export default function LatestProducts() {
                                 </Col>
                             ))}
                         </Row>
-                        <div className="webcake-view-all">
-                            <Button icon={<AppstoreOutlined />} onClick={() => router.push("/blogs")}>
-                                XEM TẤT CẢ BÀI VIẾT
-                            </Button>
-                        </div>
+                        <HomeViewAllLink
+                            href="/blogs"
+                            label="XEM TẤT CẢ BÀI VIẾT"
+                            icon={<AppstoreOutlined />}
+                        />
                     </div>
                 </section>
             )}
