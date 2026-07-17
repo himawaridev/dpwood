@@ -3633,6 +3633,20 @@ a {
   font-weight: 700;
 }
 
+.webcake-newsletter-consent.ant-typography {
+  display: block;
+  margin-top: 10px;
+  color: #777;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.webcake-newsletter-consent a {
+  color: #222;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .webcake-footer h5.webcake-footer-group-title {
   white-space: nowrap;
 }

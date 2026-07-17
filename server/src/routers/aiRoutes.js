@@ -16,6 +16,7 @@ router.post("/product-draft", authMiddleware, roleMiddleware("admin", "root"), a
 router.post("/product-batch", authMiddleware, roleMiddleware("admin", "root"), aiController.createProductBatch);
 router.post("/product-json-import", authMiddleware, roleMiddleware("admin", "root"), aiController.importProductJsonDrafts);
 router.post("/product-batch-save", authMiddleware, roleMiddleware("admin", "root"), aiController.saveProductBatchDrafts);
+router.post("/email-draft", authMiddleware, roleMiddleware("admin", "root"), aiController.createEmailDraft);
 router.post(
     "/support-auto-resolve",
     authMiddleware,

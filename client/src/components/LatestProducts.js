@@ -500,6 +500,8 @@ export default function LatestProducts() {
                 </Carousel>
             </section>
 
+            <HomeServiceStrip />
+
             <section className="webcake-section webcake-category-section">
                 <div className="webcake-container">
                     <Title level={2} className="webcake-section-title">
@@ -558,8 +560,6 @@ export default function LatestProducts() {
                     )}
                 </div>
             </section>
-
-            <HomeServiceStrip />
 
             <HomeProductSection
                 title="Bán chạy"

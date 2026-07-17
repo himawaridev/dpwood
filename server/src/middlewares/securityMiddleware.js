@@ -56,6 +56,12 @@ const orderStatusLimiter = buildRateLimit({
     message: "Too many order status requests. Please try again later.",
 });
 
+const newsletterLimiter = buildRateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 8,
+    message: "Bạn đã gửi quá nhiều yêu cầu bản tin. Vui lòng thử lại sau.",
+});
+
 module.exports = {
     securityHeaders,
     generalLimiter,
@@ -65,5 +71,6 @@ module.exports = {
     supportChatLimiter,
     imageProxyLimiter,
     orderStatusLimiter,
+    newsletterLimiter,
 };
 

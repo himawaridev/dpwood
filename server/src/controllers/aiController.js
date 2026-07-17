@@ -2159,6 +2159,63 @@ Khong giai thich ngoai JSON.
     }
 };
 
+const createEmailDraft = async (req, res) => {
+    try {
+        const prompt = ensurePrompt(req.body.prompt);
+        const tone = cleanText(req.body.tone, "thân thiện, chuyên nghiệp");
+        const audience = cleanText(req.body.audience, "Toàn bộ tài khoản đã xác minh").slice(0, 120);
+        const draft = await generateJson({
+            systemInstruction:
+                "You are a senior Vietnamese ecommerce email editor for DPWOOD, a kitchenware store. Write concise, factual, consent-friendly marketing email drafts. Return only valid JSON in natural Vietnamese UTF-8.",
+            prompt: `
+Tạo bản nháp email DPWOOD.
+Đối tượng nhận: ${audience}
+Yêu cầu của admin: ${prompt}
+Giọng văn: ${tone}
+
+Quy tắc bắt buộc:
+- Không bịa giá, mã giảm giá, thời hạn, chứng nhận hoặc thông tin sản phẩm.
+- Không dùng nội dung gây áp lực, spam hoặc cam kết quá mức.
+- Nội dung HTML chỉ dùng p, h2, h3, ul, ol, li, strong, em và br.
+- Không thêm lời chào theo tên vì email có thể gửi cho nhiều người.
+- Không thêm liên kết hủy đăng ký; hệ thống sẽ tự chèn.
+- Tiêu đề tối đa 120 ký tự, preview tối đa 180 ký tự.
+
+Trả về JSON:
+{
+  "subject": "string",
+  "preview": "string",
+  "contentHtml": "HTML string"
+}
+            `,
+            temperature: 0.45,
+            responseSchema: {
+                type: "OBJECT",
+                properties: {
+                    subject: { type: "STRING" },
+                    preview: { type: "STRING" },
+                    contentHtml: { type: "STRING" },
+                },
+                required: ["subject", "preview", "contentHtml"],
+            },
+            maxOutputTokens: 4096,
+        });
+
+        res.status(200).json({
+            draft: {
+                subject: cleanText(draft.subject).slice(0, 120),
+                preview: cleanText(draft.preview).slice(0, 180),
+                contentHtml: sanitizeGeneratedBlogHtml(draft.contentHtml),
+            },
+        });
+    } catch (error) {
+        console.error("createEmailDraft error:", error.message);
+        res.status(error.statusCode || 500).json({
+            message: error.message || "Không thể tạo bản nháp email bằng AI",
+        });
+    }
+};
+
 module.exports = {
     createBlogDraft,
     createBlogBatch,
@@ -2173,4 +2230,5 @@ module.exports = {
     createProductAdvisorReply,
     createSupportChatReply,
     autoResolveSupportTickets,
+    createEmailDraft,
 };

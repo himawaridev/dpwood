@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Layout, Menu, Button, Badge, Avatar, Dropdown, Drawer, Grid, Tooltip } from "antd";
+import { Layout, Menu, Button, Badge, Avatar, Dropdown, Drawer, Grid } from "antd";
 import {
     ShoppingCartOutlined,
     GiftOutlined,
@@ -184,8 +184,7 @@ export default function Navbar() {
                     icon={<GiftOutlined />}
                     onClick={() => goTo("/gift-codes")}
                 />
-                <Tooltip title="Sản phẩm yêu thích">
-                    <Badge count={wishlistCount} size="small" offset={[1, 1]}>
+                <Badge count={wishlistCount} size="small" offset={[1, 1]}>
                         <Button
                             type="text"
                             aria-label="Sản phẩm yêu thích"
@@ -200,8 +199,7 @@ export default function Navbar() {
                                 goTo("/products?wishlist=true");
                             }}
                         />
-                    </Badge>
-                </Tooltip>
+                </Badge>
                 <Badge count={cartCount} size="small" offset={[1, 1]}>
                     <Button
                         type="text"

@@ -24,6 +24,9 @@ const UserCoupon = require("./models/userCoupon");
 const ProductRating = require("./models/productRating");
 const Wishlist = require("./models/wishlist");
 require("./models/productCategory");
+require("./models/newsletterSubscriber");
+require("./models/emailCampaign");
+const { startEmailCampaignWorker } = require("./services/emailCampaignService");
 
 // Routers
 const authRoutes = require("./routers/auth");
@@ -38,6 +41,7 @@ const uploadRoutes = require("./routers/uploadRoutes");
 const couponRoutes = require("./routers/couponRoutes");
 const discountRoutes = require("./routers/discountRoutes");
 const aiRoutes = require("./routers/aiRoutes");
+const newsletterRoutes = require("./routers/newsletterRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -261,6 +265,7 @@ const routes = {
     "/api/coupons": couponRoutes,
     "/api/discounts": discountRoutes,
     "/api/ai": aiRoutes,
+    "/api/newsletter": newsletterRoutes,
 };
 
 Object.entries(routes).forEach(([path, route]) => {
@@ -511,6 +516,7 @@ const initializeDatabase = async () => {
         resolveDatabaseReady();
         scheduleDataRetention();
         scheduleQrExpirationSweep();
+        await startEmailCampaignWorker();
         console.log("✅ Database is ready");
     } catch (error) {
         dbState.ready = false;

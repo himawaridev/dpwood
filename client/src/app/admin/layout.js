@@ -22,6 +22,7 @@ import {
     SafetyCertificateOutlined,
     SolutionOutlined,
     SwapOutlined,
+    MailOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -38,6 +39,7 @@ const ADMIN_ROUTE_KEYS = [
     "/admin/support",
     "/admin/blogs",
     "/admin/coupons",
+    "/admin/newsletter",
 ];
 
 export default function AdminLayout({ children }) {
@@ -116,6 +118,7 @@ export default function AdminLayout({ children }) {
         { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ" },
         { key: "/admin/blogs", icon: <EditOutlined />, label: "Bài viết" },
         { key: "/admin/coupons", icon: <PercentageOutlined />, label: "Mã giảm giá" },
+        { key: "/admin/newsletter", icon: <MailOutlined />, label: "Bản tin email" },
         {
             key: "/admin/ai",
             icon: <RobotOutlined />,
@@ -125,6 +128,7 @@ export default function AdminLayout({ children }) {
                 { key: "/admin/ai/products", label: "Sản phẩm AI" },
                 { key: "/admin/ai/support", label: "Hỗ trợ AI" },
                 { key: "/admin/ai/rules", label: "Quy tắc AI" },
+                { key: "/admin/ai/email", label: "Email AI" },
             ],
         },
     ];

@@ -166,8 +166,63 @@ const generateOrderHtml = (orderInfo, orderItems = [], isPaid = false) => {
     });
 };
 
+const generateNewsletterVerificationHtml = (link) =>
+    emailShell({
+        eyebrow: "Bản tin DPWOOD",
+        title: "Xác nhận đăng ký nhận bản tin",
+        preview: "Xác nhận email để nhận ưu đãi và cẩm nang mới từ DPWOOD.",
+        children: `
+            <p style="margin:0 0 12px;">Cảm ơn bạn đã quan tâm đến bản tin DPWOOD.</p>
+            <p style="margin:0;">Hãy xác nhận địa chỉ email để nhận nội dung hữu ích và mã chào mừng. DPWOOD không tự động gửi thư quảng cáo khi bạn chưa xác nhận.</p>
+        `,
+        cta: { href: link, label: "Xác nhận email" },
+        note: "Liên kết có hiệu lực trong 24 giờ. Nếu bạn không đăng ký, hãy bỏ qua email này.",
+    });
+
+const generateNewsletterWelcomeHtml = ({ couponCode, unsubscribeUrl }) =>
+    emailShell({
+        eyebrow: "Chào mừng",
+        title: "Chào mừng bạn đến với bản tin DPWOOD",
+        preview: `Mã chào mừng ${couponCode} dành cho bạn.`,
+        children: `
+            <p style="margin:0 0 14px;">Email của bạn đã được xác nhận thành công.</p>
+            <p style="margin:0 0 18px;">Mã chào mừng dành cho đơn hàng đầu tiên:</p>
+            <div style="padding:18px; border:1px dashed ${brand.primary}; background:${brand.paper}; color:${brand.ink}; text-align:center; font-size:24px; font-weight:900; letter-spacing:2px;">${escapeHtml(couponCode)}</div>
+            <p style="margin:18px 0 0;">Mã giảm 10%, tối đa 100.000đ, cho đơn từ 300.000đ. Bạn có thể nhận mã trong kho ưu đãi trước khi thanh toán.</p>
+        `,
+        cta: { href: `${frontendUrl()}/gift-codes`, label: "Mở kho mã ưu đãi" },
+        note: `Bạn chỉ nhận thư chào mừng này một lần. <a href="${unsubscribeUrl}" style="color:${brand.primary};">Hủy đăng ký bản tin</a>.`,
+    });
+
+const generateMarketingHtml = ({ title, preview, contentHtml, unsubscribeUrl }) =>
+    emailShell({
+        eyebrow: "Bản tin DPWOOD",
+        title,
+        preview,
+        children: contentHtml,
+        cta: { href: `${frontendUrl()}/products`, label: "Khám phá sản phẩm" },
+        note: `Bạn nhận email này vì đã đăng ký bản tin DPWOOD. <a href="${unsubscribeUrl}" style="color:${brand.primary};">Hủy đăng ký</a>.`,
+    });
+
+const generateAccountMarketingHtml = ({ title, preview, contentHtml, recipientName }) =>
+    emailShell({
+        eyebrow: "Thông tin từ DPWOOD",
+        title,
+        preview,
+        children: `
+            ${recipientName ? `<p style="margin:0 0 14px;">Xin chào <strong style="color:${brand.ink};">${escapeHtml(recipientName)}</strong>,</p>` : ""}
+            ${contentHtml}
+        `,
+        cta: { href: `${frontendUrl()}/products`, label: "Khám phá sản phẩm" },
+        note: `Email này được gửi đến địa chỉ của tài khoản DPWOOD đã xác minh. Email không tự động đăng ký bạn vào bản tin. Nếu cần hỗ trợ, vui lòng truy cập <a href="${frontendUrl()}/support" style="color:${brand.primary};">Trung tâm hỗ trợ</a>.`,
+    });
+
 module.exports = {
     generateVerificationHtml,
     generateResetPasswordHtml,
     generateOrderHtml,
+    generateNewsletterVerificationHtml,
+    generateNewsletterWelcomeHtml,
+    generateMarketingHtml,
+    generateAccountMarketingHtml,
 };

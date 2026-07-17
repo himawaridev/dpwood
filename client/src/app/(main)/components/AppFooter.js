@@ -1,7 +1,10 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import NextLink from "next/link";
-import { Button, Col, Input, Layout, Row, Space, Typography } from "antd";
+import { App, Button, Col, Input, Layout, Row, Space, Typography } from "antd";
 import { EnvironmentOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
+import api from "@/utils/axios";
 
 const { Footer } = Layout;
 const { Title, Text, Link } = Typography;
@@ -39,15 +42,54 @@ const footerGroups = [
 ];
 
 export default function AppFooter() {
+    const { message } = App.useApp();
+    const [email, setEmail] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubscribe = async (event) => {
+        event.preventDefault();
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!normalizedEmail) {
+            message.warning("Vui lòng nhập địa chỉ email");
+            return;
+        }
+        try {
+            setSubmitting(true);
+            const response = await api.post("/newsletter/subscribe", { email: normalizedEmail });
+            message.success(response.data?.message || "Hãy kiểm tra email để xác nhận đăng ký");
+            setEmail("");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Chưa thể đăng ký nhận bản tin");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <Footer className="webcake-footer">
             <div className="webcake-container">
                 <div className="webcake-newsletter">
                     <Title level={3}>Đăng ký nhận bản tin</Title>
-                    <Space.Compact className="webcake-newsletter-form">
-                        <Input placeholder="Nhập địa chỉ email" />
-                        <Button type="primary">ĐĂNG KÝ</Button>
-                    </Space.Compact>
+                    <form onSubmit={handleSubscribe}>
+                        <Space.Compact className="webcake-newsletter-form">
+                            <Input
+                                type="email"
+                                value={email}
+                                onChange={(event) => setEmail(event.target.value)}
+                                placeholder="Nhập địa chỉ email"
+                                maxLength={254}
+                                autoComplete="email"
+                                aria-label="Địa chỉ email nhận bản tin"
+                            />
+                            <Button type="primary" htmlType="submit" loading={submitting}>
+                                ĐĂNG KÝ
+                            </Button>
+                        </Space.Compact>
+                        <Text className="webcake-newsletter-consent">
+                            Bạn sẽ nhận email xác nhận và có thể hủy đăng ký bất cứ lúc nào. Xem{" "}
+                            <NextLink href="/policies/privacy-policy">chính sách bảo mật</NextLink>.
+                        </Text>
+                    </form>
                 </div>
 
                 <Row gutter={[34, 30]}>
