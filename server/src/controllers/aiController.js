@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const sanitizeHtml = require("sanitize-html");
 const {
     isPlaceholderImageUrl,
     normalizeProductImagePayload,
@@ -15,6 +16,7 @@ const User = require("../models/user");
 const { fetchSafeImage } = require("../utils/safeImageFetch");
 
 const CATEGORY_VALUES = ["cookware", "tableware", "utensils", "storage", "appliances", "cleaning"];
+const LOCKNLOCK_BASE_URL = "https://www.locknlock.vn";
 const FALLBACK_PRODUCT_TEMPLATES = [
     { name: "Nồi inox 3 đáy", category: "cookware", price: 320000, stock: 120, material: "Inox 304" },
     { name: "Chảo chống dính đá", category: "cookware", price: 260000, stock: 150, material: "Hợp kim phủ đá" },
@@ -328,6 +330,86 @@ const decodeHtmlAttribute = (value) =>
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">");
 
+const decodeHtmlText = (value) =>
+    sanitizeHtml(decodeHtmlAttribute(value), {
+        allowedTags: [],
+        allowedAttributes: {},
+    })
+        .replace(/&amp;/g, "&")
+        .replace(/\s+/g, " ")
+        .trim();
+
+const buildLocknLockSearchQuery = (searchText) =>
+    buildImageSearchQuery(searchText)
+        .replace(/\b(product photo|white background|catalog|studio|high quality|editorial photo)\b/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 120);
+
+const upscaleLocknLockImageUrl = (value) => {
+    try {
+        const imageUrl = new URL(decodeHtmlAttribute(value), LOCKNLOCK_BASE_URL);
+        imageUrl.searchParams.set("sw", "900");
+        imageUrl.searchParams.set("q", "85");
+        return imageUrl.toString();
+    } catch (_) {
+        return "";
+    }
+};
+
+const searchLocknLockImages = async (searchText, limit = 8) => {
+    const query = buildLocknLockSearchQuery(searchText);
+    if (!query) return [];
+
+    const params = new URLSearchParams({ q: query });
+    const response = await fetch(`${LOCKNLOCK_BASE_URL}/vi-vn/search?${params.toString()}`, {
+        signal: AbortSignal.timeout(8000),
+        headers: {
+            "User-Agent": "Mozilla/5.0 DPWOOD Product Research",
+            Accept: "text/html,application/xhtml+xml",
+        },
+    });
+
+    if (!response.ok) throw new Error(`LocknLock product search failed: ${response.status}`);
+
+    const html = await response.text();
+    const productBlocks = html.split(/<div class="product"\s+data-pid=/i).slice(1);
+    const results = [];
+    const seen = new Set();
+
+    for (const block of productBlocks) {
+        const tileEnd = block.indexOf('<div class="product" data-pid=');
+        const tile = tileEnd >= 0 ? block.slice(0, tileEnd) : block;
+        const imageTag = tile.match(/<img\b[^>]*class="[^"]*tile-image[^"]*"[^>]*>/i)?.[0] || "";
+        const rawImageUrl = imageTag.match(/\bsrc="([^"]+)"/i)?.[1] || "";
+        const rawTitle = imageTag.match(/\balt="([^"]*)"/i)?.[1] || "";
+        const rawLandingUrl = tile.match(/<a\b[^>]*href="([^"]+)"/i)?.[1] || "";
+        const url = upscaleLocknLockImageUrl(rawImageUrl);
+        if (!isPublicImageUrl(url) || seen.has(url)) continue;
+
+        let landingUrl = "";
+        try {
+            landingUrl = new URL(decodeHtmlAttribute(rawLandingUrl), LOCKNLOCK_BASE_URL).toString();
+        } catch (_) {
+            landingUrl = LOCKNLOCK_BASE_URL;
+        }
+
+        seen.add(url);
+        results.push({
+            url,
+            title: decodeHtmlText(rawTitle).slice(0, 220),
+            source: "LocknLock Vietnam",
+            license: "Official product source - review usage rights",
+            creator: "LocknLock",
+            landingUrl,
+        });
+
+        if (results.length >= Math.min(Math.max(limit, 1), 20)) break;
+    }
+
+    return results;
+};
+
 const searchBingImages = async (searchText, limit = 8) => {
     const query = buildImageSearchQuery(searchText) || "kitchenware product";
     const params = new URLSearchParams({
@@ -527,30 +609,41 @@ const searchWikipediaReferences = async (searchText, limit = 3) => {
     return results.map((item) => ({
         title: cleanText(item.title).slice(0, 160),
         url: `https://vi.wikipedia.org/wiki/${encodeURIComponent(cleanText(item.title).replace(/\s/g, "_"))}`,
+        snippet: decodeHtmlText(item.snippet).slice(0, 360),
     }));
 };
 
-const getFreeResourceContext = async (searchText, imageLimit = 6) => {
+const getFreeResourceContext = async (searchText, imageLimit = 6, options = {}) => {
     const [imagesResult, referencesResult] = await Promise.allSettled([
         searchOpenverseImages(searchText, imageLimit),
         searchWikipediaReferences(searchText, 3),
     ]);
     const webImageResults = await Promise.allSettled([
+        options.includeLocknLock ? searchLocknLockImages(searchText, imageLimit) : Promise.resolve([]),
         searchBingImages(searchText, imageLimit),
         searchDuckDuckGoImages(searchText, imageLimit),
         searchGoogleImages(searchText, imageLimit),
         searchPexelsImages(searchText, imageLimit),
         searchWikimediaImages(searchText, imageLimit),
     ]);
-    const bingImages = webImageResults[0]?.status === "fulfilled" ? webImageResults[0].value : [];
-    const duckDuckGoImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
-    const googleImages = webImageResults[2]?.status === "fulfilled" ? webImageResults[2].value : [];
-    const pexelsImages = webImageResults[3]?.status === "fulfilled" ? webImageResults[3].value : [];
-    const wikimediaImages = webImageResults[4]?.status === "fulfilled" ? webImageResults[4].value : [];
+    const locknLockImages = webImageResults[0]?.status === "fulfilled" ? webImageResults[0].value : [];
+    const bingImages = webImageResults[1]?.status === "fulfilled" ? webImageResults[1].value : [];
+    const duckDuckGoImages = webImageResults[2]?.status === "fulfilled" ? webImageResults[2].value : [];
+    const googleImages = webImageResults[3]?.status === "fulfilled" ? webImageResults[3].value : [];
+    const pexelsImages = webImageResults[4]?.status === "fulfilled" ? webImageResults[4].value : [];
+    const wikimediaImages = webImageResults[5]?.status === "fulfilled" ? webImageResults[5].value : [];
     const openverseImages = imagesResult.status === "fulfilled" ? imagesResult.value : [];
 
     return {
-        images: [...bingImages, ...duckDuckGoImages, ...googleImages, ...pexelsImages, ...wikimediaImages, ...openverseImages],
+        images: [
+            ...locknLockImages,
+            ...bingImages,
+            ...duckDuckGoImages,
+            ...googleImages,
+            ...pexelsImages,
+            ...wikimediaImages,
+            ...openverseImages,
+        ],
         references: referencesResult.status === "fulfilled" ? referencesResult.value : [],
     };
 };
@@ -576,18 +669,35 @@ const scoreImageCandidate = (image, searchText) => {
     const tokens = getImageQueryTokens(searchText);
     if (!tokens.length) return 1;
     const haystack = normalizeSearchText([image.title, image.url, image.landingUrl, image.source].join(" "));
+    const normalizedQuery = normalizeSearchText(searchText);
     const tokenScore = tokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
     const commerceBonus = /amazon|walmart|ikea|target|shop|store|product|catalog|kitchen|cookware|home|cdn|media/i.test(
         [image.url, image.landingUrl, image.title].join(" "),
     )
         ? 2
         : 0;
+    const officialCatalogBonus = /locknlock\.vn/i.test([image.url, image.landingUrl].join(" ")) ? 2 : 0;
+    const paddedQuery = ` ${normalizedQuery} `;
+    const paddedHaystack = ` ${haystack} `;
+    const materialConflictPenalty = [
+        [["wooden", " go ", " go soi ", " tre "], ["plastic", " nhua ", "silicone"]],
+        [["glass", " thuy tinh "], ["plastic", " nhua ", "ceramic", " su "]],
+        [["stainless steel", " inox "], ["plastic", " nhua ", "ceramic", " su "]],
+        [["ceramic", " su "], ["plastic", " nhua ", "stainless steel", " inox "]],
+        [["silicone"], ["wooden", " go ", "stainless steel", " inox "]],
+    ].some(
+        ([expectedTerms, conflicts]) =>
+            expectedTerms.some((term) => paddedQuery.includes(term)) &&
+            conflicts.some((material) => paddedHaystack.includes(material)),
+    )
+        ? 6
+        : 0;
     const genericPenalty = /forest|tree|waterfall|landscape|wallpaper|nature|vector|drawing|illustration|map|clipart/i.test(
         [image.url, image.landingUrl, image.title].join(" "),
     )
         ? 3
         : 0;
-    return tokenScore + commerceBonus - genericPenalty;
+    return tokenScore + commerceBonus + officialCatalogBonus - genericPenalty - materialConflictPenalty;
 };
 
 const getProductAnchorTokens = (searchText) => {
@@ -628,9 +738,19 @@ const matchesProductAnchor = (image, searchText) => {
     return anchors.some((group) => group.every((token) => haystack.includes(token)));
 };
 
+const matchesOfficialCatalogQuery = (image, searchText) => {
+    if (!/locknlock\.vn/i.test([image.url, image.landingUrl].join(" "))) return true;
+    const tokens = getImageQueryTokens(searchText);
+    const haystack = normalizeSearchText([image.title, image.url, image.landingUrl].join(" "));
+    return tokens.some((token) => haystack.includes(token));
+};
+
 const sortImagesByQueryRelevance = (images, searchText) =>
     images
-        .filter((image) => matchesProductAnchor(image, searchText))
+        .filter(
+            (image) =>
+                matchesProductAnchor(image, searchText) && matchesOfficialCatalogQuery(image, searchText),
+        )
         .map((image, index) => ({ image, index, score: scoreImageCandidate(image, searchText) }))
         .filter((item) => item.score > 0)
         .sort((a, b) => b.score - a.score || a.index - b.index)
@@ -640,7 +760,9 @@ const mergeImageCandidates = async (searchText, limit = 6, useFreeResources = tr
     const usedUrls = options.usedUrls || new Set();
     const offset = Number(options.offset || 0);
     const freeResources = useFreeResources
-        ? await getFreeResourceContext(searchText, limit)
+        ? await getFreeResourceContext(searchText, limit, {
+              includeLocknLock: options.includeLocknLock === true,
+          })
         : { images: [], references: [] };
     const catalogImages = await getImageCandidatesFromCatalog(searchText, limit);
     const urls = [];
@@ -767,9 +889,109 @@ const buildSampleProductImageUrl = (req, name, category = "kitchenware") => {
 
 const buildReferencePrompt = (references = []) => {
     if (!references.length) return "";
-    return `Nguon tham khao mo co the dung de lay y tuong, khong sao chep nguyen van:\n${references
-        .map((item, index) => `${index + 1}. ${item.title} - ${item.url}`)
+    return `Nguon tham khao mo chi duoc dung cho thong tin phu hop, khong sao chep nguyen van:\n${references
+        .map(
+            (item, index) =>
+                `${index + 1}. ${item.title}${item.snippet ? `: ${item.snippet}` : ""} - ${item.url}`,
+        )
         .join("\n")}`;
+};
+
+const getBlogCatalogContext = async (searchText, limit = 6) => {
+    const tokens = getImageQueryTokens(searchText);
+    const products = await Product.findAll({
+        where: { isActive: true },
+        attributes: ["name", "category", "material", "brand", "capacity", "description"],
+        limit: 100,
+        order: [["createdAt", "DESC"]],
+    });
+
+    return products
+        .map((product) => {
+            const plain = product.get({ plain: true });
+            const haystack = normalizeSearchText(Object.values(plain).join(" "));
+            const score = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0);
+            return { product: plain, score };
+        })
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit)
+        .map(({ product }) => ({
+            name: cleanText(product.name),
+            category: cleanText(product.category),
+            material: cleanText(product.material),
+            brand: cleanText(product.brand),
+            capacity: cleanText(product.capacity),
+        }));
+};
+
+const buildCatalogPrompt = (products = []) => {
+    if (!products.length) {
+        return "Khong co san pham DPWOOD nao trong database khop ro voi chu de. Khong tu bia ten san pham cu the.";
+    }
+
+    return `San pham dang co that trong database DPWOOD (chi goi dich danh san pham trong danh sach nay):\n${products
+        .map(
+            (product, index) =>
+                `${index + 1}. ${product.name}; danh muc: ${product.category || "khong ro"}; chat lieu: ${
+                    product.material || "khong ro"
+                }; dung tich/kich thuoc: ${product.capacity || "khong ro"}; thuong hieu: ${product.brand || "khong ro"}`,
+        )
+        .join("\n")}`;
+};
+
+const buildBlogQualityRules = (wordRange = "700-1000") => `
+Quy tac chat luong bat buoc:
+- Bam sat dung chu de, doi tuong doc, muc tieu va tu khoa admin cung cap; khong viet lan sang noi that neu chu de la do bep.
+- Moi bai dai khoang ${wordRange} tu, mo dau tra loi truc tiep nhu cau cua nguoi doc, sau do moi phan tich chi tiet.
+- Content la HTML sach: chi dung h2, h3, p, ul/ol/li, strong, em; khong dung h1, markdown, script, style hoac iframe.
+- Cau truc gom: mo dau, cac tieu chi/phan tich chinh, huong dan thuc hanh, luu y an toan va bao quan khi phu hop, ket luan co loi khuyen cu the.
+- Khong bia so lieu, chung nhan, tieu chuan, gia, bao hanh, cong dung suc khoe hoac thong tin san pham DPWOOD. Neu khong co can cu thi viet theo huong khuyen nghi than trong.
+- Chi goi dich danh san pham DPWOOD neu san pham do co trong du lieu database duoc cung cap.
+- Title ro nghia, khong giat tit; summary 120-180 ky tu; metaTitle toi da 60 ky tu; metaDescription 140-160 ky tu; 5-8 metaKeywords lien quan.
+- imageSearchQueries gom 3 cum tu tieng Anh cu the, mo ta dung vat the/khong gian chinh cua bai, uu tien anh editorial thuc te va khong chua tu DPWOOD.
+`;
+
+const resolveBlogWordRange = (prompt) => {
+    const normalized = normalizeSearchText(prompt);
+    if (/do sau noi dung ngan gon/.test(normalized)) return "350-500";
+    if (/do sau noi dung chuyen sau/.test(normalized)) return "800-1100";
+    return "550-750";
+};
+
+const BLOG_DRAFT_RESPONSE_SCHEMA = {
+    type: "OBJECT",
+    properties: {
+        title: { type: "STRING" },
+        summary: { type: "STRING" },
+        content: { type: "STRING" },
+        thumbnail: { type: "STRING" },
+        imageSearchQueries: { type: "ARRAY", items: { type: "STRING" } },
+        author: { type: "STRING" },
+        metaTitle: { type: "STRING" },
+        metaDescription: { type: "STRING" },
+        metaKeywords: { type: "ARRAY", items: { type: "STRING" } },
+    },
+    required: [
+        "title",
+        "summary",
+        "content",
+        "imageSearchQueries",
+        "metaTitle",
+        "metaDescription",
+        "metaKeywords",
+    ],
+};
+
+const BLOG_BATCH_RESPONSE_SCHEMA = {
+    type: "OBJECT",
+    properties: {
+        blogs: {
+            type: "ARRAY",
+            items: BLOG_DRAFT_RESPONSE_SCHEMA,
+        },
+    },
+    required: ["blogs"],
 };
 
 const buildReferenceHtml = (references = []) => {
@@ -849,14 +1071,48 @@ const isSensitiveSupportTicket = (ticket, messages = []) => {
     return sensitiveSupportPattern.test(content);
 };
 
+const sanitizeGeneratedBlogHtml = (value) =>
+    sanitizeHtml(cleanText(value), {
+        allowedTags: ["h2", "h3", "p", "ul", "ol", "li", "strong", "em", "blockquote", "a"],
+        allowedAttributes: {
+            a: ["href", "target", "rel"],
+        },
+        allowedSchemes: ["http", "https"],
+        transformTags: {
+            a: (tagName, attribs) => ({
+                tagName,
+                attribs: {
+                    ...attribs,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                },
+            }),
+        },
+    });
+
+const getPlainBlogText = (value) =>
+    sanitizeHtml(cleanText(value), { allowedTags: [], allowedAttributes: {} })
+        .replace(/&amp;/g, "&")
+        .replace(/\s+/g, " ")
+        .trim();
+
 const sanitizeBlogDraft = (draft, imageCandidates = []) => {
     const thumbnail = imageCandidates[0] || (/^https?:\/\//i.test(cleanText(draft.thumbnail)) ? cleanText(draft.thumbnail) : "");
+    const content = sanitizeGeneratedBlogHtml(draft.content) || "<p>Nội dung đang được cập nhật.</p>";
+    const plainContent = getPlainBlogText(content);
+    const summary = cleanText(draft.summary) || plainContent.slice(0, 260);
+    const imageSearchQueries = []
+        .concat(draft.imageSearchQueries || draft.image_search_queries || draft.searchQueries || draft.imageQueries || [])
+        .map((item) => buildImageSearchQuery(item))
+        .filter(Boolean)
+        .slice(0, 6);
 
     return {
-        title: cleanText(draft.title, "Bai viet moi tu DPWOOD").slice(0, 180),
+        title: cleanText(draft.title, "Bài viết mới từ DPWOOD").slice(0, 180),
         thumbnail,
-        summary: cleanText(draft.summary).slice(0, 500),
-        content: cleanText(draft.content, "<p>Noi dung dang duoc cap nhat.</p>"),
+        summary: summary.slice(0, 500),
+        content,
+        imageSearchQueries,
         author: cleanText(draft.author, "DPWOOD"),
         isPublished: false,
         metaTitle: cleanText(draft.metaTitle || draft.title).slice(0, 180),
@@ -869,8 +1125,16 @@ const sanitizeBlogDraft = (draft, imageCandidates = []) => {
 
 const sanitizeBlogBatchDrafts = (value, imageCandidates = []) => {
     const drafts = Array.isArray(value?.blogs) ? value.blogs : Array.isArray(value) ? value : [];
+    const seenTitles = new Set();
 
-    return drafts.map((draft, index) => sanitizeBlogDraft(draft, imageCandidates.slice(index, index + 3)));
+    return drafts
+        .map((draft, index) => sanitizeBlogDraft(draft, imageCandidates.slice(index, index + 3)))
+        .filter((draft) => {
+            const titleKey = normalizeSearchText(draft.title);
+            if (!titleKey || seenTitles.has(titleKey)) return false;
+            seenTitles.add(titleKey);
+            return true;
+        });
 };
 
 const sanitizeProductDraft = (draft, imageCandidates = [], options = {}) => {
@@ -904,6 +1168,7 @@ const sanitizeProductDraft = (draft, imageCandidates = [], options = {}) => {
         stock: variants.length
             ? variants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0)
             : clampNumber(draft.stock, 0, 99999, 0),
+        sold: Math.trunc(clampNumber(draft.sold, 0, 999999999, 0)),
         imageUrl: images[0] || "",
         images,
         imageSearchQueries,
@@ -1027,13 +1292,26 @@ const buildBlogImageSearchText = (blog, basePrompt = "") => {
         .join(" ");
 };
 
+const buildBlogImageSearchTexts = (blog, basePrompt = "") => {
+    const aiSearchQueries = Array.isArray(blog.imageSearchQueries)
+        ? blog.imageSearchQueries.map((item) => buildImageSearchQuery(item)).filter(Boolean)
+        : [];
+    const primaryQuery = buildBlogImageSearchText(blog, basePrompt);
+
+    return [
+        ...aiSearchQueries,
+        primaryQuery,
+        `${primaryQuery} editorial lifestyle photography`,
+    ].filter(Boolean);
+};
+
 const enrichBlogDraftImages = async (drafts, basePrompt, useFreeResources) => {
     const enriched = [];
     const usedUrls = new Set();
 
     for (const [index, draft] of drafts.entries()) {
-        const searchText = buildBlogImageSearchText(draft, basePrompt);
-        const imageResult = await mergeImageCandidates(searchText, 3, useFreeResources, {
+        const searchTexts = buildBlogImageSearchTexts(draft, basePrompt);
+        const imageResult = await mergeImageCandidatesFromQueries(searchTexts, 3, useFreeResources, {
             usedUrls,
             offset: index,
         });
@@ -1086,11 +1364,11 @@ const buildProductImageSearchTexts = (product, basePrompt = "") => {
         : [];
 
     return [
+        exactProductQuery,
+        ...aiSearchQueries,
         matched?.keyword,
         matched?.keyword ? `${matched.keyword} product photo` : "",
         matched?.keyword ? `${matched.keyword} catalog white background` : "",
-        exactProductQuery,
-        ...aiSearchQueries,
         [categoryKeyword, materialKeyword].filter(Boolean).join(" "),
         categoryKeyword,
         ...categoryFallbacks,
@@ -1107,6 +1385,7 @@ const enrichProductDraftImages = async (req, drafts, basePrompt, useFreeResource
         const imageResult = await mergeImageCandidatesFromQueries(searchTexts, 5, useFreeResources, {
             usedUrls,
             offset: index,
+            includeLocknLock: true,
         });
         const productWithImages = sanitizeProductDraft(draft, imageResult.urls);
         for (const url of productWithImages.images || []) {
@@ -1123,23 +1402,29 @@ const createBlogDraft = async (req, res) => {
         const prompt = ensurePrompt(req.body.prompt);
         const tone = cleanText(req.body.tone, "than thien, chuyen nghiep");
         const useFreeResources = req.body.useFreeResources !== false;
-        const freeContext = useFreeResources ? await getFreeResourceContext(prompt, 4) : { images: [], references: [] };
+        const [freeContext, catalogContext] = await Promise.all([
+            useFreeResources ? getFreeResourceContext(prompt, 4) : Promise.resolve({ images: [], references: [] }),
+            getBlogCatalogContext(prompt, 6),
+        ]);
 
         const draft = await generateJson({
             systemInstruction:
-                "You are an ecommerce content assistant for DPWOOD, a Vietnamese kitchenware store. Return only valid JSON. Write in natural Vietnamese UTF-8.",
+                "You are a senior Vietnamese ecommerce editor for DPWOOD, a kitchenware store. Prioritize factual accuracy, topical relevance, useful buying guidance and natural Vietnamese UTF-8. Return only valid JSON.",
             prompt: `
 Tao ban nhap blog cho website thuong mai dien tu do gia dung nha bep DPWOOD.
 Yeu cau cua admin: ${prompt}
 Giong van: ${tone}
 ${buildReferencePrompt(freeContext.references)}
+${buildCatalogPrompt(catalogContext)}
+${buildBlogQualityRules(resolveBlogWordRange(prompt))}
 
 Tra ve JSON voi dung cac truong:
 {
   "title": "string",
   "summary": "string",
-            "content": "HTML string with h2, p, ul/li when useful",
+  "content": "complete HTML article",
   "thumbnail": "leave empty if you do not have a real existing image URL",
+  "imageSearchQueries": ["specific English editorial image query"],
   "author": "DPWOOD",
   "metaTitle": "string",
   "metaDescription": "string",
@@ -1147,14 +1432,18 @@ Tra ve JSON voi dung cac truong:
 }
 Khong chen markdown, khong giai thich ngoai JSON.
             `,
+            temperature: 0.45,
+            responseSchema: BLOG_DRAFT_RESPONSE_SCHEMA,
+            maxOutputTokens: 8192,
         });
 
-        const imageResult = await mergeImageCandidates(
-            buildBlogImageSearchText(draft, prompt),
+        const sanitizedBaseDraft = sanitizeBlogDraft(draft);
+        const imageResult = await mergeImageCandidatesFromQueries(
+            buildBlogImageSearchTexts(sanitizedBaseDraft, prompt),
             3,
             useFreeResources,
         );
-        const sanitizedDraft = sanitizeBlogDraft(draft, imageResult.urls);
+        const sanitizedDraft = sanitizeBlogDraft(sanitizedBaseDraft, imageResult.urls);
         sanitizedDraft.content = `${sanitizedDraft.content}${buildReferenceHtml(freeContext.references)}`;
 
         res.status(200).json({
@@ -1177,19 +1466,32 @@ const createBlogBatch = async (req, res) => {
         const count = clampNumber(req.body.count, 1, 20, 5);
         const publish = cleanBoolean(req.body.publish);
         const useFreeResources = req.body.useFreeResources !== false;
-        const freeContext = useFreeResources ? await getFreeResourceContext(prompt, Math.min(count * 2, 20)) : { images: [], references: [] };
+        const [freeContext, catalogContext] = await Promise.all([
+            useFreeResources
+                ? getFreeResourceContext(prompt, Math.min(count * 2, 20))
+                : Promise.resolve({ images: [], references: [] }),
+            getBlogCatalogContext(prompt, 8),
+        ]);
+        const wordRange = resolveBlogWordRange(prompt);
+        const rawDrafts = [];
+        const chunkSize = 4;
 
-        const draftResponse = await generateJson({
-            systemInstruction:
-                "You are an ecommerce content operations assistant for DPWOOD, a Vietnamese kitchenware store. Return only valid JSON. Write natural Vietnamese UTF-8.",
-            prompt: `
-Tao ${count} ban nhap blog rieng biet cho website thuong mai dien tu do gia dung nha bep DPWOOD.
+        for (let offset = 0; offset < count; offset += chunkSize) {
+            const chunkCount = Math.min(chunkSize, count - offset);
+            const previousTitles = rawDrafts.map((draft) => draft.title).filter(Boolean);
+            const draftResponse = await generateJson({
+                systemInstruction:
+                    "You are a senior Vietnamese ecommerce content operations editor for DPWOOD, a kitchenware store. Prioritize factual accuracy, distinct search intent and practical usefulness. Return only valid JSON in natural Vietnamese UTF-8.",
+                prompt: `
+Tao ${chunkCount} ban nhap blog rieng biet (phan ${offset + 1}-${offset + chunkCount} trong tong so ${count} bai) cho website thuong mai dien tu do gia dung nha bep DPWOOD.
 Chien dich/noi dung admin yeu cau: ${prompt}
 Giong van: ${tone}
 ${buildReferencePrompt(freeContext.references)}
+${buildCatalogPrompt(catalogContext)}
+${buildBlogQualityRules(wordRange)}
+${previousTitles.length ? `Cac title da tao, tuyet doi khong lap lai: ${previousTitles.join(" | ")}` : ""}
 
-Moi bai can khac nhau ve goc tiep can, khong lap title.
-Content la HTML ngan gon voi h2, p, ul/li khi huu ich. Khong dung markdown.
+Moi bai phai phuc vu mot search intent va goc tiep can khac nhau. Khong lap title, dan y, vi du hoac ket luan.
 
 Tra ve JSON dung dang:
 {
@@ -1199,6 +1501,7 @@ Tra ve JSON dung dang:
       "summary": "string",
       "content": "HTML string",
       "thumbnail": "",
+      "imageSearchQueries": ["specific English editorial image query"],
       "author": "DPWOOD AI",
       "metaTitle": "string",
       "metaDescription": "string",
@@ -1207,12 +1510,17 @@ Tra ve JSON dung dang:
   ]
 }
 Khong giai thich ngoai JSON.
-            `,
-            temperature: 0.75,
-        });
+                `,
+                temperature: 0.58,
+                responseSchema: BLOG_BATCH_RESPONSE_SCHEMA,
+                maxOutputTokens: 8192,
+            });
 
-        const rawDrafts = sanitizeBlogBatchDrafts(draftResponse).slice(0, count);
-        const drafts = await enrichBlogDraftImages(rawDrafts, prompt, useFreeResources);
+            rawDrafts.push(...sanitizeBlogBatchDrafts(draftResponse));
+        }
+
+        const uniqueRawDrafts = sanitizeBlogBatchDrafts({ blogs: rawDrafts }).slice(0, count);
+        const drafts = await enrichBlogDraftImages(uniqueRawDrafts, prompt, useFreeResources);
 
         if (!drafts.length) {
             const error = new Error("AI chua tao duoc danh sach blog hop le");
@@ -1266,6 +1574,7 @@ Yeu cau cua admin: ${prompt}
 
 Category chi duoc chon 1 trong: ${CATEGORY_VALUES.join(", ")}.
 Neu san pham co mau/kich co, tao variants doc lap de moi mau co the di voi nhieu kich co khi hop ly.
+He thong co the tham khao danh muc chinh thuc LocknLock Vietnam de tim dung loai vat the. Khong sao chep ten model, thong so hoac gan thuong hieu LocknLock cho san pham DPWOOD neu admin khong yeu cau.
 Tao imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai co danh tu san pham chinh nhu cutting board, cast iron pan, chef knife set, glass food container, kettle, dish brush. Uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query. Khong tao query chi noi ve chat lieu/cam giac nhu natural wood, water, bamboo fiber, eco friendly.
 Tra ve JSON voi dung cac truong:
 {
@@ -1297,6 +1606,7 @@ Khong chen markdown, khong giai thich ngoai JSON.
             buildProductImageSearchTexts(sanitizedDraft, prompt),
             5,
             useFreeResources,
+            { includeLocknLock: true },
         );
 
         res.status(200).json({
@@ -1330,6 +1640,7 @@ Yeu cau cua admin: ${prompt}
 Moi san pham phai khac nhau ve ten, gia, cong dung hoac phan loai.
 Category chi duoc chon 1 trong: ${CATEGORY_VALUES.join(", ")}.
 Neu san pham co mau/kich co, tao variants doc lap de moi mau co the di voi nhieu kich co khi hop ly.
+He thong co the tham khao danh muc chinh thuc LocknLock Vietnam de tim dung loai vat the. Khong sao chep ten model, thong so hoac gan thuong hieu LocknLock cho san pham DPWOOD neu admin khong yeu cau.
 Khong tu bia ra URL anh. Truong images co the de [] neu khong chac URL ton tai.
 Moi san pham phai co imageSearchQueries gom 3-5 cum tu tieng Anh de tim anh that tren web. Query phai co danh tu san pham chinh nhu cutting board, cast iron pan, chef knife set, glass food container, kettle, dish brush. Uu tien "product photo", "white background", "catalog", "studio". Khong dung DPWOOD trong query. Khong tao query chi noi ve chat lieu/cam giac nhu natural wood, water, bamboo fiber, eco friendly.
 

@@ -65,7 +65,13 @@ const parseJsonResponse = (rawText) => {
     }
 };
 
-const generateJson = async ({ systemInstruction, prompt, temperature = 0.65 }) => {
+const generateJson = async ({
+    systemInstruction,
+    prompt,
+    temperature = 0.65,
+    responseSchema,
+    maxOutputTokens = 8192,
+}) => {
     const apiKey = process.env.GEMINI_API_KEY;
     const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
@@ -94,6 +100,8 @@ const generateJson = async ({ systemInstruction, prompt, temperature = 0.65 }) =
             generationConfig: {
                 temperature,
                 responseMimeType: "application/json",
+                maxOutputTokens,
+                ...(responseSchema ? { responseSchema } : {}),
             },
         }),
     });

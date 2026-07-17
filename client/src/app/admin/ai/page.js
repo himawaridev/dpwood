@@ -14,14 +14,12 @@ import {
     Form,
     Input,
     InputNumber,
-    Image,
     Progress,
     Row,
     Select,
     Space,
     Switch,
     Tag,
-    Tooltip,
     Typography,
 } from "antd";
 import {
@@ -29,56 +27,26 @@ import {
     CalendarOutlined,
     CheckCircleOutlined,
     CustomerServiceOutlined,
-    DeleteOutlined,
-    EditOutlined,
-    EyeOutlined,
     FileTextOutlined,
     RobotOutlined,
     SafetyCertificateOutlined,
-    SaveOutlined,
     StopOutlined,
     ThunderboltOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import AdminIconButton from "@/components/ui/AdminIconButton";
 import api from "@/utils/axios";
+import AiResultCards from "./components/AiResultCards";
+import {
+    blogBlockOptions,
+    blogGoalOptions,
+    depthOptions,
+    supportAllowedItems,
+    supportBlockedItems,
+    toneOptions,
+} from "./aiOptions";
 
 const { Title, Text, Paragraph } = Typography;
-
-const toneOptions = [
-    { value: "than thien, chuyen nghiep", label: "Thân thiện" },
-    { value: "sang trong, tu van nhu chuyen gia", label: "Chuyên gia" },
-    { value: "ngan gon, tap trung SEO va chuyen doi", label: "SEO bán hàng" },
-];
-
-const depthOptions = [
-    { value: "ngan gon", label: "Ngắn gọn" },
-    { value: "day du", label: "Đầy đủ" },
-    { value: "chuyen sau", label: "Chuyên sâu" },
-];
-
-const blogBlockOptions = [
-    { value: "seo", label: "Tối ưu SEO" },
-    { value: "faq", label: "FAQ cuối bài" },
-    { value: "buyingGuide", label: "Gợi ý chọn mua" },
-    { value: "careTips", label: "Mẹo sử dụng/bảo quản" },
-    { value: "internalLinks", label: "Gợi ý liên kết sản phẩm" },
-];
-
-const supportAllowedItems = [
-    "Tư vấn cách tìm sản phẩm, danh mục, mã giảm giá và giỏ hàng.",
-    "Hướng dẫn đặt hàng, theo dõi trạng thái đơn và chính sách giao hàng chung.",
-    "Giải thích cách dùng voucher, điều kiện áp dụng và lỗi nhập mã thông thường.",
-    "Trả lời câu hỏi về chất liệu, kích cỡ, bảo quản đồ bếp, kinh nghiệm chọn mua.",
-    "Tóm tắt yêu cầu hỗ trợ dài để quản trị viên đọc nhanh hơn.",
-];
-
-const supportBlockedItems = [
-    "Thanh toán, PayOS, chuyển khoản, hoàn tiền hoặc tranh chấp tiền bạc.",
-    "Sửa số điện thoại, email, địa chỉ, họ tên hoặc dữ liệu cá nhân.",
-    "Mật khẩu, OTP, xác minh tài khoản hoặc thông tin định danh.",
-    "Khiếu nại cần quyết định của quản trị viên: hủy đơn, đổi trả đặc biệt, bồi thường.",
-    "Bất kỳ yêu cầu hỗ trợ nào AI không đủ chắc chắn hoặc khách yêu cầu gặp quản trị viên.",
-];
 
 export function AdminAiCenterSection({ section = "blog" }) {
     const { message } = App.useApp();
@@ -114,6 +82,8 @@ export function AdminAiCenterSection({ section = "blog" }) {
 
         return [
             values.prompt,
+            values.audience ? `Đối tượng đọc chính: ${values.audience}` : "",
+            values.goal ? `Mục tiêu tìm kiếm của bài viết: ${values.goal}` : "",
             values.keywords ? `Từ khóa trọng tâm: ${values.keywords}` : "",
             values.depth ? `Độ sâu nội dung: ${values.depth}` : "",
             values.blocks?.length ? `Các phần cần có: ${values.blocks.join(", ")}` : "",
@@ -201,20 +171,6 @@ export function AdminAiCenterSection({ section = "blog" }) {
         }
     };
 
-    const isGeneratedPlaceholderUrl = (url) => {
-        const value = String(url || "").toLowerCase();
-        return (
-            !value ||
-            value.includes("/ai/product-image-placeholder") ||
-            value.includes("product-image-placeholder?") ||
-            value.includes("placehold.co/") ||
-            value.includes("loremflickr.com/") ||
-            value.includes("picsum.photos/")
-        );
-    };
-
-    const isRealProductImage = (url) => /^https?:\/\//i.test(String(url || "")) && !isGeneratedPlaceholderUrl(url);
-
     const handleAutoResolveSupport = async (values) => {
         try {
             setSupportLoading(true);
@@ -232,260 +188,25 @@ export function AdminAiCenterSection({ section = "blog" }) {
     };
 
     const resultCards = (
-        <>
-            {createdBlogs.length > 0 && (
-                <Card
-                    className="dp-admin-ai-card"
-                    title={
-                        <Space>
-                            <EditOutlined />
-                            Blog vừa tạo
-                        </Space>
-                    }
-                    extra={
-                        <Tooltip title="Xem bài viết">
-                            <Button
-                                type="text"
-                                icon={<EyeOutlined />}
-                                aria-label="Xem bài viết"
-                                className="dp-admin-action-button"
-                                onClick={() => router.push("/admin/blogs")}
-                            />
-                        </Tooltip>
-                    }
-                >
-                    <div className="dp-admin-ai-result-list">
-                        {createdBlogs.map((blog) => (
-                            <div className="dp-admin-ai-result-item" key={blog.id}>
-                                <div>
-                                    <Text strong>{blog.title}</Text>
-                                    <Paragraph type="secondary" className="dp-admin-ai-result-summary">
-                                        {blog.summary || "Bài viết AI đang chờ bổ sung mô tả."}
-                                    </Paragraph>
-                                </div>
-                                <Space wrap>
-                                    <Tag color={blog.isPublished ? "success" : "default"}>
-                                        {blog.isPublished ? "Công khai" : "Bản nháp"}
-                                    </Tag>
-                                    <Tooltip title="Chỉnh sửa bài viết">
-                                        <Button
-                                            type="text"
-                                            icon={<EditOutlined />}
-                                            aria-label="Chỉnh sửa bài viết"
-                                            className="dp-admin-action-button"
-                                            onClick={() => router.push(`/admin/blogs/${blog.id}?from=ai`)}
-                                        />
-                                    </Tooltip>
-                                </Space>
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            )}
-
-            {pendingProducts.length > 0 && (
-                <Card
-                    className="dp-admin-ai-card"
-                    title={
-                        <Space>
-                            <AppstoreAddOutlined />
-                            Sản phẩm chờ duyệt
-                        </Space>
-                    }
-                    extra={
-                        <Space wrap>
-                            <Tooltip title="Xóa toàn bộ bản nháp">
-                                <Button
-                                    type="text"
-                                    icon={<DeleteOutlined />}
-                                    aria-label="Xóa toàn bộ bản nháp"
-                                    className="dp-admin-action-button"
-                                    onClick={() => setPendingProducts([])}
-                                />
-                            </Tooltip>
-                            <Tooltip title="Lưu tất cả sản phẩm">
-                                <Button
-                                    type="text"
-                                    icon={<SaveOutlined />}
-                                    aria-label="Lưu tất cả sản phẩm"
-                                    className="dp-admin-action-button"
-                                    loading={productLoading}
-                                    onClick={handleSavePendingProducts}
-                                />
-                            </Tooltip>
-                        </Space>
-                    }
-                >
-                    <Alert
-                        type="info"
-                        showIcon
-                        title="Duyệt trước khi lưu"
-                        description="Các sản phẩm dưới đây chưa được lưu vào database. Kiểm tra nhanh ảnh, giá và tồn kho rồi bấm Lưu tất cả."
-                        style={{ marginBottom: 14 }}
-                    />
-                    <div className="dp-admin-ai-result-list">
-                        {pendingProducts.map((product, index) => {
-                            const previewImage = [product.imageUrl, ...(Array.isArray(product.images) ? product.images : [])].find(
-                                isRealProductImage,
-                            );
-                            const imageKey = `${product.name}-${index}`;
-                            const imageSrc = brokenProductImages[imageKey] ? "" : previewImage;
-                            return (
-                                <div className="dp-admin-ai-result-item" key={imageKey}>
-                                    <Space align="start" size={12}>
-                                        {imageSrc ? (
-                                            <Image
-                                                src={imageSrc}
-                                                alt={product.name}
-                                                width={64}
-                                                height={64}
-                                                style={{ objectFit: "cover" }}
-                                                onError={() =>
-                                                    setBrokenProductImages((current) => ({
-                                                        ...current,
-                                                        [imageKey]: true,
-                                                    }))
-                                                }
-                                            />
-                                        ) : (
-                                            <div className="dp-admin-ai-image-placeholder">Chưa có ảnh</div>
-                                        )}
-                                        <div>
-                                            <Text strong>{product.name}</Text>
-                                            <Paragraph type="secondary" className="dp-admin-ai-result-summary">
-                                                {`${Number(product.price || 0).toLocaleString("vi-VN")} đ - Tồn kho ${product.stock || 0}`}
-                                            </Paragraph>
-                                        </div>
-                                    </Space>
-                                    <Space wrap>
-                                        <Tag>{product.category || "kitchen"}</Tag>
-                                        <Tag color={imageSrc ? "success" : "warning"}>
-                                            {imageSrc ? "Có ảnh" : "Thiếu ảnh"}
-                                        </Tag>
-                                    </Space>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </Card>
-            )}
-
-            {createdProducts.length > 0 && (
-                <Card
-                    className="dp-admin-ai-card"
-                    title={
-                        <Space>
-                            <AppstoreAddOutlined />
-                            Sản phẩm vừa tạo
-                        </Space>
-                    }
-                    extra={
-                        <Tooltip title="Xem sản phẩm">
-                            <Button
-                                type="text"
-                                icon={<EyeOutlined />}
-                                aria-label="Xem sản phẩm"
-                                className="dp-admin-action-button"
-                                onClick={() => router.push("/admin/products")}
-                            />
-                        </Tooltip>
-                    }
-                >
-                    <div className="dp-admin-ai-result-list">
-                        {createdProducts.map((product) => (
-                            <div className="dp-admin-ai-result-item" key={product.id}>
-                                <div>
-                                    <Text strong>{product.name}</Text>
-                                    <Paragraph type="secondary" className="dp-admin-ai-result-summary">
-                                        {`${Number(product.price || 0).toLocaleString("vi-VN")} đ - Tồn kho ${product.stock || 0}`}
-                                    </Paragraph>
-                                </div>
-                                <Space wrap>
-                                    <Tag>{product.category || "kitchen"}</Tag>
-                                    <Tooltip title="Xem sản phẩm">
-                                        <Button
-                                            type="text"
-                                            icon={<EyeOutlined />}
-                                            aria-label="Xem sản phẩm"
-                                            className="dp-admin-action-button"
-                                            onClick={() => router.push(`/products/${product.id}`)}
-                                        />
-                                    </Tooltip>
-                                </Space>
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            )}
-
-            {supportResult && (
-                <Card
-                    className="dp-admin-ai-card"
-                    title={
-                        <Space>
-                            <CustomerServiceOutlined />
-                            Kết quả xử lý support
-                        </Space>
-                    }
-                    extra={
-                        <Tooltip title="Mở yêu cầu hỗ trợ">
-                            <Button
-                                type="text"
-                                icon={<EyeOutlined />}
-                                aria-label="Mở yêu cầu hỗ trợ"
-                                className="dp-admin-action-button"
-                                onClick={() => router.push("/admin/support")}
-                            />
-                        </Tooltip>
-                    }
-                >
-                    <Row gutter={[16, 16]}>
-                        <Col xs={24} lg={12}>
-                            <Text strong>Đã xử lý</Text>
-                            <div className="dp-admin-ai-result-list" style={{ marginTop: 10 }}>
-                                {(supportResult.handled || []).length ? (
-                                    supportResult.handled.map((ticket) => (
-                                        <div className="dp-admin-ai-result-item" key={ticket.id}>
-                                            <div>
-                                                <Text strong>{ticket.ticketCode}</Text>
-                                                <Paragraph type="secondary" className="dp-admin-ai-result-summary">
-                                                    {ticket.title}
-                                                </Paragraph>
-                                            </div>
-                                            <Tag color="success">{ticket.status}</Tag>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <Text type="secondary">Chưa có yêu cầu hỗ trợ nào được AI xử lý.</Text>
-                                )}
-                            </div>
-                        </Col>
-                        <Col xs={24} lg={12}>
-                            <Text strong>Chuyển quản trị viên</Text>
-                            <div className="dp-admin-ai-result-list" style={{ marginTop: 10 }}>
-                                {(supportResult.skipped || []).length ? (
-                                    supportResult.skipped.map((ticket) => (
-                                        <div className="dp-admin-ai-result-item" key={ticket.id}>
-                                            <div>
-                                                <Text strong>{ticket.ticketCode}</Text>
-                                                <Paragraph type="secondary" className="dp-admin-ai-result-summary">
-                                                    {ticket.reason}
-                                                </Paragraph>
-                                            </div>
-                                            <Tag color="warning">Quản trị viên</Tag>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <Text type="secondary">Không có yêu cầu hỗ trợ bị chặn.</Text>
-                                )}
-                            </div>
-                        </Col>
-                    </Row>
-                </Card>
-            )}
-        </>
+        <AiResultCards
+            createdBlogs={createdBlogs}
+            pendingProducts={pendingProducts}
+            createdProducts={createdProducts}
+            supportResult={supportResult}
+            productLoading={productLoading}
+            brokenProductImages={brokenProductImages}
+            onBrokenProductImage={(imageKey) =>
+                setBrokenProductImages((current) => ({ ...current, [imageKey]: true }))
+            }
+            onClearPendingProducts={() => setPendingProducts([])}
+            onSavePendingProducts={handleSavePendingProducts}
+            onOpenBlogs={() => router.push("/admin/blogs")}
+            onEditBlog={(blog) => router.push(`/admin/blogs/${blog.id}?from=ai`)}
+            onOpenProducts={() => router.push("/admin/products")}
+            onOpenProduct={(product) => router.push(`/products/${product.id}`)}
+            onOpenSupport={() => router.push("/admin/support")}
+        />
     );
-
     const blogTab = (
         <Row gutter={[16, 16]}>
             <Col xs={24} xl={15}>
@@ -513,6 +234,7 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             count: 5,
                             tone: toneOptions[0].value,
                             depth: "day du",
+                            goal: blogGoalOptions[0].value,
                             publishMode: "draft",
                             blocks: ["seo", "buyingGuide", "careTips"],
                             useFreeResources: true,
@@ -547,6 +269,19 @@ export function AdminAiCenterSection({ section = "blog" }) {
                             <Col xs={24} md={8}>
                                 <Form.Item name="depth" label="Độ sâu nội dung">
                                     <Select options={depthOptions} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+
+                        <Row gutter={12}>
+                            <Col xs={24} md={14}>
+                                <Form.Item name="audience" label="Đối tượng người đọc">
+                                    <Input placeholder="VD: Gia đình 2-4 người, người mới tự nấu ăn" />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={10}>
+                                <Form.Item name="goal" label="Mục tiêu bài viết">
+                                    <Select options={blogGoalOptions} />
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -877,24 +612,16 @@ export function AdminAiCenterSection({ section = "blog" }) {
                     </Paragraph>
                 </div>
                 <Space wrap>
-                    <Tooltip title="Bài viết AI">
-                        <Button
-                            type="text"
-                            icon={<FileTextOutlined />}
-                            aria-label="Bài viết AI"
-                            className="dp-admin-action-button"
-                            onClick={() => router.push("/admin/ai/blog")}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Hỗ trợ AI">
-                        <Button
-                            type="text"
-                            icon={<CustomerServiceOutlined />}
-                            aria-label="Hỗ trợ AI"
-                            className="dp-admin-action-button"
-                            onClick={() => router.push("/admin/ai/support")}
-                        />
-                    </Tooltip>
+                    <AdminIconButton
+                        label="Bài viết AI"
+                        icon={<FileTextOutlined />}
+                        onClick={() => router.push("/admin/ai/blog")}
+                    />
+                    <AdminIconButton
+                        label="Hỗ trợ AI"
+                        icon={<CustomerServiceOutlined />}
+                        onClick={() => router.push("/admin/ai/support")}
+                    />
                 </Space>
             </Flex>
 
