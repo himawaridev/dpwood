@@ -13,7 +13,9 @@ router.post("/unsubscribe/:token", newsletterLimiter, newsletterController.unsub
 router.get("/admin/recipients", ...adminOnly, newsletterController.getVerifiedRecipients);
 router.get("/admin/subscribers", ...adminOnly, newsletterController.getSubscribers);
 router.get("/admin/campaigns", ...adminOnly, newsletterController.getCampaigns);
+router.get("/admin/email-status", ...adminOnly, newsletterController.getEmailProviderStatus);
 router.post("/admin/preview", ...adminOnly, newsletterController.previewCampaign);
+router.post("/admin/test-email", ...adminOnly, newsletterController.sendTestEmail);
 router.post("/admin/send", ...adminOnly, newsletterController.sendCampaign);
 router.post("/admin/campaigns/:id/cancel", ...adminOnly, newsletterController.cancelCampaign);
 router.post("/admin/send-welcome", ...adminOnly, newsletterController.sendPendingWelcomeEmails);

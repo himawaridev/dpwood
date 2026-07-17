@@ -86,6 +86,8 @@ export default function AdminNewsletterPage() {
     const [campaignStatus, setCampaignStatus] = useState("");
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
     const [sending, setSending] = useState(false);
+    const [testingEmail, setTestingEmail] = useState(false);
+    const [providerStatus, setProviderStatus] = useState(null);
     const [composerOpen, setComposerOpen] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [campaign, setCampaign] = useState({ audience: "verified_users", target: "all", recipient: null });
@@ -154,6 +156,19 @@ export default function AdminNewsletterPage() {
         }
     }, [campaignPage, campaignStatus, message]);
 
+    const fetchProviderStatus = useCallback(async () => {
+        try {
+            const response = await api.get("/newsletter/admin/email-status", { authRequired: true });
+            setProviderStatus(response.data || null);
+        } catch (error) {
+            setProviderStatus({
+                ready: false,
+                readyForBulk: false,
+                message: error.response?.data?.message || "Không thể kiểm tra dịch vụ email",
+            });
+        }
+    }, []);
+
     useEffect(() => {
         const timer = window.setTimeout(fetchUsers, 250);
         return () => window.clearTimeout(timer);
@@ -163,6 +178,10 @@ export default function AdminNewsletterPage() {
         const timer = window.setTimeout(fetchSubscribers, 250);
         return () => window.clearTimeout(timer);
     }, [fetchSubscribers]);
+
+    useEffect(() => {
+        void fetchProviderStatus();
+    }, [fetchProviderStatus]);
 
     useEffect(() => {
         if (activeTab !== "campaigns") return undefined;
@@ -279,6 +298,32 @@ export default function AdminNewsletterPage() {
                     throw error;
                 } finally {
                     setSending(false);
+                }
+            },
+        });
+    };
+
+    const sendTestEmail = () => {
+        modal.confirm({
+            title: "Gửi email kiểm tra?",
+            content: "Hệ thống sẽ gửi một email thử tới địa chỉ email của tài khoản quản trị đang đăng nhập.",
+            okText: "Gửi email thử",
+            cancelText: "Hủy",
+            onOk: async () => {
+                try {
+                    setTestingEmail(true);
+                    const response = await api.post(
+                        "/newsletter/admin/test-email",
+                        undefined,
+                        { authRequired: true },
+                    );
+                    message.success(response.data?.message || "Đã gửi email thử");
+                    await fetchProviderStatus();
+                } catch (error) {
+                    message.error(error.response?.data?.message || "Không thể gửi email thử");
+                    throw error;
+                } finally {
+                    setTestingEmail(false);
                 }
             },
         });
@@ -414,6 +459,21 @@ export default function AdminNewsletterPage() {
                         <Text type="secondary">
                             {record.sentCount || 0} đã gửi, {record.failedCount || 0} lỗi / {total} người nhận
                         </Text>
+                        {record.lastError && (
+                            <Text
+                                type="danger"
+                                title={record.lastError}
+                                style={{
+                                    display: "block",
+                                    maxWidth: 330,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                }}
+                            >
+                                {record.lastError}
+                            </Text>
+                        )}
                     </div>
                 );
             },
@@ -576,9 +636,15 @@ export default function AdminNewsletterPage() {
                         label="Làm mới"
                         icon={<ReloadOutlined />}
                         loading={loadingUsers || loadingSubscribers || loadingCampaigns}
-                        onClick={() => { fetchUsers(); fetchSubscribers(); fetchCampaigns(); }}
+                        onClick={() => { fetchUsers(); fetchSubscribers(); fetchCampaigns(); fetchProviderStatus(); }}
                     />
                     <AdminIconButton label="Tạo email bằng AI" icon={<RobotOutlined />} onClick={() => router.push("/admin/ai/email")} />
+                    <AdminIconButton
+                        label="Gửi email kiểm tra"
+                        icon={<MailOutlined />}
+                        loading={testingEmail}
+                        onClick={sendTestEmail}
+                    />
                     <AdminIconButton
                         label="Gửi thư chào mừng còn thiếu"
                         icon={<UserOutlined />}
@@ -587,6 +653,20 @@ export default function AdminNewsletterPage() {
                     />
                 </Space>
             </Flex>
+
+            {providerStatus && (
+                <Alert
+                    type={providerStatus.readyForBulk ? "success" : "error"}
+                    showIcon
+                    title={providerStatus.readyForBulk
+                        ? "Dịch vụ email sẵn sàng gửi hàng loạt"
+                        : "Dịch vụ email chưa sẵn sàng gửi hàng loạt"}
+                    description={providerStatus.readyForBulk
+                        ? `Người gửi: ${providerStatus.sender || "DPWOOD"}`
+                        : "Resend đang dùng địa chỉ thử nghiệm hoặc chưa xác minh miền gửi. Hãy xác minh dpwood.store và cấu hình RESEND_FROM trên Render."}
+                    style={{ marginBottom: 18 }}
+                />
+            )}
 
             <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
                 <Col xs={24} sm={12} lg={6}><Card><Statistic title="Tài khoản đã xác minh" value={userStats.verifiedUsers || 0} /></Card></Col>

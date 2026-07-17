@@ -11,7 +11,6 @@ const {
 const BATCH_SIZE = Math.min(Math.max(Number(process.env.EMAIL_CAMPAIGN_BATCH_SIZE) || 20, 1), 100);
 const BATCH_DELAY_MS = Math.max(Number(process.env.EMAIL_CAMPAIGN_BATCH_DELAY_MS) || 1000, 250);
 const POLL_INTERVAL_MS = Math.max(Number(process.env.EMAIL_CAMPAIGN_POLL_MS) || 5000, 1000);
-const MAX_PARALLEL_SENDS = Math.min(Math.max(Number(process.env.EMAIL_CAMPAIGN_CONCURRENCY) || 2, 1), 5);
 
 let workerTimer = null;
 let workerRunning = false;
@@ -94,7 +93,7 @@ const buildSubscriberMap = async (campaign, recipients) => {
     return new Map(rows.map((subscriber) => [normalizeEmail(subscriber.email), subscriber]));
 };
 
-const sendRecipient = async (campaign, recipient, subscriber) => {
+const buildRecipientMessage = (campaign, recipient, subscriber) => {
     const html = subscriber
         ? generateMarketingHtml({
             title: campaign.subject,
@@ -108,34 +107,50 @@ const sendRecipient = async (campaign, recipient, subscriber) => {
             contentHtml: campaign.contentHtml,
             recipientName: recipient.name,
         });
-    await sendEmail(recipient.email, `[DPWOOD] ${campaign.subject}`, html);
-    if (subscriber) await subscriber.update({ lastEmailSentAt: new Date() });
+    return {
+        to: recipient.email,
+        subject: `[DPWOOD] ${campaign.subject}`,
+        content: html,
+        subscriber,
+    };
 };
 
-const sendBatch = async (campaign, recipients) => {
+const sendBatch = async (campaign, recipients, batch) => {
     const subscriberByEmail = await buildSubscriberMap(campaign, recipients);
-    let sent = 0;
-    let failed = 0;
-    let lastError = null;
+    const messages = recipients.map((recipient) => buildRecipientMessage(
+        campaign,
+        recipient,
+        subscriberByEmail.get(normalizeEmail(recipient.email)),
+    ));
+    const idempotencyKey = [
+        "campaign",
+        campaign.id,
+        batch.nextOffset ?? campaign.cursorOffset,
+        batch.nextCursor ?? campaign.cursorId ?? "start",
+    ].join("-");
 
-    for (let index = 0; index < recipients.length; index += MAX_PARALLEL_SENDS) {
-        const slice = recipients.slice(index, index + MAX_PARALLEL_SENDS);
-        const results = await Promise.allSettled(
-            slice.map((recipient) => sendRecipient(
-                campaign,
-                recipient,
-                subscriberByEmail.get(normalizeEmail(recipient.email)),
-            )),
-        );
-        results.forEach((result) => {
-            if (result.status === "fulfilled") sent += 1;
-            else {
-                failed += 1;
-                lastError = String(result.reason?.message || result.reason || "Không thể gửi email").slice(0, 1000);
-            }
-        });
+    try {
+        const result = await sendEmail.batch(messages, { idempotencyKey });
+        const successfulSubscribers = messages
+            .filter((message, index) => result.results[index]?.status === "fulfilled" && message.subscriber)
+            .map((message) => message.subscriber.update({ lastEmailSentAt: new Date() }));
+        await Promise.allSettled(successfulSubscribers);
+
+        const rejected = result.results.find((item) => item.status === "rejected");
+        return {
+            sent: result.sent,
+            failed: result.failed,
+            lastError: rejected
+                ? String(rejected.reason?.message || rejected.reason || "Không thể gửi email").slice(0, 1000)
+                : null,
+        };
+    } catch (error) {
+        return {
+            sent: 0,
+            failed: recipients.length,
+            lastError: String(error.message || error || "Không thể gửi email").slice(0, 1000),
+        };
     }
-    return { sent, failed, lastError };
 };
 
 const processCampaign = async (campaign) => {
@@ -158,7 +173,7 @@ const processCampaign = async (campaign) => {
             return;
         }
 
-        const result = await sendBatch(campaign, batch.recipients);
+        const result = await sendBatch(campaign, batch.recipients, batch);
         const missing = Math.max(batch.requestedCount - batch.recipients.length, 0);
         const failed = result.failed + missing;
         const processedCount = campaign.processedCount + batch.requestedCount;

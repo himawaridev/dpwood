@@ -329,6 +329,15 @@ const sendCampaign = async (req, res) => {
             return res.status(400).json({ message: "Nhóm được chọn chỉ áp dụng cho danh sách tài khoản" });
         }
 
+        const providerStatus = await sendEmail.getProviderStatus();
+        if (!providerStatus.readyForBulk) {
+            return res.status(503).json({
+                message: providerStatus.message,
+                provider: providerStatus.provider,
+                sender: providerStatus.sender,
+            });
+        }
+
         const recipientSnapshotAt = new Date();
         const definition = await resolveCampaignDefinition({
             audience,
@@ -368,6 +377,44 @@ const sendCampaign = async (req, res) => {
         return res.status(error.statusCode || 500).json({
             message: error.message || "Không thể tạo chiến dịch email",
         });
+    }
+};
+
+const getEmailProviderStatus = async (req, res) => {
+    try {
+        const status = await sendEmail.getProviderStatus();
+        return res.status(200).json(status);
+    } catch (error) {
+        return res.status(503).json({
+            provider: process.env.RESEND_API_KEY ? "resend" : "smtp",
+            ready: false,
+            readyForBulk: false,
+            message: error.message || "Không thể kiểm tra dịch vụ email",
+        });
+    }
+};
+
+const sendTestEmail = async (req, res) => {
+    try {
+        const email = normalizeEmail(req.user?.email);
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: "Tài khoản quản trị chưa có email hợp lệ" });
+        }
+        const html = generateAccountMarketingHtml({
+            title: "Kiểm tra hệ thống email DPWOOD",
+            preview: "Email thử từ trang quản trị DPWOOD",
+            contentHtml: [
+                "<h2>Hệ thống email đang hoạt động</h2>",
+                "<p>Đây là email kiểm tra được gửi từ trang quản trị DPWOOD.</p>",
+                `<p>Thời gian kiểm tra: <strong>${new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}</strong></p>`,
+            ].join(""),
+            recipientName: req.user?.name || "Quản trị viên DPWOOD",
+        });
+        await sendEmail(email, "[DPWOOD] Kiểm tra hệ thống email", html);
+        return res.status(200).json({ message: `Đã gửi email thử tới ${email}` });
+    } catch (error) {
+        console.error("newsletter test email error:", error.message);
+        return res.status(502).json({ message: error.message || "Không thể gửi email thử" });
     }
 };
 
@@ -477,6 +524,8 @@ module.exports = {
     unsubscribe,
     getVerifiedRecipients,
     getSubscribers,
+    getEmailProviderStatus,
+    sendTestEmail,
     previewCampaign,
     sendCampaign,
     getCampaigns,
