@@ -32,6 +32,12 @@ router.put(
     notificationController.updateNotification,
 );
 router.delete(
+    "/all",
+    authMiddleware,
+    roleMiddleware("admin", "root"),
+    notificationController.deleteAllNotifications,
+);
+router.delete(
     "/:id",
     authMiddleware,
     roleMiddleware("admin", "root", "staff"),

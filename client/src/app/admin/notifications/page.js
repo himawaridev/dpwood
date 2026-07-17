@@ -1,10 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { App, Table, Button, Typography, Tag, Switch, Flex, Popconfirm, Tooltip } from "antd";
+import { App, Table, Typography, Tag, Switch, Flex, Popconfirm } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, FieldTimeOutlined } from "@ant-design/icons";
 import api from "@/utils/axios";
 import NotificationModal from "./components/NotificationModal";
 import dayjs from "dayjs";
+import AdminIconButton from "@/components/ui/AdminIconButton";
+import AdminDeleteAllButton from "@/components/ui/AdminDeleteAllButton";
 
 const { Title, Text } = Typography;
 
@@ -12,6 +14,7 @@ export default function AdminNotificationsPage() {
     const { message } = App.useApp();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [deleteAllLoading, setDeleteAllLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
@@ -65,6 +68,20 @@ export default function AdminNotificationsPage() {
             fetchNotifications();
         } catch {
             message.error("Lỗi khi xóa");
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        try {
+            setDeleteAllLoading(true);
+            const response = await api.delete("/notifications/all");
+            setNotifications([]);
+            message.success(response.data?.message || "Đã xóa tất cả thông báo");
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xóa tất cả thông báo");
+            throw error;
+        } finally {
+            setDeleteAllLoading(false);
         }
     };
 
@@ -139,30 +156,19 @@ export default function AdminNotificationsPage() {
             key: "action",
             render: (_, record) => (
                 <Flex gap="small">
-                    <Tooltip title="Chỉnh sửa thông báo">
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            aria-label="Chỉnh sửa thông báo"
-                            className="dp-admin-action-button"
-                            onClick={() => {
-                                setEditingItem(record);
-                                setIsModalVisible(true);
-                            }}
-                        />
-                    </Tooltip>
+                    <AdminIconButton
+                        label="Chỉnh sửa thông báo"
+                        icon={<EditOutlined />}
+                        onClick={() => {
+                            setEditingItem(record);
+                            setIsModalVisible(true);
+                        }}
+                    />
                     <Popconfirm
                         title="Xóa thông báo này?"
                         onConfirm={() => handleDelete(record.id)}
                     >
-                        <Tooltip title="Xóa thông báo">
-                            <Button
-                                type="text"
-                                icon={<DeleteOutlined />}
-                                aria-label="Xóa thông báo"
-                                className="dp-admin-action-button"
-                            />
-                        </Tooltip>
+                        <AdminIconButton label="Xóa thông báo" icon={<DeleteOutlined />} />
                     </Popconfirm>
                 </Flex>
             ),
@@ -175,18 +181,22 @@ export default function AdminNotificationsPage() {
                 <Title level={3} style={{ margin: 0 }}>
                     Quản Lý Thông Báo Hệ Thống
                 </Title>
-                <Tooltip title="Thêm thông báo mới">
-                    <Button
-                        type="text"
+                <Flex gap="small">
+                    <AdminDeleteAllButton
+                        entityLabel="thông báo"
+                        count={notifications.length}
+                        loading={deleteAllLoading}
+                        onConfirm={handleDeleteAll}
+                    />
+                    <AdminIconButton
+                        label="Thêm thông báo mới"
                         icon={<PlusOutlined />}
-                        aria-label="Thêm thông báo mới"
-                        className="dp-admin-action-button"
                         onClick={() => {
                             setEditingItem(null);
                             setIsModalVisible(true);
                         }}
                     />
-                </Tooltip>
+                </Flex>
             </Flex>
             <Table
                 dataSource={notifications}

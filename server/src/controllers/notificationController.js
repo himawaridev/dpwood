@@ -73,10 +73,24 @@ const deleteNotification = async (req, res) => {
     }
 };
 
+const deleteAllNotifications = async (req, res) => {
+    try {
+        const deletedCount = await Notification.destroy({ where: {} });
+        res.status(200).json({
+            message: `Đã xóa ${deletedCount} thông báo`,
+            deletedCount,
+        });
+    } catch (error) {
+        console.error("Lỗi deleteAllNotifications:", error);
+        res.status(500).json({ message: "Lỗi xóa tất cả thông báo", error: error.message });
+    }
+};
+
 module.exports = {
     getActiveNotifications,
     getAllNotifications,
     createNotification,
     updateNotification,
     deleteNotification,
+    deleteAllNotifications,
 };
