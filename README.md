@@ -391,6 +391,7 @@ Base URL local: `http://localhost:5000/api`.
 | Discounts | `/discounts` | Ưu đãi và kiểm tra điều kiện |
 | Blogs | `/blogs` | Bài viết, bình luận và quản trị nội dung |
 | Notifications | `/notifications` | Thông báo storefront/admin |
+| Banners | `/banners` | Banner trang chủ và quản trị nội dung trình chiếu |
 | Support | `/support` | Ticket người dùng và quản trị |
 | Newsletter | `/newsletter` | Subscribe/confirm/unsubscribe và chiến dịch email |
 | Upload | `/upload` | Upload ảnh Cloudinary |

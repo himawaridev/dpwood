@@ -26,6 +26,7 @@ const Wishlist = require("./models/wishlist");
 require("./models/productCategory");
 require("./models/newsletterSubscriber");
 require("./models/emailCampaign");
+require("./models/banner");
 const { startEmailCampaignWorker } = require("./services/emailCampaignService");
 
 // Routers
@@ -42,6 +43,7 @@ const couponRoutes = require("./routers/couponRoutes");
 const discountRoutes = require("./routers/discountRoutes");
 const aiRoutes = require("./routers/aiRoutes");
 const newsletterRoutes = require("./routers/newsletterRoutes");
+const bannerRoutes = require("./routers/bannerRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -266,6 +268,7 @@ const routes = {
     "/api/discounts": discountRoutes,
     "/api/ai": aiRoutes,
     "/api/newsletter": newsletterRoutes,
+    "/api/banners": bannerRoutes,
 };
 
 Object.entries(routes).forEach(([path, route]) => {

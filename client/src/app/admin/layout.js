@@ -24,6 +24,7 @@ import {
     SwapOutlined,
     MailOutlined,
     StarOutlined,
+    PictureOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -42,6 +43,7 @@ const ADMIN_ROUTE_KEYS = [
     "/admin/blogs",
     "/admin/coupons",
     "/admin/newsletter",
+    "/admin/banners",
 ];
 
 export default function AdminLayout({ children }) {
@@ -115,6 +117,7 @@ export default function AdminLayout({ children }) {
             ],
         },
         { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "Sản phẩm" },
+        { key: "/admin/banners", icon: <PictureOutlined />, label: "Banner trang chủ" },
         { key: "/admin/reviews", icon: <StarOutlined />, label: "Đánh giá" },
         { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
         { key: "/admin/notifications", icon: <BellOutlined />, label: "Thông báo" },

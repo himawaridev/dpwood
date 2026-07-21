@@ -13,10 +13,10 @@ import {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import api from "@/utils/axios";
-import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
 import { addCatalogProductToCart } from "@/utils/cartStorage";
 import { getProductImage } from "@/utils/productImages";
+import { formatBannerPriceText } from "@/utils/bannerPrice";
 import HomeServiceStrip from "@/components/home/HomeServiceStrip";
 import HomeProductSection from "@/components/home/HomeProductSection";
 import HomeViewAllLink from "@/components/home/HomeViewAllLink";
@@ -104,6 +104,7 @@ export default function LatestProducts() {
     const [productCategories, setProductCategories] = useState([]);
     const [blogs, setBlogs] = useState([]);
     const [coupons, setCoupons] = useState([]);
+    const [banners, setBanners] = useState([]);
     const [claimedCouponIds, setClaimedCouponIds] = useState(new Set());
     const [couponWalletItems, setCouponWalletItems] = useState([]);
     const [claimingCouponId, setClaimingCouponId] = useState("");
@@ -119,11 +120,12 @@ export default function LatestProducts() {
             const storedClaimedCoupons = readStoredClaimedCoupons();
             setClaimedCouponIds(storedClaimedCoupons);
 
-            const [productResponse, categoryResponse, blogResponse, couponResponse] = await Promise.allSettled([
+            const [productResponse, categoryResponse, blogResponse, couponResponse, bannerResponse] = await Promise.allSettled([
                 fetchProductsWithWakeRetry(),
                 api.get("/products/categories", { timeout: 12000 }),
                 api.get("/blogs?public=true", { timeout: 12000 }),
                 api.get("/coupons/active", { timeout: 12000 }),
+                api.get("/banners/active", { timeout: 12000 }),
             ]);
 
             setProducts(productResponse.status === "fulfilled" ? productResponse.value : []);
@@ -131,6 +133,7 @@ export default function LatestProducts() {
                 categoryResponse.status === "fulfilled" ? categoryResponse.value.data || [] : [],
             );
             setBlogs(blogResponse.status === "fulfilled" ? blogResponse.value.data || [] : []);
+            setBanners(bannerResponse.status === "fulfilled" ? bannerResponse.value.data || [] : []);
             const activeCoupons = couponResponse.status === "fulfilled" ? couponResponse.value.data || [] : [];
 
             if (token) {
@@ -194,23 +197,9 @@ export default function LatestProducts() {
     const homepageCouponItems = couponSource;
     const blogSource = blogs.filter((blog) => blog?.title);
     const homepageBlogs = useMemo(() => blogSource.slice(0, 3), [blogSource]);
-    const heroProducts = useMemo(
-        () =>
-            [...products]
-                .filter((product) => isUsableCategoryImage(getProductImage(product)))
-                .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
-                .slice(0, 3)
-                .map((product, index) => ({
-                    key: product.id || `${product.name}-${index}`,
-                    product,
-                    title: product.name || "DPWOOD Kitchen",
-                    copy:
-                        product.description ||
-                        `${product.categoryLabel || getKitchenCategoryLabel(product.category)} được chọn lọc cho căn bếp gọn gàng, tiện dụng và bền đẹp.`,
-                    image: getProductImage(product),
-                    price: Number(product.price || 0),
-                })),
-        [products],
+    const heroBanners = useMemo(
+        () => banners.filter((banner) => banner?.imageUrl && banner?.title),
+        [banners],
     );
 
     const categoryCards = useMemo(() => {
@@ -237,6 +226,12 @@ export default function LatestProducts() {
     const goToProduct = (product) => {
         if (!product?.id) return;
         router.push(`/products/${product.id}`);
+    };
+
+    const goToBannerLink = (link) => {
+        const target = String(link || "/products");
+        if (target.startsWith("https://")) window.location.assign(target);
+        else router.push(target);
     };
 
     const handleAddToCart = (product) => {
@@ -458,27 +453,31 @@ export default function LatestProducts() {
                         }
                     }}
                 >
-                    {heroProducts.map((slide) => (
-                        <div key={slide.key}>
+                    {heroBanners.map((slide) => (
+                        <div key={slide.id}>
                             <div
                                 className="webcake-hero-slide"
-                                style={{ "--webcake-hero-image": `url(${slide.image})` }}
+                                style={{ "--webcake-hero-image": `url(${slide.imageUrl})` }}
                             >
                                 <div className="webcake-hero-copy">
-                                    <span className="webcake-hero-eyebrow">Nổi bật cho gian bếp</span>
+                                    {slide.eyebrow && <span className="webcake-hero-eyebrow">{slide.eyebrow}</span>}
                                     <Title level={1}>{slide.title}</Title>
-                                    <Paragraph className="dp-line-clamp-2">{slide.copy}</Paragraph>
-                                    <Text className="webcake-hero-price">
-                                        {slide.price.toLocaleString("vi-VN")}đ
-                                    </Text>
-                                    <Button type="primary" onClick={() => goToProduct(slide.product)}>
-                                        XEM SẢN PHẨM
+                                    {slide.description && (
+                                        <Paragraph className="dp-line-clamp-2">{slide.description}</Paragraph>
+                                    )}
+                                    {slide.priceText && (
+                                        <Text className="webcake-hero-price">
+                                            {formatBannerPriceText(slide.priceText)}
+                                        </Text>
+                                    )}
+                                    <Button type="primary" onClick={() => goToBannerLink(slide.buttonLink)}>
+                                        {slide.buttonText || "XEM SẢN PHẨM"}
                                     </Button>
                                 </div>
                             </div>
                         </div>
                     ))}
-                    {!heroProducts.length && loading && (
+                    {!heroBanners.length && loading && (
                         <div>
                             <div className="webcake-hero-slide webcake-hero-empty">
                                 <div className="webcake-hero-copy">
@@ -487,9 +486,12 @@ export default function LatestProducts() {
                             </div>
                         </div>
                     )}
-                    {!heroProducts.length && !loading && (
+                    {!heroBanners.length && !loading && (
                         <div>
-                            <div className="webcake-hero-slide webcake-hero-empty">
+                            <div
+                                className="webcake-hero-slide"
+                                style={{ "--webcake-hero-image": "url(/linkbanner.png)" }}
+                            >
                                 <div className="webcake-hero-copy">
                                     <span className="webcake-hero-eyebrow">Gian bếp DPWOOD</span>
                                     <Title level={1}>Đồ gia dụng nhà bếp cho từng bữa ăn</Title>
