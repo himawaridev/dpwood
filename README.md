@@ -557,7 +557,7 @@ Google Identity Services dùng credential popup nên không cần tự thêm cal
 
 ### Giữ backend Render hoạt động
 
-Repository có workflow [`.github/workflows/keep-render-awake.yml`](.github/workflows/keep-render-awake.yml) gọi health endpoint khoảng 10 phút/lần. Xem hướng dẫn tại [docs/RENDER_KEEP_ALIVE.md](docs/RENDER_KEEP_ALIVE.md).
+Repository có workflow [`.github/workflows/keep-render-awake.yml`](.github/workflows/keep-render-awake.yml) gọi health endpoint khoảng 5 phút/lần. Client cũng ping nhẹ mỗi 10 phút khi có tab đang mở, nhưng chỉ đóng vai trò dự phòng. Xem hướng dẫn tại [docs/RENDER_KEEP_ALIVE.md](docs/RENDER_KEEP_ALIVE.md).
 
 GitHub scheduled workflow là best-effort và có thể trễ. Nếu cần ổn định hơn, dùng UptimeRobot/Better Stack/cron-job.org gọi:
 

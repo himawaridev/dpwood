@@ -3,7 +3,7 @@ name: Keep Render API Awake
 on:
   schedule:
     # Avoid round minutes because GitHub reports higher scheduler load there.
-    - cron: "3,13,23,33,43,53 * * * *"
+    - cron: "3/5 * * * *"
   workflow_dispatch:
 
 permissions:

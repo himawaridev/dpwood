@@ -471,7 +471,10 @@ const initializeDatabase = async () => {
                 console.log("Added variants column to Products via QueryInterface");
             }
             const productColumns = {
-                sku: { type: DataTypes.STRING(120), allowNull: true, unique: true },
+                // Add the column first. TiDB can reject ADD COLUMN when Sequelize
+                // combines it with a UNIQUE constraint, which previously stopped
+                // every remaining product migration from running.
+                sku: { type: DataTypes.STRING(120), allowNull: true },
                 gtin: { type: DataTypes.STRING(32), allowNull: true },
                 mpn: { type: DataTypes.STRING(100), allowNull: true },
                 dimensions: { type: DataTypes.STRING(150), allowNull: true },
@@ -485,8 +488,12 @@ const initializeDatabase = async () => {
             };
             for (const [column, definition] of Object.entries(productColumns)) {
                 if (!tableDesc[column]) {
-                    await queryInterface.addColumn("Products", column, definition);
-                    console.log(`Added ${column} column to Products via QueryInterface`);
+                    try {
+                        await queryInterface.addColumn("Products", column, definition);
+                        console.log(`Added ${column} column to Products via QueryInterface`);
+                    } catch (columnError) {
+                        console.warn(`Could not add Products.${column}: ${columnError.message}`);
+                    }
                 }
             }
         } catch (e) {
@@ -505,12 +512,36 @@ const initializeDatabase = async () => {
             };
             for (const [column, definition] of Object.entries(ratingColumns)) {
                 if (!tableDesc[column]) {
-                    await queryInterface.addColumn("ProductRatings", column, definition);
-                    console.log(`Added ${column} column to ProductRatings via QueryInterface`);
+                    try {
+                        await queryInterface.addColumn("ProductRatings", column, definition);
+                        console.log(`Added ${column} column to ProductRatings via QueryInterface`);
+                    } catch (columnError) {
+                        console.warn(`Could not add ProductRatings.${column}: ${columnError.message}`);
+                    }
                 }
             }
         } catch (e) {
             console.log("QueryInterface ProductRatings check skipped:", e.message);
+        }
+
+        // Do not advertise the database as ready while a partially applied
+        // schema would make every product or wishlist query fail at runtime.
+        const requiredSchema = {
+            Products: [
+                "sku", "gtin", "mpn", "dimensions", "weight", "packageContents",
+                "careInstructions", "safetyInstructions", "specifications",
+                "returnEligible", "returnWindowDays",
+            ],
+            ProductRatings: [
+                "comment", "images", "isVerifiedPurchase", "orderId", "source", "managedById",
+            ],
+        };
+        for (const [tableName, requiredColumns] of Object.entries(requiredSchema)) {
+            const description = await queryInterface.describeTable(tableName);
+            const missingColumns = requiredColumns.filter((column) => !description[column]);
+            if (missingColumns.length) {
+                throw new Error(`Schema migration incomplete: ${tableName}.${missingColumns.join(", ")}`);
+            }
         }
 
         try {

@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./Providers";
 import AppBootLoader from "@/components/AppBootLoader";
+import BackendKeepAlive from "@/components/BackendKeepAlive";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
     <html lang="vi" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <AppBootLoader />
+        <BackendKeepAlive />
         <Providers>{children}</Providers>
       </body>
     </html>
