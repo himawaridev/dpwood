@@ -12,6 +12,12 @@ services:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql # Giữ lại dữ liệu DB ngay cả khi xóa container
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
 
   # 2. BACKEND NODE.JS
   server:
@@ -19,7 +25,7 @@ services:
     container_name: dpwood_server
     restart: always
     ports:
-      - "5000:5000"
+      - "${SERVER_PORT:-5000}:5000"
     # 🔴 BẢO DOCKER ĐỌC THẲNG FILE .ENV CỦA SERVER
     env_file:
       - ./server/.env
@@ -32,7 +38,18 @@ services:
       - DB_USER=root
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-change_me_strong_password}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:5000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   # 3. FRONTEND NEXT.JS
   client:
@@ -42,11 +59,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # URL để gọi API (Dùng cho Client Component thì vẫn gọi qua localhost)
-      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+      # Next.js proxy gọi backend bằng DNS service trong Docker network.
       - BACKEND_API_URL=http://server:5000/api
     depends_on:
-      - server
+      server:
+        condition: service_healthy
 
 volumes:
   db_data: # Khai báo volume để lưu trữ Database vĩnh viễn

@@ -2,13 +2,12 @@ import axios from "axios";
 
 const getBaseURL = () => {
     if (typeof window !== "undefined") {
-        const localHosts = ["localhost", "127.0.0.1", "::1"];
-        if (!localHosts.includes(window.location.hostname)) {
-            return "/api";
-        }
+        // Browser requests always use the Next.js same-origin proxy. This keeps
+        // Docker, local development and production independent of host API ports.
+        return "/api";
     }
-    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-    return "http://localhost:5000/api";
+
+    return process.env.BACKEND_API_URL || "http://localhost:5000/api";
 };
 
 const storage = {

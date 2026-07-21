@@ -3,9 +3,13 @@ const ProductRating = require("../models/productRating");
 const Wishlist = require("../models/wishlist");
 const AuditLog = require("../models/auditLog");
 const ProductCategory = require("../models/productCategory");
+const Order = require("../models/order");
+const OrderItem = require("../models/orderItem");
+const User = require("../models/user");
 const { sequelize } = require("../config/connectSequelize");
-const { Op } = require("sequelize");
+const { Op, fn, col } = require("sequelize");
 const { normalizeProductImagePayload } = require("../utils/productImageUrl");
+const { normalizeProductPayload, validateProductPayload } = require("../utils/productData");
 
 const productForResponse = (product) =>
     normalizeProductImagePayload(product?.toJSON ? product.toJSON() : product);
@@ -193,40 +197,60 @@ const normalizeRating = (rating) => {
     return Math.min(5, Math.max(1, Math.round(ratingValue * 2) / 2));
 };
 
-const refreshProductRatingSummary = async (product) => {
-    const ratings = await ProductRating.findAll({
+const refreshProductRatingSummary = async (product, transaction = null) => {
+    const summary = await ProductRating.findOne({
         where: { productId: product.id },
-        attributes: ["rating"],
+        attributes: [
+            [fn("COUNT", col("id")), "ratingCount"],
+            [fn("AVG", col("rating")), "averageRating"],
+        ],
+        raw: true,
+        transaction,
     });
 
-    const ratingCount = ratings.length;
-    const averageRating = ratingCount
-        ? ratings.reduce((sum, item) => sum + Number(item.rating || 0), 0) / ratingCount
-        : 0;
+    const ratingCount = Number(summary?.ratingCount || 0);
+    const averageRating = Number(summary?.averageRating || 0);
 
     await product.update({
         rating: Number(averageRating.toFixed(2)),
         ratingCount,
-    });
+    }, { transaction });
 
     return product;
 };
 
+const findVerifiedPurchase = async (userId, product) => {
+    const equivalentProducts = await Product.findAll({
+        where: {
+            [Op.or]: [
+                { id: product.id },
+                ...(product.name ? [{ name: product.name }] : []),
+            ],
+        },
+        attributes: ["id"],
+        paranoid: false,
+    });
+    const productIds = [...new Set([product.id, ...equivalentProducts.map((item) => item.id)])];
+    return OrderItem.findOne({
+        where: { productId: { [Op.in]: productIds } },
+        include: [{
+            model: Order,
+            required: true,
+            where: {
+                userId,
+                [Op.or]: [
+                    { status: "COMPLETED" },
+                    { paymentMethod: "QR", status: { [Op.in]: ["PAID", "SHIPPING"] } },
+                ],
+            },
+            attributes: ["id", "orderCode", "status", "paymentMethod", "createdAt"],
+        }],
+        order: [[Order, "createdAt", "DESC"]],
+    });
+};
+
 const getAllProducts = async (req, res) => {
     try {
-        const storedProducts = await Product.findAll({
-            where: { isActive: true },
-            order: [["createdAt", "DESC"]],
-        });
-        const categoryRows = await getActiveProductCategories();
-        const categoryLabels = new Map(categoryRows.map((item) => [item.value, item.label]));
-        const allProducts = storedProducts.map((product) => {
-            const normalized = productForResponse(product);
-            return {
-                ...normalized,
-                categoryLabel: categoryLabels.get(normalized.category) || normalized.category,
-            };
-        });
         const query = req.query.search || req.query.q || "";
         const categories = normalizeListParam(req.query.category);
         const colors = normalizeListParam(req.query.color);
@@ -237,35 +261,69 @@ const getAllProducts = async (req, res) => {
         const minRating = parseNumber(req.query.minRating);
         const onlyInStock = String(req.query.inStock || "").toLowerCase() === "true";
         const sortBy = String(req.query.sort || req.query.sortBy || "newest");
+        const usePagination = req.query.page !== undefined || req.query.limit !== undefined;
+        const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(60, Math.max(1, Number.parseInt(req.query.limit, 10) || 12));
+        const where = { isActive: true };
+        const and = [];
+        if (query.trim()) {
+            const pattern = `%${query.trim()}%`;
+            and.push({
+                [Op.or]: ["name", "description", "sku", "category", "material", "brand", "capacity"].map(
+                    (field) => ({ [field]: { [Op.like]: pattern } }),
+                ),
+            });
+        }
+        if (categories.length) and.push({ category: { [Op.in]: categories } });
+        if (colors.length) and.push({ color: { [Op.in]: colors } });
+        if (materials.length) and.push({ material: { [Op.in]: materials } });
+        if (brands.length) and.push({ brand: { [Op.in]: brands } });
+        if (minPrice !== null || maxPrice !== null) {
+            const priceWhere = {};
+            if (minPrice !== null) priceWhere[Op.gte] = minPrice;
+            if (maxPrice !== null) priceWhere[Op.lte] = maxPrice;
+            and.push({ price: priceWhere });
+        }
+        if (minRating !== null && minRating > 0) and.push({ rating: { [Op.gte]: minRating } });
+        if (onlyInStock) and.push({ stock: { [Op.gt]: 0 } });
+        const ids = normalizeListParam(req.query.ids).slice(0, 500);
+        if (ids.length) and.push({ id: { [Op.in]: ids } });
+        if (and.length) where[Op.and] = and;
 
-        let products = allProducts.filter((product) => {
-            const price = Number(product.price || 0);
-            const rating = Number(product.rating || 0);
-            return (
-                productMatchesQuery(product, query) &&
-                productMatchesList(product.category, categories) &&
-                productMatchesList(product.color, colors) &&
-                productMatchesList(product.material, materials) &&
-                productMatchesList(product.brand, brands) &&
-                (minPrice === null || price >= minPrice) &&
-                (maxPrice === null || price <= maxPrice) &&
-                (minRating === null || rating >= minRating) &&
-                (!onlyInStock || Number(product.stock || 0) > 0)
-            );
+        const sortMap = {
+            priceAsc: [["price", "ASC"]],
+            priceDesc: [["price", "DESC"]],
+            sold: [["sold", "DESC"]],
+            rating: [["rating", "DESC"], ["ratingCount", "DESC"]],
+            newest: [["createdAt", "DESC"]],
+        };
+        const result = await Product.findAndCountAll({
+            where,
+            order: sortMap[sortBy] || sortMap.newest,
+            distinct: true,
+            ...(usePagination ? { limit, offset: (page - 1) * limit } : {}),
+        });
+        const categoryRows = await getActiveProductCategories();
+        const categoryLabels = new Map(categoryRows.map((item) => [item.value, item.label]));
+        const products = result.rows.map((product) => {
+            const normalized = productForResponse(product);
+            return { ...normalized, categoryLabel: categoryLabels.get(normalized.category) || normalized.category };
         });
 
-        products = products.sort((a, b) => {
-            if (sortBy === "priceAsc") return Number(a.price || 0) - Number(b.price || 0);
-            if (sortBy === "priceDesc") return Number(b.price || 0) - Number(a.price || 0);
-            if (sortBy === "sold") return Number(b.sold || 0) - Number(a.sold || 0);
-            if (sortBy === "rating") return Number(b.rating || 0) - Number(a.rating || 0);
-            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-        });
-
-        if (String(req.query.withFacets || "").toLowerCase() === "true") {
+        if (String(req.query.withFacets || "").toLowerCase() === "true" || usePagination) {
+            const facetRows = await Product.findAll({
+                where: { isActive: true },
+                attributes: ["category", "material", "color", "brand", "capacity", "price"],
+            });
             return res.status(200).json({
                 products,
-                facets: buildProductFacets(allProducts),
+                facets: buildProductFacets(facetRows.map((item) => item.toJSON())),
+                pagination: {
+                    page,
+                    limit: usePagination ? limit : result.count,
+                    total: result.count,
+                    totalPages: usePagination ? Math.max(1, Math.ceil(result.count / limit)) : 1,
+                },
             });
         }
 
@@ -396,7 +454,17 @@ const getMyProductRating = async (req, res) => {
             },
         });
 
-        res.status(200).json({ rating: rating ? Number(rating.rating) : 0 });
+        const purchase = await findVerifiedPurchase(req.user.id, product);
+        res.status(200).json({
+            rating: rating ? Number(rating.rating) : 0,
+            comment: rating?.comment || "",
+            images: Array.isArray(rating?.images) ? rating.images : [],
+            canRate: Boolean(purchase),
+            isVerifiedPurchase: Boolean(rating?.isVerifiedPurchase),
+            eligibilityMessage: purchase
+                ? "Bạn đã thanh toán sản phẩm này và có thể đánh giá hoặc cập nhật đánh giá."
+                : "Chỉ khách hàng có đơn đã thanh toán hoặc hoàn tất mới có thể đánh giá sản phẩm.",
+        });
     } catch (error) {
         console.error("getMyProductRating error:", error);
         res.status(500).json({ message: "Khong the lay danh gia san pham", error: error.message });
@@ -413,10 +481,26 @@ const rateProduct = async (req, res) => {
             return res.status(400).json({ message: "Diem danh gia phai tu 1 den 5 sao" });
         }
 
+        const purchase = await findVerifiedPurchase(req.user.id, product);
+        if (!purchase) {
+            return res.status(403).json({
+                message: "Chỉ khách hàng có đơn đã thanh toán hoặc hoàn tất mới có thể đánh giá sản phẩm này.",
+            });
+        }
+
+        const comment = String(req.body.comment || "").trim().slice(0, 2000);
+        const reviewImages = normalizeProductImagePayload({ images: req.body.images }).images.slice(0, 5);
+
         await ProductRating.upsert({
             productId: product.id,
             userId: req.user.id,
             rating: ratingValue,
+            comment: comment || null,
+            images: reviewImages,
+            isVerifiedPurchase: true,
+            orderId: purchase.orderId,
+            source: "CUSTOMER",
+            managedById: null,
         });
 
         await refreshProductRatingSummary(product);
@@ -425,6 +509,8 @@ const rateProduct = async (req, res) => {
             message: "Cam on ban da danh gia san pham",
             product,
             userRating: ratingValue,
+            comment,
+            isVerifiedPurchase: true,
         });
     } catch (error) {
         console.error("rateProduct error:", error);
@@ -434,54 +520,15 @@ const rateProduct = async (req, res) => {
 
 const createProduct = async (req, res) => {
     try {
-        const {
-            name,
-            description,
-            price,
-            stock,
-            sold,
-            imageUrl,
-            images,
-            variants,
-            category,
-            material,
-            color,
-            brand,
-            capacity,
-            warranty,
-            origin,
-            dishwasherSafe,
-            microwaveSafe,
-        } = req.body;
-        if (!name || !price) {
-            return res.status(400).json({ message: "Ten va gia san pham la bat buoc" });
+        const payload = normalizeProductPayload(req.body);
+        const validationErrors = validateProductPayload(payload);
+        if (validationErrors.length) {
+            return res.status(400).json({ message: validationErrors[0], errors: validationErrors });
         }
+        const existingSku = await Product.findOne({ where: { sku: payload.sku } });
+        if (existingSku) return res.status(409).json({ message: "SKU đã tồn tại" });
 
-        const soldQuantity = sold === undefined || sold === null || sold === "" ? 0 : Number(sold);
-        if (!Number.isInteger(soldQuantity) || soldQuantity < 0) {
-            return res.status(400).json({ message: "So luong da ban phai la so nguyen khong am" });
-        }
-
-        const imagePayload = normalizeProductImagePayload({ imageUrl, images, variants });
-        const newProduct = await Product.create({
-            name,
-            description,
-            price,
-            stock,
-            sold: soldQuantity,
-            imageUrl: imagePayload.imageUrl,
-            images: imagePayload.images,
-            variants: imagePayload.variants,
-            category,
-            material,
-            color,
-            brand,
-            capacity,
-            warranty,
-            origin,
-            dishwasherSafe,
-            microwaveSafe,
-        });
+        const newProduct = await Product.create(payload);
         res.status(201).json({ message: "Them san pham thanh cong", product: productForResponse(newProduct) });
     } catch (error) {
         console.error("createProduct error:", error);
@@ -494,100 +541,24 @@ const updateProduct = async (req, res) => {
         const product = await Product.findOne({ where: { id: req.params.id, isActive: true } });
         if (!product) return res.status(404).json({ message: "Khong tim thay san pham" });
 
+        const payload = normalizeProductPayload(req.body, product.toJSON());
+        const validationErrors = validateProductPayload(payload);
+        if (validationErrors.length) {
+            return res.status(400).json({ message: validationErrors[0], errors: validationErrors });
+        }
+        const existingSku = await Product.findOne({
+            where: { sku: payload.sku, id: { [Op.ne]: product.id } },
+        });
+        if (existingSku) return res.status(409).json({ message: "SKU đã tồn tại" });
+
         const editableFields = [
-            "name",
-            "description",
-            "imageUrl",
-            "images",
-            "category",
-            "material",
-            "color",
-            "brand",
-            "capacity",
-            "warranty",
-            "origin",
-            "dishwasherSafe",
-            "microwaveSafe",
+            "name", "description", "sku", "gtin", "mpn", "price", "stock", "sold",
+            "imageUrl", "images", "variants", "category", "material", "color", "brand",
+            "capacity", "dimensions", "weight", "warranty", "origin", "packageContents",
+            "careInstructions", "safetyInstructions", "specifications", "dishwasherSafe",
+            "microwaveSafe", "returnEligible", "returnWindowDays",
         ];
-        const updates = {};
-        for (const field of editableFields) {
-            if (Object.prototype.hasOwnProperty.call(req.body, field)) updates[field] = req.body[field];
-        }
-
-        if (
-            Object.prototype.hasOwnProperty.call(req.body, "imageUrl") ||
-            Object.prototype.hasOwnProperty.call(req.body, "images")
-        ) {
-            const imagePayload = normalizeProductImagePayload({
-                imageUrl: Object.prototype.hasOwnProperty.call(req.body, "imageUrl")
-                    ? req.body.imageUrl
-                    : product.imageUrl,
-                images: Object.prototype.hasOwnProperty.call(req.body, "images") ? req.body.images : product.images,
-            });
-            updates.imageUrl = imagePayload.imageUrl;
-            updates.images = imagePayload.images;
-        }
-
-        if (Object.prototype.hasOwnProperty.call(req.body, "price")) {
-            const price = Number(req.body.price);
-            if (!Number.isFinite(price) || price < 0) {
-                return res.status(400).json({ message: "Gia san pham khong hop le" });
-            }
-            updates.price = price;
-        }
-
-        if (Object.prototype.hasOwnProperty.call(req.body, "stock")) {
-            const stock = Number(req.body.stock);
-            if (!Number.isInteger(stock) || stock < 0) {
-                return res.status(400).json({ message: "Ton kho phai la so nguyen khong am" });
-            }
-            updates.stock = stock;
-        }
-
-        if (Object.prototype.hasOwnProperty.call(req.body, "sold")) {
-            const sold = Number(req.body.sold);
-            if (!Number.isInteger(sold) || sold < 0) {
-                return res.status(400).json({ message: "So luong da ban phai la so nguyen khong am" });
-            }
-            updates.sold = sold;
-        }
-
-        if (Object.prototype.hasOwnProperty.call(req.body, "variants")) {
-            if (!Array.isArray(req.body.variants)) {
-                return res.status(400).json({ message: "Danh sach bien the khong hop le" });
-            }
-
-            const variants = [];
-            for (const variant of req.body.variants) {
-                if (!variant || typeof variant !== "object") {
-                    return res.status(400).json({ message: "Du lieu bien the khong hop le" });
-                }
-
-                const variantPrice = Number(variant.price ?? updates.price ?? product.price);
-                const variantStock = Number(variant.stock);
-                if (!Number.isFinite(variantPrice) || variantPrice < 0) {
-                    return res.status(400).json({ message: "Gia bien the khong hop le" });
-                }
-                if (!Number.isInteger(variantStock) || variantStock < 0) {
-                    return res.status(400).json({ message: "Ton kho bien the phai la so nguyen khong am" });
-                }
-
-                variants.push({
-                    variantId: String(variant.variantId || `variant-${Date.now()}-${variants.length}`),
-                    color: String(variant.color || "").trim(),
-                    size: String(variant.size || variant.capacity || "").trim(),
-                    price: variantPrice,
-                    stock: variantStock,
-                    imageUrl: String(variant.imageUrl || "").trim(),
-                });
-            }
-
-            updates.variants = normalizeProductImagePayload({ variants }).variants;
-            if (variants.length) {
-                updates.stock = variants.reduce((sum, variant) => sum + variant.stock, 0);
-            }
-        }
-
+        const updates = Object.fromEntries(editableFields.map((field) => [field, payload[field]]));
         await product.update(updates);
         await product.reload();
         res.status(200).json({ message: "Cap nhat san pham thanh cong", product: productForResponse(product) });
@@ -609,6 +580,211 @@ const deleteProduct = async (req, res) => {
     } catch (error) {
         console.error("deleteProduct error:", error);
         res.status(500).json({ message: "Khong the xoa san pham", error: error.message });
+    }
+};
+
+const getProductReviews = async (req, res) => {
+    try {
+        const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(20, Math.max(1, Number.parseInt(req.query.limit, 10) || 6));
+        const product = await Product.findOne({ where: { id: req.params.id, isActive: true }, attributes: ["id"] });
+        if (!product) return res.status(404).json({ message: "Sản phẩm không tồn tại" });
+
+        const result = await ProductRating.findAndCountAll({
+            where: { productId: product.id },
+            include: [{ model: User, attributes: ["id", "name", "avatarUrl"] }],
+            order: [["updatedAt", "DESC"]],
+            limit,
+            offset: (page - 1) * limit,
+        });
+        res.status(200).json({
+            reviews: result.rows.map((review) => ({
+                id: review.id,
+                rating: Number(review.rating),
+                comment: review.comment || "",
+                images: Array.isArray(review.images) ? review.images : [],
+                isVerifiedPurchase: Boolean(review.isVerifiedPurchase),
+                source: review.source || "CUSTOMER",
+                updatedAt: review.updatedAt,
+                user: review.User
+                    ? { id: review.User.id, name: review.User.name, avatarUrl: review.User.avatarUrl }
+                    : null,
+            })),
+            pagination: { page, limit, total: result.count, totalPages: Math.max(1, Math.ceil(result.count / limit)) },
+        });
+    } catch (error) {
+        console.error("getProductReviews error:", error);
+        res.status(500).json({ message: "Không thể tải đánh giá sản phẩm", error: error.message });
+    }
+};
+
+const getAdminProductRatings = async (req, res) => {
+    try {
+        const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
+        const search = String(req.query.search || "").trim();
+        const where = {};
+
+        if (req.query.productId) where.productId = req.query.productId;
+        if (req.query.rating) where.rating = Number(req.query.rating);
+        if (["CUSTOMER", "ADMIN"].includes(req.query.source)) where.source = req.query.source;
+        if (req.query.verified === "true") where.isVerifiedPurchase = true;
+        if (req.query.verified === "false") where.isVerifiedPurchase = false;
+        if (search) {
+            where[Op.or] = [
+                { "$Product.name$": { [Op.like]: `%${search}%` } },
+                { "$User.name$": { [Op.like]: `%${search}%` } },
+                { "$User.email$": { [Op.like]: `%${search}%` } },
+                { comment: { [Op.like]: `%${search}%` } },
+            ];
+        }
+
+        const result = await ProductRating.findAndCountAll({
+            where,
+            include: [
+                { model: Product, attributes: ["id", "name", "imageUrl"], required: true },
+                { model: User, attributes: ["id", "name", "email", "avatarUrl"], required: true },
+            ],
+            order: [["updatedAt", "DESC"]],
+            limit,
+            offset: (page - 1) * limit,
+            distinct: true,
+            subQuery: false,
+        });
+
+        res.status(200).json({
+            ratings: result.rows,
+            pagination: {
+                page,
+                limit,
+                total: result.count,
+                totalPages: Math.max(1, Math.ceil(result.count / limit)),
+            },
+        });
+    } catch (error) {
+        console.error("getAdminProductRatings error:", error);
+        res.status(500).json({ message: "Không thể tải danh sách đánh giá", error: error.message });
+    }
+};
+
+const createAdminProductRating = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const ratingValue = normalizeRating(req.body.rating);
+        if (!ratingValue) {
+            await transaction.rollback();
+            return res.status(400).json({ message: "Điểm đánh giá phải từ 1 đến 5 sao" });
+        }
+
+        const [product, user] = await Promise.all([
+            Product.findOne({ where: { id: req.body.productId, isActive: true }, transaction }),
+            User.findByPk(req.body.userId, { transaction }),
+        ]);
+        if (!product || !user) {
+            await transaction.rollback();
+            return res.status(404).json({ message: "Không tìm thấy sản phẩm hoặc tài khoản" });
+        }
+
+        const existing = await ProductRating.findOne({
+            where: { productId: product.id, userId: user.id },
+            transaction,
+        });
+        if (existing) {
+            await transaction.rollback();
+            return res.status(409).json({
+                message: "Tài khoản này đã đánh giá sản phẩm. Hãy chỉnh sửa đánh giá hiện có.",
+            });
+        }
+
+        const purchase = await findVerifiedPurchase(user.id, product);
+        const rating = await ProductRating.create({
+            productId: product.id,
+            userId: user.id,
+            rating: ratingValue,
+            comment: String(req.body.comment || "").trim().slice(0, 2000) || null,
+            images: [],
+            isVerifiedPurchase: Boolean(purchase),
+            orderId: purchase?.orderId || null,
+            source: "ADMIN",
+            managedById: req.user.id,
+        }, { transaction });
+
+        await refreshProductRatingSummary(product, transaction);
+        await AuditLog.create({
+            userId: req.user.id,
+            action: "ADMIN_PRODUCT_RATING_CREATED",
+            details: `Tao danh gia ${rating.id} cho san pham ${product.id}, tai khoan ${user.id}.`,
+        }, { transaction });
+        await transaction.commit();
+        res.status(201).json({ message: "Đã tạo đánh giá", rating });
+    } catch (error) {
+        await transaction.rollback();
+        console.error("createAdminProductRating error:", error);
+        res.status(500).json({ message: "Không thể tạo đánh giá", error: error.message });
+    }
+};
+
+const updateAdminProductRating = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const rating = await ProductRating.findByPk(req.params.ratingId, { transaction });
+        if (!rating) {
+            await transaction.rollback();
+            return res.status(404).json({ message: "Không tìm thấy đánh giá" });
+        }
+
+        const ratingValue = normalizeRating(req.body.rating);
+        if (!ratingValue) {
+            await transaction.rollback();
+            return res.status(400).json({ message: "Điểm đánh giá phải từ 1 đến 5 sao" });
+        }
+
+        await rating.update({
+            rating: ratingValue,
+            comment: String(req.body.comment || "").trim().slice(0, 2000) || null,
+            source: "ADMIN",
+            managedById: req.user.id,
+        }, { transaction });
+        const product = await Product.findByPk(rating.productId, { transaction, paranoid: false });
+        if (product) await refreshProductRatingSummary(product, transaction);
+        await AuditLog.create({
+            userId: req.user.id,
+            action: "ADMIN_PRODUCT_RATING_UPDATED",
+            details: `Cap nhat danh gia ${rating.id} cho san pham ${rating.productId}.`,
+        }, { transaction });
+        await transaction.commit();
+        res.status(200).json({ message: "Đã cập nhật đánh giá", rating });
+    } catch (error) {
+        await transaction.rollback();
+        console.error("updateAdminProductRating error:", error);
+        res.status(500).json({ message: "Không thể cập nhật đánh giá", error: error.message });
+    }
+};
+
+const deleteAdminProductRating = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const rating = await ProductRating.findByPk(req.params.ratingId, { transaction });
+        if (!rating) {
+            await transaction.rollback();
+            return res.status(404).json({ message: "Không tìm thấy đánh giá" });
+        }
+
+        const productId = rating.productId;
+        await rating.destroy({ transaction });
+        const product = await Product.findByPk(productId, { transaction, paranoid: false });
+        if (product) await refreshProductRatingSummary(product, transaction);
+        await AuditLog.create({
+            userId: req.user.id,
+            action: "ADMIN_PRODUCT_RATING_DELETED",
+            details: `Xoa danh gia ${rating.id} cua san pham ${productId}.`,
+        }, { transaction });
+        await transaction.commit();
+        res.status(200).json({ message: "Đã xóa đánh giá" });
+    } catch (error) {
+        await transaction.rollback();
+        console.error("deleteAdminProductRating error:", error);
+        res.status(500).json({ message: "Không thể xóa đánh giá", error: error.message });
     }
 };
 
@@ -662,6 +838,11 @@ module.exports = {
     getRelatedProducts,
     getMyWishlist,
     toggleWishlist,
+    getProductReviews,
+    getAdminProductRatings,
+    createAdminProductRating,
+    updateAdminProductRating,
+    deleteAdminProductRating,
     getMyProductRating,
     rateProduct,
     createProduct,

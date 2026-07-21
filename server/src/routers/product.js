@@ -11,8 +11,33 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 router.get("/categories", productController.getProductCategories);
 router.get("/", productController.getAllProducts);
 router.get("/wishlist/me", authMiddleware, productController.getMyWishlist);
+router.get(
+    "/admin/ratings",
+    authMiddleware,
+    roleMiddleware("root", "admin"),
+    productController.getAdminProductRatings,
+);
+router.post(
+    "/admin/ratings",
+    authMiddleware,
+    roleMiddleware("root", "admin"),
+    productController.createAdminProductRating,
+);
+router.put(
+    "/admin/ratings/:ratingId",
+    authMiddleware,
+    roleMiddleware("root", "admin"),
+    productController.updateAdminProductRating,
+);
+router.delete(
+    "/admin/ratings/:ratingId",
+    authMiddleware,
+    roleMiddleware("root", "admin"),
+    productController.deleteAdminProductRating,
+);
 router.post("/:id/wishlist", authMiddleware, productController.toggleWishlist);
 router.get("/:id/related", productController.getRelatedProducts);
+router.get("/:id/reviews", productController.getProductReviews);
 router.get("/:id", productController.getProductById);
 router.get("/:id/rating", authMiddleware, productController.getMyProductRating);
 router.post("/:id/rating", authMiddleware, productController.rateProduct);

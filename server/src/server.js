@@ -470,8 +470,47 @@ const initializeDatabase = async () => {
                 });
                 console.log("Added variants column to Products via QueryInterface");
             }
+            const productColumns = {
+                sku: { type: DataTypes.STRING(120), allowNull: true, unique: true },
+                gtin: { type: DataTypes.STRING(32), allowNull: true },
+                mpn: { type: DataTypes.STRING(100), allowNull: true },
+                dimensions: { type: DataTypes.STRING(150), allowNull: true },
+                weight: { type: DataTypes.STRING(100), allowNull: true },
+                packageContents: { type: DataTypes.TEXT, allowNull: true },
+                careInstructions: { type: DataTypes.TEXT, allowNull: true },
+                safetyInstructions: { type: DataTypes.TEXT, allowNull: true },
+                specifications: { type: DataTypes.JSON, allowNull: true },
+                returnEligible: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+                returnWindowDays: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 7 },
+            };
+            for (const [column, definition] of Object.entries(productColumns)) {
+                if (!tableDesc[column]) {
+                    await queryInterface.addColumn("Products", column, definition);
+                    console.log(`Added ${column} column to Products via QueryInterface`);
+                }
+            }
         } catch (e) {
             console.log("QueryInterface Products check skipped:", e.message);
+        }
+
+        try {
+            const tableDesc = await queryInterface.describeTable("ProductRatings");
+            const ratingColumns = {
+                comment: { type: DataTypes.TEXT, allowNull: true },
+                images: { type: DataTypes.JSON, allowNull: true },
+                isVerifiedPurchase: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+                orderId: { type: DataTypes.UUID, allowNull: true },
+                source: { type: DataTypes.STRING(20), allowNull: false, defaultValue: "CUSTOMER" },
+                managedById: { type: DataTypes.UUID, allowNull: true },
+            };
+            for (const [column, definition] of Object.entries(ratingColumns)) {
+                if (!tableDesc[column]) {
+                    await queryInterface.addColumn("ProductRatings", column, definition);
+                    console.log(`Added ${column} column to ProductRatings via QueryInterface`);
+                }
+            }
+        } catch (e) {
+            console.log("QueryInterface ProductRatings check skipped:", e.message);
         }
 
         try {

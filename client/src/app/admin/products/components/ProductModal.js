@@ -132,6 +132,8 @@ export default function ProductModal({
                     sold: 0,
                     dishwasherSafe: false,
                     microwaveSafe: false,
+                    returnEligible: true,
+                    returnWindowDays: 7,
                     ...editingProduct,
                     images: currentImages.length > 0 ? currentImages : [""],
                     variants: Array.isArray(editingProduct.variants) ? editingProduct.variants : [],
@@ -143,6 +145,8 @@ export default function ProductModal({
                     sold: 0,
                     dishwasherSafe: false,
                     microwaveSafe: false,
+                    returnEligible: true,
+                    returnWindowDays: 7,
                     ...(draftProduct || {}),
                     images: draftImages,
                     variants: Array.isArray(draftProduct?.variants) ? draftProduct.variants : [],
@@ -228,6 +232,24 @@ export default function ProductModal({
                         placeholder="Mô tả công dụng, chất liệu, cách dùng và điểm nổi bật của sản phẩm..."
                     />
                 </Form.Item>
+
+                <Row gutter={16}>
+                    <Col xs={24} md={8}>
+                        <Form.Item name="sku" label="SKU" extra="Để trống để hệ thống tự tạo mã duy nhất.">
+                            <Input placeholder="VD: COOK-PAN-28-BLK" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Form.Item name="gtin" label="GTIN / mã vạch">
+                            <Input placeholder="8, 12, 13 hoặc 14 chữ số" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Form.Item name="mpn" label="MPN / mã nhà sản xuất">
+                            <Input placeholder="Mã model của nhà sản xuất" />
+                        </Form.Item>
+                    </Col>
+                </Row>
 
                 <Row gutter={16}>
                     <Col xs={24} md={8}>
@@ -332,6 +354,31 @@ export default function ProductModal({
                                 <Input placeholder="VD: Việt Nam" />
                             </Form.Item>
                         </Col>
+                        <Col xs={24} md={8}>
+                            <Form.Item name="dimensions" label="Kích thước đóng gói">
+                                <Input placeholder="VD: 32 x 20 x 12 cm" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={8}>
+                            <Form.Item name="weight" label="Khối lượng">
+                                <Input placeholder="VD: 1.2 kg" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={8}>
+                            <Form.Item name="packageContents" label="Bộ sản phẩm gồm">
+                                <Input placeholder="VD: 1 nồi, 1 nắp kính, hướng dẫn" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Form.Item name="careInstructions" label="Hướng dẫn sử dụng và bảo quản">
+                                <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Form.Item name="safetyInstructions" label="Cảnh báo an toàn">
+                                <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
+                            </Form.Item>
+                        </Col>
                         <Col xs={24} sm={12}>
                             <Form.Item
                                 name="dishwasherSafe"
@@ -350,6 +397,21 @@ export default function ProductModal({
                                 extra="Bật khi sản phẩm được phép hâm nóng trong lò vi sóng. Không áp dụng cho kim loại và không đồng nghĩa với dùng được trong lò nướng."
                             >
                                 <Switch checkedChildren="Có" unCheckedChildren="Không" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                            <Form.Item
+                                name="returnEligible"
+                                valuePropName="checked"
+                                label="Cho phép đổi trả"
+                                extra="Áp dụng khi sản phẩm còn nguyên trạng và đáp ứng chính sách của cửa hàng."
+                            >
+                                <Switch checkedChildren="Có" unCheckedChildren="Không" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                            <Form.Item name="returnWindowDays" label="Thời hạn đổi trả (ngày)">
+                                <InputNumber min={0} max={30} precision={0} style={{ width: "100%" }} />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -387,6 +449,9 @@ export default function ProductModal({
                                 {fields.map((field, index) => (
                                     <div key={field.key} className="dp-admin-variant-row">
                                         <Form.Item name={[field.name, "variantId"]} hidden>
+                                            <Input />
+                                        </Form.Item>
+                                        <Form.Item name={[field.name, "sku"]} hidden>
                                             <Input />
                                         </Form.Item>
                                         <Row gutter={12} align="middle">

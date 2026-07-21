@@ -40,6 +40,7 @@ dist/
 # Bỏ qua các ảnh/file test upload ở máy local để không làm nặng Git
 uploads/
 server/uploads/
+server/backups/
 client/public/uploads/
 
 # =========================================

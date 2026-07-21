@@ -25,6 +25,36 @@ const ProductRating = sequelize.define(
                 max: 5,
             },
         },
+        comment: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        images: {
+            type: DataTypes.JSON,
+            allowNull: true,
+            defaultValue: [],
+        },
+        isVerifiedPurchase: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        orderId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+        },
+        source: {
+            type: DataTypes.STRING(20),
+            allowNull: false,
+            defaultValue: "CUSTOMER",
+            validate: {
+                isIn: [["CUSTOMER", "ADMIN"]],
+            },
+        },
+        managedById: {
+            type: DataTypes.UUID,
+            allowNull: true,
+        },
     },
     {
         timestamps: true,
@@ -32,6 +62,9 @@ const ProductRating = sequelize.define(
             {
                 unique: true,
                 fields: ["userId", "productId"],
+            },
+            {
+                fields: ["productId", "updatedAt"],
             },
         ],
     },

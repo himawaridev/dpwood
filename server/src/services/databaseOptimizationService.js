@@ -125,6 +125,9 @@ const optimizeDatabase = async (sequelize) => {
 
     const indexDefinitions = [
         ["Products", ["isActive", "category", "createdAt"], "idx_products_active_category_created"],
+        ["Products", ["isActive", "price"], "idx_products_active_price"],
+        ["Products", ["isActive", "rating"], "idx_products_active_rating"],
+        ["Products", ["isActive", "sold"], "idx_products_active_sold"],
         ["Orders", ["userId", "createdAt"], "idx_orders_user_created"],
         ["Orders", ["status", "createdAt"], "idx_orders_status_created"],
         [
@@ -133,6 +136,8 @@ const optimizeDatabase = async (sequelize) => {
             "idx_orders_pending_qr_expiry",
         ],
         ["OrderItems", ["orderId"], "idx_order_items_order"],
+        ["OrderItems", ["productId", "orderId"], "idx_order_items_product_order"],
+        ["ProductRatings", ["productId", "updatedAt"], "idx_product_ratings_product_updated"],
         ["AuditLogs", ["userId", "createdAt"], "idx_audit_logs_user_created"],
         ["AuditLogs", ["action", "createdAt"], "idx_audit_logs_action_created"],
         ["SupportTickets", ["userId", "createdAt"], "idx_support_user_created"],

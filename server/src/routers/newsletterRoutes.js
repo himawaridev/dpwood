@@ -12,12 +12,20 @@ router.post("/confirm/:token", newsletterLimiter, newsletterController.confirmSu
 router.post("/unsubscribe/:token", newsletterLimiter, newsletterController.unsubscribe);
 router.get("/admin/recipients", ...adminOnly, newsletterController.getVerifiedRecipients);
 router.get("/admin/subscribers", ...adminOnly, newsletterController.getSubscribers);
+router.post(
+    "/admin/subscribers/:id/resend-verification",
+    ...adminOnly,
+    newsletterController.resendSubscriberVerification,
+);
+router.delete("/admin/subscribers/:id", ...adminOnly, newsletterController.deleteSubscriber);
 router.get("/admin/campaigns", ...adminOnly, newsletterController.getCampaigns);
 router.get("/admin/email-status", ...adminOnly, newsletterController.getEmailProviderStatus);
 router.post("/admin/preview", ...adminOnly, newsletterController.previewCampaign);
 router.post("/admin/test-email", ...adminOnly, newsletterController.sendTestEmail);
 router.post("/admin/send", ...adminOnly, newsletterController.sendCampaign);
 router.post("/admin/campaigns/:id/cancel", ...adminOnly, newsletterController.cancelCampaign);
+router.post("/admin/campaigns/:id/resend", ...adminOnly, newsletterController.resendCampaign);
+router.delete("/admin/campaigns/:id", ...adminOnly, newsletterController.deleteCampaign);
 router.post("/admin/send-welcome", ...adminOnly, newsletterController.sendPendingWelcomeEmails);
 
 module.exports = router;

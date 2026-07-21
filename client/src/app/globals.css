@@ -1572,12 +1572,37 @@ a {
 
 .dp-product-rating-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 18px;
   align-items: center;
   padding: 16px;
   border: 1px solid var(--dp-soft-border);
   background: #f8f8f8;
+}
+
+.dp-product-rating-panel > div {
+  min-width: 0;
+}
+
+.dp-product-rating-panel .ant-typography {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.dp-product-rating-panel .ant-rate {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.dp-product-reviews-empty .ant-card-body {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  padding: 32px 20px;
+}
+
+.dp-product-reviews-empty .ant-empty {
+  margin: 0;
 }
 
 .ant-card,

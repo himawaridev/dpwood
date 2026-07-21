@@ -117,6 +117,25 @@ const sendWelcomeOnce = async (subscriber) => {
     }
 };
 
+const sendSubscriberVerification = async (subscriber) => {
+    const now = new Date();
+    const token = createVerificationToken();
+    await subscriber.update({
+        status: "pending",
+        verificationTokenHash: hashToken(token),
+        verificationExpiresAt: new Date(now.getTime() + VERIFICATION_TTL_MS),
+        verificationSentAt: now,
+        unsubscribedAt: null,
+    });
+
+    const verificationUrl = `${frontendUrl()}/newsletter/confirm/${token}`;
+    await sendEmail(
+        subscriber.email,
+        "[DPWOOD] Xác nhận đăng ký nhận bản tin",
+        generateNewsletterVerificationHtml(verificationUrl),
+    );
+};
+
 const subscribe = async (req, res) => {
     try {
         const email = normalizeEmail(req.body.email);
@@ -135,23 +154,8 @@ const subscribe = async (req, res) => {
             return res.status(429).json({ message: "Vui lòng đợi 60 giây trước khi gửi lại email xác nhận" });
         }
 
-        const token = createVerificationToken();
-        const payload = {
-            status: "pending",
-            verificationTokenHash: hashToken(token),
-            verificationExpiresAt: new Date(now.getTime() + VERIFICATION_TTL_MS),
-            verificationSentAt: now,
-            unsubscribedAt: null,
-        };
-        if (subscriber) await subscriber.update(payload);
-        else subscriber = await NewsletterSubscriber.create({ email, ...payload });
-
-        const verificationUrl = `${frontendUrl()}/newsletter/confirm/${token}`;
-        await sendEmail(
-            email,
-            "[DPWOOD] Xác nhận đăng ký nhận bản tin",
-            generateNewsletterVerificationHtml(verificationUrl),
-        );
+        if (!subscriber) subscriber = await NewsletterSubscriber.create({ email, status: "pending" });
+        await sendSubscriberVerification(subscriber);
         return res.status(200).json({ message: "Hãy kiểm tra email để xác nhận đăng ký" });
     } catch (error) {
         console.error("newsletter subscribe error:", error.message);
@@ -175,11 +179,57 @@ const confirmSubscription = async (req, res) => {
             verificationTokenHash: null,
             verificationExpiresAt: null,
         });
-        await sendWelcomeOnce(subscriber);
-        return res.status(200).json({ message: "Đăng ký thành công. Mã chào mừng đã được gửi qua email." });
+        void sendWelcomeOnce(subscriber).catch((error) => {
+            console.error(`newsletter welcome email failed for subscriber ${subscriber.id}:`, error.message);
+        });
+        return res.status(200).json({
+            message: "Đăng ký bản tin thành công. Thư chào mừng và mã ưu đãi sẽ được gửi qua email.",
+        });
     } catch (error) {
         console.error("newsletter confirm error:", error.message);
         return res.status(500).json({ message: "Không thể hoàn tất đăng ký bản tin lúc này" });
+    }
+};
+
+const resendSubscriberVerification = async (req, res) => {
+    try {
+        const subscriber = await NewsletterSubscriber.findByPk(req.params.id);
+        if (!subscriber) return res.status(404).json({ message: "Không tìm thấy đăng ký bản tin" });
+        if (subscriber.status === "subscribed") {
+            return res.status(409).json({ message: "Email này đã xác nhận đăng ký bản tin" });
+        }
+
+        const now = new Date();
+        if (
+            subscriber.verificationSentAt
+            && now.getTime() - new Date(subscriber.verificationSentAt).getTime() < RESEND_COOLDOWN_MS
+        ) {
+            const retryAfter = Math.ceil(
+                (RESEND_COOLDOWN_MS - (now.getTime() - new Date(subscriber.verificationSentAt).getTime())) / 1000,
+            );
+            return res.status(429).json({
+                message: `Vui lòng đợi ${retryAfter} giây trước khi gửi lại email xác nhận`,
+                retryAfter,
+            });
+        }
+
+        await sendSubscriberVerification(subscriber);
+        return res.status(200).json({ message: `Đã gửi lại email xác nhận tới ${subscriber.email}` });
+    } catch (error) {
+        console.error("newsletter admin resend verification error:", error.message);
+        return res.status(502).json({ message: "Không thể gửi lại email xác nhận. Vui lòng thử lại sau." });
+    }
+};
+
+const deleteSubscriber = async (req, res) => {
+    try {
+        const subscriber = await NewsletterSubscriber.findByPk(req.params.id);
+        if (!subscriber) return res.status(404).json({ message: "Không tìm thấy đăng ký bản tin" });
+
+        await subscriber.destroy();
+        return res.status(200).json({ message: `Đã xóa ${subscriber.email} khỏi danh sách bản tin` });
+    } catch (error) {
+        return res.status(500).json({ message: "Không thể xóa đăng ký bản tin", error: error.message });
     }
 };
 
@@ -493,6 +543,84 @@ const cancelCampaign = async (req, res) => {
     }
 };
 
+const resendCampaign = async (req, res) => {
+    try {
+        const original = await EmailCampaign.findByPk(req.params.id);
+        if (!original) return res.status(404).json({ message: "Không tìm thấy chiến dịch" });
+        if (["queued", "processing"].includes(original.status)) {
+            return res.status(409).json({ message: "Chiến dịch đang được gửi và chưa thể gửi lại" });
+        }
+
+        const providerStatus = await sendEmail.getProviderStatus();
+        if (!providerStatus.readyForBulk) {
+            return res.status(503).json({
+                message: providerStatus.message,
+                provider: providerStatus.provider,
+                sender: providerStatus.sender,
+            });
+        }
+
+        const recipientSnapshotAt = new Date();
+        const recipientIds = Array.isArray(original.recipientIds) ? original.recipientIds : [];
+        const definition = await resolveCampaignDefinition({
+            audience: original.audience,
+            target: original.target,
+            userId: original.audience === "verified_users" ? recipientIds[0] : undefined,
+            userIds: original.target === "selected" ? recipientIds : undefined,
+            subscriberId: original.audience === "subscribers" ? recipientIds[0] : undefined,
+            snapshotAt: recipientSnapshotAt,
+        });
+        if (!definition.totalRecipients) {
+            return res.status(404).json({ message: "Không còn người nhận hợp lệ để gửi lại chiến dịch" });
+        }
+
+        const campaign = await EmailCampaign.create({
+            audience: original.audience,
+            target: original.target,
+            recipientIds: definition.recipientIds,
+            subject: original.subject,
+            preview: original.preview,
+            contentHtml: original.contentHtml,
+            totalRecipients: definition.totalRecipients,
+            recipientSnapshotAt,
+            createdBy: req.user.id,
+        });
+        wakeEmailCampaignWorker();
+
+        return res.status(202).json({
+            message: `Đã xếp hàng gửi lại cho ${definition.totalRecipients} người nhận`,
+            campaign: {
+                id: campaign.id,
+                status: campaign.status,
+                totalRecipients: campaign.totalRecipients,
+            },
+        });
+    } catch (error) {
+        console.error("newsletter resend campaign error:", error.message);
+        return res.status(error.statusCode || 500).json({
+            message: error.message || "Không thể gửi lại chiến dịch email",
+        });
+    }
+};
+
+const deleteCampaign = async (req, res) => {
+    try {
+        const deleted = await EmailCampaign.destroy({
+            where: {
+                id: req.params.id,
+                status: { [Op.in]: ["completed", "failed", "cancelled"] },
+            },
+        });
+        if (deleted) return res.status(200).json({ message: "Đã xóa lịch sử chiến dịch email" });
+
+        const campaign = await EmailCampaign.findByPk(req.params.id, { attributes: ["id", "status"] });
+        if (!campaign) return res.status(404).json({ message: "Không tìm thấy chiến dịch" });
+        return res.status(409).json({ message: "Hãy hủy hoặc chờ chiến dịch gửi xong trước khi xóa" });
+    } catch (error) {
+        return res.status(500).json({ message: "Không thể xóa lịch sử chiến dịch", error: error.message });
+    }
+};
+
 const sendPendingWelcomeEmails = async (req, res) => {
     try {
         const recipients = await NewsletterSubscriber.findAll({
@@ -522,6 +650,8 @@ module.exports = {
     subscribe,
     confirmSubscription,
     unsubscribe,
+    resendSubscriberVerification,
+    deleteSubscriber,
     getVerifiedRecipients,
     getSubscribers,
     getEmailProviderStatus,
@@ -530,5 +660,7 @@ module.exports = {
     sendCampaign,
     getCampaigns,
     cancelCampaign,
+    resendCampaign,
+    deleteCampaign,
     sendPendingWelcomeEmails,
 };

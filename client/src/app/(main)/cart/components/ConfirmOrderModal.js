@@ -109,7 +109,7 @@ export default function ConfirmOrderModal({
                     type="info"
                     showIcon
                     title="Thông báo đơn hàng"
-                    description="Trạng thái đơn hàng và hóa đơn điện tử sẽ được gửi về email tài khoản của bạn. Vui lòng kiểm tra biến thể, số lượng và địa chỉ trước khi chốt đơn."
+                    description="Đơn hàng dự kiến được giao trong 1-5 ngày làm việc. Sản phẩm đủ điều kiện có thể đổi trả trong 7 ngày kể từ khi nhận hàng. Trạng thái đơn và hóa đơn điện tử sẽ được gửi về email tài khoản của bạn."
                 />
             </div>
         </Modal>

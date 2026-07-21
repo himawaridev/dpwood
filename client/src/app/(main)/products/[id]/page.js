@@ -10,6 +10,7 @@ import ProductGallery from "./components/ProductGallery";
 import ProductInfo from "./components/ProductInfo";
 import ProductKitchenSpecs from "./components/ProductKitchenSpecs";
 import RelatedProducts from "./components/RelatedProducts";
+import ProductReviews from "./components/ProductReviews";
 
 const { Title } = Typography;
 
@@ -26,6 +27,9 @@ export default function ProductDetailPage() {
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [userRating, setUserRating] = useState(0);
     const [ratingSubmitting, setRatingSubmitting] = useState(false);
+    const [ratingEligibility, setRatingEligibility] = useState({ canRate: false, message: "" });
+    const [userComment, setUserComment] = useState("");
+    const [reviews, setReviews] = useState([]);
 
     useEffect(() => {
         if (!id) return;
@@ -33,9 +37,10 @@ export default function ProductDetailPage() {
         const fetchProductDetailAndRelated = async () => {
             try {
                 setLoading(true);
-                const [productRes, relatedProductsRes] = await Promise.all([
+                const [productRes, relatedProductsRes, reviewsRes] = await Promise.all([
                     api.get(`/products/${id}`),
                     api.get(`/products/${id}/related`),
+                    api.get(`/products/${id}/reviews`),
                 ]);
 
                 const data = productRes.data;
@@ -45,8 +50,15 @@ export default function ProductDetailPage() {
                 if (token) {
                     const ratingRes = await api.get(`/products/${data.id}/rating`).catch(() => ({ data: { rating: 0 } }));
                     setUserRating(Number(ratingRes.data?.rating || 0));
+                    setUserComment(ratingRes.data?.comment || "");
+                    setRatingEligibility({
+                        canRate: Boolean(ratingRes.data?.canRate),
+                        message: ratingRes.data?.eligibilityMessage || "",
+                    });
                 } else {
                     setUserRating(0);
+                    setUserComment("");
+                    setRatingEligibility({ canRate: false, message: "Đăng nhập và hoàn thành đơn hàng để đánh giá." });
                 }
 
                 const variantImages = (Array.isArray(data.variants) ? data.variants : [])
@@ -63,6 +75,7 @@ export default function ProductDetailPage() {
                 setActiveImage(fetchedImages[0]);
 
                 setRelatedProducts((relatedProductsRes.data || []).slice(0, 4));
+                setReviews(reviewsRes.data?.reviews || []);
             } catch (error) {
                 const errorMsg = error.response?.data?.message || error.response?.data?.error || "Lỗi server";
                 message.error(`Không thể tải sản phẩm: ${errorMsg}`);
@@ -122,12 +135,18 @@ export default function ProductDetailPage() {
             router.push("/login");
             return;
         }
+        if (!ratingEligibility.canRate) {
+            message.warning(ratingEligibility.message || "Chỉ khách hàng đã mua sản phẩm mới có thể đánh giá.");
+            return;
+        }
 
         try {
             setRatingSubmitting(true);
-            const response = await api.post(`/products/${product.id}/rating`, { rating });
+            const response = await api.post(`/products/${product.id}/rating`, { rating, comment: userComment });
             setProduct(response.data.product);
             setUserRating(Number(response.data.userRating || rating));
+            const reviewsResponse = await api.get(`/products/${product.id}/reviews`).catch(() => null);
+            if (reviewsResponse) setReviews(reviewsResponse.data?.reviews || []);
             message.success(userRating ? "Đã cập nhật đánh giá sản phẩm." : "Cảm ơn bạn đã đánh giá sản phẩm.");
         } catch (error) {
             message.error(error.response?.data?.message || "Không thể gửi đánh giá lúc này.");
@@ -201,13 +220,23 @@ export default function ProductDetailPage() {
                                 ratingSubmitting={ratingSubmitting}
                                 hasRatedProduct={Boolean(userRating)}
                                 userRating={userRating}
+                                canRateProduct={ratingEligibility.canRate}
+                                ratingEligibilityMessage={ratingEligibility.message}
+                                userComment={userComment}
+                                setUserComment={setUserComment}
                             />
                         </Col>
                     </Row>
 
                     <Divider style={{ margin: "34px 0" }} />
-                    <ProductDescription description={product.description} />
+                    <ProductDescription
+                        description={product.description}
+                        careInstructions={product.careInstructions}
+                        safetyInstructions={product.safetyInstructions}
+                    />
                 </section>
+
+                <ProductReviews reviews={reviews} />
 
                 <section className="dp-section">
                     <RelatedProducts

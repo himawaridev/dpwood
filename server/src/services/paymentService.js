@@ -95,4 +95,8 @@ class PaymentService {
     }
 }
 
-module.exports = new PaymentService();
+const paymentService = new PaymentService();
+
+module.exports = paymentService;
+module.exports.PaymentService = PaymentService;
+module.exports.readPayosConfig = readPayosConfig;

@@ -21,8 +21,10 @@ import {
     Typography,
 } from "antd";
 import {
+    DeleteOutlined,
     EyeOutlined,
     MailOutlined,
+    RedoOutlined,
     ReloadOutlined,
     RobotOutlined,
     SendOutlined,
@@ -80,11 +82,15 @@ export default function AdminNewsletterPage() {
     const [subscriberStatus, setSubscriberStatus] = useState("");
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [loadingSubscribers, setLoadingSubscribers] = useState(false);
+    const [resendingVerificationId, setResendingVerificationId] = useState(null);
+    const [deletingSubscriberId, setDeletingSubscriberId] = useState(null);
     const [campaigns, setCampaigns] = useState([]);
     const [campaignTotal, setCampaignTotal] = useState(0);
     const [campaignPage, setCampaignPage] = useState(1);
     const [campaignStatus, setCampaignStatus] = useState("");
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+    const [resendingCampaignId, setResendingCampaignId] = useState(null);
+    const [deletingCampaignId, setDeletingCampaignId] = useState(null);
     const [sending, setSending] = useState(false);
     const [testingEmail, setTestingEmail] = useState(false);
     const [providerStatus, setProviderStatus] = useState(null);
@@ -353,6 +359,110 @@ export default function AdminNewsletterPage() {
         });
     };
 
+    const resendCampaign = (record) => {
+        modal.confirm({
+            title: "Gửi lại chiến dịch email?",
+            content: `Hệ thống sẽ tạo một chiến dịch mới từ “${record.subject}” và kiểm tra lại những người nhận hiện còn hợp lệ.`,
+            okText: "Gửi lại",
+            cancelText: "Hủy",
+            onOk: async () => {
+                try {
+                    setResendingCampaignId(record.id);
+                    const response = await api.post(
+                        `/newsletter/admin/campaigns/${record.id}/resend`,
+                        undefined,
+                        { authRequired: true },
+                    );
+                    message.success(response.data?.message || "Đã tạo chiến dịch gửi lại");
+                    if (campaignPage === 1) await fetchCampaigns();
+                    else setCampaignPage(1);
+                } catch (error) {
+                    message.error(error.response?.data?.message || "Không thể gửi lại chiến dịch");
+                    throw error;
+                } finally {
+                    setResendingCampaignId(null);
+                }
+            },
+        });
+    };
+
+    const deleteCampaign = (record) => {
+        modal.confirm({
+            title: "Xóa lịch sử chiến dịch?",
+            content: `Chiến dịch “${record.subject}” sẽ bị xóa khỏi lịch sử. Email đã gửi và hộp thư người nhận không bị ảnh hưởng.`,
+            okText: "Xóa",
+            cancelText: "Giữ lại",
+            okButtonProps: { danger: true },
+            onOk: async () => {
+                try {
+                    setDeletingCampaignId(record.id);
+                    await api.delete(`/newsletter/admin/campaigns/${record.id}`, { authRequired: true });
+                    message.success("Đã xóa lịch sử chiến dịch email");
+                    if (campaigns.length === 1 && campaignPage > 1) setCampaignPage((page) => page - 1);
+                    else await fetchCampaigns();
+                } catch (error) {
+                    message.error(error.response?.data?.message || "Không thể xóa lịch sử chiến dịch");
+                    throw error;
+                } finally {
+                    setDeletingCampaignId(null);
+                }
+            },
+        });
+    };
+
+    const resendSubscriberVerification = (record) => {
+        modal.confirm({
+            title: "Gửi lại email xác nhận?",
+            content: `DPWOOD sẽ gửi một liên kết xác nhận mới tới ${record.email}. Liên kết cũ sẽ hết hiệu lực.`,
+            okText: "Gửi lại",
+            cancelText: "Hủy",
+            onOk: async () => {
+                try {
+                    setResendingVerificationId(record.id);
+                    const response = await api.post(
+                        `/newsletter/admin/subscribers/${record.id}/resend-verification`,
+                        undefined,
+                        { authRequired: true },
+                    );
+                    message.success(response.data?.message || "Đã gửi lại email xác nhận");
+                    await fetchSubscribers();
+                } catch (error) {
+                    message.error(error.response?.data?.message || "Không thể gửi lại email xác nhận");
+                    throw error;
+                } finally {
+                    setResendingVerificationId(null);
+                }
+            },
+        });
+    };
+
+    const deleteSubscriber = (record) => {
+        modal.confirm({
+            title: "Xóa đăng ký bản tin?",
+            content: `${record.email} sẽ bị xóa khỏi danh sách bản tin và có thể tự đăng ký lại sau này.`,
+            okText: "Xóa",
+            cancelText: "Giữ lại",
+            okButtonProps: { danger: true },
+            onOk: async () => {
+                try {
+                    setDeletingSubscriberId(record.id);
+                    await api.delete(`/newsletter/admin/subscribers/${record.id}`, { authRequired: true });
+                    message.success("Đã xóa đăng ký bản tin");
+                    if (subscribers.length === 1 && subscriberPage > 1) {
+                        setSubscriberPage((page) => page - 1);
+                    } else {
+                        await fetchSubscribers();
+                    }
+                } catch (error) {
+                    message.error(error.response?.data?.message || "Không thể xóa đăng ký bản tin");
+                    throw error;
+                } finally {
+                    setDeletingSubscriberId(null);
+                }
+            },
+        });
+    };
+
     const userColumns = [
         {
             title: "Người dùng",
@@ -409,12 +519,33 @@ export default function AdminNewsletterPage() {
             title: "Hành động",
             key: "action",
             render: (_, record) => (
-                <AdminIconButton
-                    label={`Gửi email cho ${record.email}`}
-                    icon={<SendOutlined />}
-                    disabled={record.status !== "subscribed"}
-                    onClick={() => openComposer({ audience: "subscribers", target: "individual", recipient: record })}
-                />
+                <Flex gap="small">
+                    {record.status === "pending" && (
+                        <AdminIconButton
+                            label={`Gửi lại email xác nhận cho ${record.email}`}
+                            icon={<RedoOutlined />}
+                            loading={resendingVerificationId === record.id}
+                            disabled={deletingSubscriberId === record.id}
+                            onClick={() => resendSubscriberVerification(record)}
+                        />
+                    )}
+                    {record.status === "subscribed" && (
+                        <AdminIconButton
+                            label={`Gửi email cho ${record.email}`}
+                            icon={<SendOutlined />}
+                            disabled={deletingSubscriberId === record.id}
+                            onClick={() => openComposer({ audience: "subscribers", target: "individual", recipient: record })}
+                        />
+                    )}
+                    <AdminIconButton
+                        label={`Xóa ${record.email} khỏi danh sách bản tin`}
+                        icon={<DeleteOutlined />}
+                        danger
+                        loading={deletingSubscriberId === record.id}
+                        disabled={resendingVerificationId === record.id}
+                        onClick={() => deleteSubscriber(record)}
+                    />
+                </Flex>
             ),
         },
     ];
@@ -482,14 +613,39 @@ export default function AdminNewsletterPage() {
         {
             title: "Hành động",
             key: "action",
-            width: 100,
-            render: (_, record) => ["queued", "processing"].includes(record.status) ? (
-                <AdminIconButton
-                    label="Hủy chiến dịch"
-                    icon={<StopOutlined />}
-                    onClick={() => cancelCampaign(record)}
-                />
-            ) : null,
+            width: 150,
+            render: (_, record) => {
+                const isActive = ["queued", "processing"].includes(record.status);
+                return (
+                    <Flex gap="small">
+                        {isActive ? (
+                            <AdminIconButton
+                                label="Hủy chiến dịch"
+                                icon={<StopOutlined />}
+                                onClick={() => cancelCampaign(record)}
+                            />
+                        ) : (
+                            <>
+                                <AdminIconButton
+                                    label="Gửi lại chiến dịch"
+                                    icon={<RedoOutlined />}
+                                    loading={resendingCampaignId === record.id}
+                                    disabled={deletingCampaignId === record.id}
+                                    onClick={() => resendCampaign(record)}
+                                />
+                                <AdminIconButton
+                                    label="Xóa lịch sử chiến dịch"
+                                    icon={<DeleteOutlined />}
+                                    danger
+                                    loading={deletingCampaignId === record.id}
+                                    disabled={resendingCampaignId === record.id}
+                                    onClick={() => deleteCampaign(record)}
+                                />
+                            </>
+                        )}
+                    </Flex>
+                );
+            },
         },
     ];
 

@@ -22,7 +22,7 @@ export const maxDuration = 60;
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 const getBackendApiUrl = () => {
-    const configuredUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "";
+    const configuredUrl = process.env.BACKEND_API_URL || "";
 
     try {
         const parsedUrl = new URL(configuredUrl);

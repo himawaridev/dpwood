@@ -23,6 +23,7 @@ import {
     SolutionOutlined,
     SwapOutlined,
     MailOutlined,
+    StarOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -34,6 +35,7 @@ const ADMIN_ROUTE_KEYS = [
     "/admin/dashboard",
     "/admin/users",
     "/admin/products",
+    "/admin/reviews",
     "/admin/orders",
     "/admin/notifications",
     "/admin/support",
@@ -113,6 +115,7 @@ export default function AdminLayout({ children }) {
             ],
         },
         { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "Sản phẩm" },
+        { key: "/admin/reviews", icon: <StarOutlined />, label: "Đánh giá" },
         { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
         { key: "/admin/notifications", icon: <BellOutlined />, label: "Thông báo" },
         { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ" },

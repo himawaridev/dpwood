@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, App, Button, Col, Empty, Row, Skeleton, Space, Typography } from "antd";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
+import { Alert, App, Button, Col, Empty, Pagination, Row, Skeleton, Space, Typography } from "antd";
 import {
     AppstoreOutlined,
     ReloadOutlined,
@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import api from "@/utils/axios";
 import ProductGrid from "./components/ProductGrid";
 import ProductCatalogFilters from "./components/ProductCatalogFilters";
-import { filterAndSortProducts } from "./catalogFilters";
 import { addCatalogProductToCart } from "@/utils/cartStorage";
 
 const { Text } = Typography;
@@ -36,30 +35,62 @@ export default function ProductsPage() {
     const [facets, setFacets] = useState({ categories: [], materials: [], colors: [], brands: [] });
     const [wishlistIds, setWishlistIds] = useState(new Set());
     const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 1 });
+    const deferredQuery = useDeferredValue(query);
     const router = useRouter();
 
     const fetchProducts = useCallback(async () => {
         try {
             setLoading(true);
             setErrorMessage("");
-            const [productResponse, categoryResponse] = await Promise.all([
-                api.get("/products", { params: { withFacets: true } }),
-                api.get("/products/categories"),
-            ]);
+            if (onlyWishlist && wishlistIds.size === 0) {
+                setProducts([]);
+                setPagination({ page: 1, limit: 12, total: 0, totalPages: 1 });
+                return;
+            }
+            const productResponse = await api.get("/products", {
+                params: {
+                    withFacets: true,
+                    page,
+                    limit: 12,
+                    search: deferredQuery || undefined,
+                    sort: sortBy,
+                    category: category !== "all" ? category : undefined,
+                    color: color !== "all" ? color : undefined,
+                    material: material !== "all" ? material : undefined,
+                    brand: brand !== "all" ? brand : undefined,
+                    minPrice: minPrice ?? undefined,
+                    maxPrice: maxPrice ?? undefined,
+                    minRating: minRating || undefined,
+                    inStock: onlyInStock || undefined,
+                    ids: onlyWishlist ? [...wishlistIds].join(",") : undefined,
+                },
+            });
             setProducts(productResponse.data?.products || []);
             setFacets(productResponse.data?.facets || { categories: [], materials: [], colors: [], brands: [] });
-            setProductCategories(categoryResponse.data || []);
+            setPagination(productResponse.data?.pagination || { page: 1, limit: 12, total: 0, totalPages: 1 });
         } catch (error) {
             setProducts([]);
             setErrorMessage(error.response?.data?.message || error.message || "Không thể tải sản phẩm.");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [page, deferredQuery, sortBy, category, color, material, brand, minPrice, maxPrice, minRating, onlyInStock, onlyWishlist, wishlistIds]);
 
     useEffect(() => {
         fetchProducts();
     }, [fetchProducts]);
+
+    useEffect(() => {
+        api.get("/products/categories")
+            .then((response) => setProductCategories(response.data || []))
+            .catch(() => setProductCategories([]));
+    }, []);
+
+    useEffect(() => {
+        setPage(1);
+    }, [deferredQuery, sortBy, category, color, material, brand, minPrice, maxPrice, minRating, onlyInStock, onlyWishlist]);
 
     useEffect(() => {
         if (!localStorage.getItem("token")) return;
@@ -151,25 +182,7 @@ export default function ProductsPage() {
         setOnlyWishlist(checked);
     };
 
-    const filteredProducts = useMemo(
-        () =>
-            filterAndSortProducts({
-                products,
-                query,
-                sortBy,
-                category,
-                color,
-                material,
-                brand,
-                minPrice,
-                maxPrice,
-                minRating,
-                onlyInStock,
-                onlyWishlist,
-                wishlistIds,
-            }),
-        [products, query, sortBy, category, color, material, brand, minPrice, maxPrice, minRating, onlyInStock, onlyWishlist, wishlistIds],
-    );
+    const filteredProducts = products;
 
     const emptyDescription = products.length
         ? "Không tìm thấy sản phẩm đồ bếp phù hợp với bộ lọc hiện tại."
@@ -217,7 +230,7 @@ export default function ProductsPage() {
                     }}
                 >
                     <Text className="dp-muted">
-                        <AppstoreOutlined /> Hiển thị <strong>{filteredProducts.length}</strong> sản phẩm
+                        <AppstoreOutlined /> Hiển thị <strong>{filteredProducts.length}</strong> trong tổng số <strong>{pagination.total}</strong> sản phẩm
                     </Text>
                     <Space wrap>
                         {errorMessage && (
@@ -269,6 +282,20 @@ export default function ProductsPage() {
                 ) : (
                     <div className="dp-panel" style={{ padding: 44 }}>
                         <Empty description={emptyDescription} />
+                    </div>
+                )}
+                {!loading && pagination.totalPages > 1 && (
+                    <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+                        <Pagination
+                            current={pagination.page}
+                            pageSize={pagination.limit}
+                            total={pagination.total}
+                            showSizeChanger={false}
+                            onChange={(nextPage) => {
+                                setPage(nextPage);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                        />
                     </div>
                 )}
             </div>

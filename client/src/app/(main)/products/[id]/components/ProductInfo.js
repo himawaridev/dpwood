@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { Typography, Flex, Tag, InputNumber, Button, Space, Divider, Rate } from "antd";
+import { Typography, Flex, Tag, Input, InputNumber, Button, Space, Divider, Rate } from "antd";
 import {
     CheckCircleOutlined,
     CloseCircleOutlined,
@@ -28,6 +28,10 @@ export default function ProductInfo({
     ratingSubmitting,
     hasRatedProduct,
     userRating,
+    canRateProduct,
+    ratingEligibilityMessage,
+    userComment,
+    setUserComment,
     onVariantChange,
 }) {
     const variants = useMemo(() => (Array.isArray(product.variants) ? product.variants : []), [product.variants]);
@@ -119,7 +123,37 @@ export default function ProductInfo({
                     <Text className="dp-muted" style={{ display: "block", marginBottom: 8 }}>
                         {hasRatedProduct ? "Bạn có thể thay đổi đánh giá của mình" : "Chọn số sao của bạn"}
                     </Text>
-                    <Rate allowHalf value={userRating || 0} disabled={ratingSubmitting} onChange={onRateProduct} />
+                    <Rate
+                        allowHalf
+                        value={userRating || 0}
+                        disabled={ratingSubmitting || !canRateProduct}
+                        onChange={onRateProduct}
+                    />
+                    <Input.TextArea
+                        value={userComment}
+                        onChange={(event) => setUserComment?.(event.target.value)}
+                        disabled={!canRateProduct || ratingSubmitting}
+                        maxLength={2000}
+                        autoSize={{ minRows: 2, maxRows: 4 }}
+                        placeholder="Chia sẻ trải nghiệm sử dụng (không bắt buộc)"
+                        style={{ marginTop: 10 }}
+                    />
+                    {canRateProduct && userRating > 0 && (
+                        <Button
+                            type="primary"
+                            size="small"
+                            loading={ratingSubmitting}
+                            onClick={() => onRateProduct(userRating)}
+                            style={{ marginTop: 8 }}
+                        >
+                            Lưu đánh giá
+                        </Button>
+                    )}
+                    {!canRateProduct && (
+                        <Text className="dp-muted" style={{ display: "block", marginTop: 8, fontSize: 13 }}>
+                            {ratingEligibilityMessage}
+                        </Text>
+                    )}
                 </div>
             </div>
 
@@ -227,9 +261,15 @@ export default function ProductInfo({
 
             <div className="dp-kitchen-promise-grid">
                 {[
-                    { icon: <TruckOutlined />, title: "Giao hàng", text: "Theo dõi trạng thái đơn" },
+                    { icon: <TruckOutlined />, title: "Giao hàng", text: "Dự kiến 1-5 ngày làm việc" },
                     { icon: <SafetyCertificateOutlined />, title: "Thanh toán", text: "COD hoặc QR PayOS" },
-                    { icon: <ToolOutlined />, title: "Hướng dẫn", text: "Tư vấn sử dụng và bảo quản" },
+                    {
+                        icon: <ToolOutlined />,
+                        title: "Đổi trả",
+                        text: product.returnEligible === false
+                            ? "Không áp dụng đổi trả"
+                            : `Đổi trả trong ${product.returnWindowDays || 7} ngày`,
+                    },
                 ].map((item) => (
                     <div key={item.title} className="dp-kitchen-promise-item">
                         <div style={{ color: "var(--dp-primary)", fontSize: 20 }}>{item.icon}</div>

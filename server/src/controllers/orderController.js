@@ -944,4 +944,10 @@ module.exports = {
     updateOrderStatusAdmin,
     getMyOrders,
     expireStaleQrOrders,
+    _test: {
+        QR_PAYMENT_TTL_MS,
+        getQrPaymentExpiry,
+        isQrPaymentExpired,
+        serializePayosData,
+    },
 };

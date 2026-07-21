@@ -4,10 +4,12 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test test/*.test.js",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed:kitchen": "node src/scripts/seedKitchenProducts.js",
+    "products:quality": "node src/scripts/normalizeProductCatalog.js",
+    "products:normalize": "node src/scripts/normalizeProductCatalog.js --apply --dedupe --archive-invalid",
     "fix:product-encoding": "node src/scripts/fixProductEncoding.js"
   },
   "keywords": [],

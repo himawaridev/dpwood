@@ -14,6 +14,7 @@ const Blog = require("../models/blog");
 const SupportTicket = require("../models/supportTicket");
 const User = require("../models/user");
 const { fetchSafeImage } = require("../utils/safeImageFetch");
+const { normalizeProductPayload, validateProductPayload } = require("../utils/productData");
 
 const CATEGORY_VALUES = ["cookware", "tableware", "utensils", "storage", "appliances", "cleaning"];
 const LOCKNLOCK_BASE_URL = "https://www.locknlock.vn";
@@ -1700,7 +1701,16 @@ Khong giai thich ngoai JSON.
             });
         }
 
-        const createdProducts = await Product.bulkCreate(drafts.map(normalizeProductImagesForStorage));
+        const normalizedDrafts = drafts
+            .map(normalizeProductImagesForStorage)
+            .map((draft) => normalizeProductPayload(draft))
+            .filter((draft) => validateProductPayload(draft).length === 0);
+        if (!normalizedDrafts.length) {
+            const error = new Error("Không có sản phẩm đủ tên, giá, danh mục và ảnh hợp lệ để lưu");
+            error.statusCode = 422;
+            throw error;
+        }
+        const createdProducts = await Product.bulkCreate(normalizedDrafts);
 
         res.status(201).json({
             message: usedLocalFallback
@@ -1724,7 +1734,8 @@ const saveProductBatchDrafts = async (req, res) => {
         const products = Array.isArray(req.body.products) ? req.body.products : [];
         const drafts = products
             .map((product) => normalizeProductImagesForStorage(sanitizeProductDraft(product)))
-            .filter((product) => product.name && product.price);
+            .map((product) => normalizeProductPayload(product))
+            .filter((product) => validateProductPayload(product).length === 0);
 
         if (!drafts.length) {
             const error = new Error("Khong co san pham hop le de luu");
