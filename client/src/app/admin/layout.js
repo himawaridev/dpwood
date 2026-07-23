@@ -25,6 +25,9 @@ import {
     MailOutlined,
     StarOutlined,
     PictureOutlined,
+    DatabaseOutlined,
+    TagsOutlined,
+    UnorderedListOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -86,6 +89,12 @@ export default function AdminLayout({ children }) {
             return;
         }
 
+        if (pathname.startsWith("/admin/products")) {
+            setSelectedMenuKey(pathname);
+            setOpenMenuKeys(["/admin/products-menu"]);
+            return;
+        }
+
         setSelectedMenuKey(
             ADMIN_ROUTE_KEYS.find((key) => pathname.startsWith(key)) || "/admin/dashboard",
         );
@@ -116,7 +125,16 @@ export default function AdminLayout({ children }) {
                 { key: "/admin/users/transactions", icon: <SwapOutlined />, label: "Lịch sử giao dịch" },
             ],
         },
-        { key: "/admin/products", icon: <AppstoreAddOutlined />, label: "Sản phẩm" },
+        {
+            key: "/admin/products-menu",
+            icon: <AppstoreAddOutlined />,
+            label: "Sản phẩm",
+            children: [
+                { key: "/admin/products", icon: <UnorderedListOutlined />, label: "Danh sách sản phẩm" },
+                { key: "/admin/products/categories", icon: <TagsOutlined />, label: "Danh mục sản phẩm" },
+                { key: "/admin/products/data", icon: <DatabaseOutlined />, label: "Dữ liệu JSON" },
+            ],
+        },
         { key: "/admin/banners", icon: <PictureOutlined />, label: "Banner trang chủ" },
         { key: "/admin/reviews", icon: <StarOutlined />, label: "Đánh giá" },
         { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
@@ -177,6 +195,8 @@ export default function AdminLayout({ children }) {
             ? pathname === "/admin/users"
                 ? "/admin/users/roles"
                 : pathname
+            : pathname.startsWith("/admin/products")
+            ? pathname
             : pathname.startsWith("/admin/ai")
             ? pathname === "/admin/ai"
                 ? "/admin/ai/blog"

@@ -38,7 +38,9 @@ const unsubscribeUrlFor = (subscriber) =>
 
 const baseRecipientWhere = (campaign) => ({
     createdAt: { [Op.lte]: campaign.recipientSnapshotAt || campaign.createdAt },
-    ...(campaign.audience === "subscribers" ? { status: "subscribed" } : { isVerified: true }),
+    ...(campaign.audience === "subscribers"
+        ? { status: "subscribed" }
+        : { isVerified: true, email: { [Op.notLike]: "%.invalid" } }),
 });
 
 const loadRecipientBatch = async (campaign) => {

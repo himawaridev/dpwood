@@ -151,6 +151,9 @@ export default function AdminBannersPage() {
             <BannerModal
                 open={modalOpen}
                 banner={editingBanner}
+                usedSortOrders={banners
+                    .filter((item) => item.id !== editingBanner?.id)
+                    .map((item) => Number(item.sortOrder))}
                 onClose={() => setModalOpen(false)}
                 onSaved={fetchBanners}
             />

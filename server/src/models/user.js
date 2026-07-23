@@ -47,10 +47,15 @@ const User = sequelize.define(
             defaultValue: "user",
         },
         authProvider: {
-            type: DataTypes.ENUM("local", "google"),
+            type: DataTypes.ENUM("local", "google", "telegram"),
             defaultValue: "local",
         },
         googleId: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            unique: true,
+        },
+        telegramId: {
             type: DataTypes.STRING,
             allowNull: true,
             unique: true,

@@ -327,6 +327,26 @@ const initializeDatabase = async () => {
                 });
                 console.log("Added emailVerifySentAt column to users via QueryInterface");
             }
+            if (!tableDesc.telegramId) {
+                await queryInterface.addColumn("users", "telegramId", {
+                    type: DataTypes.STRING,
+                    allowNull: true,
+                });
+                await queryInterface.addIndex("users", ["telegramId"], {
+                    name: "users_telegram_id_unique",
+                    unique: true,
+                });
+                console.log("Added Telegram identity column to users via QueryInterface");
+            }
+            const providerType = String(tableDesc.authProvider?.type || "").toLowerCase();
+            if (providerType.includes("enum") && !providerType.includes("telegram")) {
+                await queryInterface.changeColumn("users", "authProvider", {
+                    type: DataTypes.ENUM("local", "google", "telegram"),
+                    allowNull: false,
+                    defaultValue: "local",
+                });
+                console.log("Extended users authProvider enum for Telegram");
+            }
         } catch (e) {
             console.log("QueryInterface users check skipped:", e.message);
         }

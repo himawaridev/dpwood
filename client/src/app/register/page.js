@@ -3,21 +3,24 @@
 import { useEffect, useState } from "react";
 import { App, Button, Card, Divider, Form, Input, Typography } from "antd";
 import { LockOutlined, MailOutlined, PhoneOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
-import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import api from "@/utils/axios";
 import { waitForAuthLoading } from "@/utils/authLoading";
+import { persistAuthSession } from "@/utils/authSession";
+import SocialAuthMethods from "@/components/auth/SocialAuthMethods";
 
 const { Title, Text, Paragraph } = Typography;
-const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+const GOOGLE_AUTH_MESSAGE_KEY = "register-google-auth";
+const TELEGRAM_AUTH_MESSAGE_KEY = "register-telegram-auth";
 
 export default function RegisterPage() {
     const { message } = App.useApp();
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
     const [googleSubmitting, setGoogleSubmitting] = useState(false);
+    const [telegramSubmitting, setTelegramSubmitting] = useState(false);
 
     useEffect(() => {
         if (window.location.hostname === "127.0.0.1") {
@@ -26,17 +29,12 @@ export default function RegisterPage() {
         }
     }, []);
 
-    const handleLoginSuccess = (data) => {
-        localStorage.setItem("token", data.token);
-        if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
-        localStorage.setItem("userName", data.user.name);
-        localStorage.setItem("userRole", data.user.role);
-        if (data.user.avatarUrl) {
-            localStorage.setItem("avatarUrl", data.user.avatarUrl);
-        } else {
-            localStorage.removeItem("avatarUrl");
-        }
-        message.success("Đăng ký và đăng nhập thành công.");
+    const handleLoginSuccess = (data, messageKey) => {
+        persistAuthSession(data);
+        message.success({
+            content: "Đăng ký và đăng nhập thành công.",
+            ...(messageKey ? { key: messageKey } : {}),
+        });
         router.push("/");
     };
 
@@ -62,13 +60,68 @@ export default function RegisterPage() {
 
         try {
             setGoogleSubmitting(true);
+            message.loading({
+                content: "Đang xác thực tài khoản Google...",
+                key: GOOGLE_AUTH_MESSAGE_KEY,
+                duration: 0,
+            });
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
-            handleLoginSuccess(response.data);
+            handleLoginSuccess(response.data, GOOGLE_AUTH_MESSAGE_KEY);
         } catch (error) {
             await waitForAuthLoading(startedAt);
-            message.error(error.response?.data?.message || "Đăng ký bằng Google thất bại.");
+            message.error({
+                content: error.response?.data?.message || "Đăng ký bằng Google thất bại.",
+                key: GOOGLE_AUTH_MESSAGE_KEY,
+            });
             setGoogleSubmitting(false);
         }
+    };
+
+    const handleGoogleStart = () => {
+        message.loading({
+            content: "Đang mở cửa sổ xác thực Google...",
+            key: GOOGLE_AUTH_MESSAGE_KEY,
+            duration: 3,
+        });
+    };
+
+    const handleGoogleError = () => {
+        setGoogleSubmitting(false);
+        message.error({
+            content: "Đăng ký bằng Google thất bại.",
+            key: GOOGLE_AUTH_MESSAGE_KEY,
+        });
+    };
+
+    const handleTelegramAuth = async (telegramUser) => {
+        if (telegramSubmitting) return;
+        const startedAt = Date.now();
+
+        try {
+            setTelegramSubmitting(true);
+            message.loading({
+                content: "Đang xác thực tài khoản Telegram...",
+                key: TELEGRAM_AUTH_MESSAGE_KEY,
+                duration: 0,
+            });
+            const response = await api.post("/auth/telegram", telegramUser);
+            handleLoginSuccess(response.data, TELEGRAM_AUTH_MESSAGE_KEY);
+        } catch (error) {
+            await waitForAuthLoading(startedAt);
+            setTelegramSubmitting(false);
+            message.error({
+                content: error.response?.data?.message || "Đăng ký bằng Telegram thất bại.",
+                key: TELEGRAM_AUTH_MESSAGE_KEY,
+            });
+        }
+    };
+
+    const handleTelegramError = () => {
+        setTelegramSubmitting(false);
+        message.error({
+            content: "Không thể tải Telegram Login Widget.",
+            key: TELEGRAM_AUTH_MESSAGE_KEY,
+        });
     };
 
     return (
@@ -92,7 +145,12 @@ export default function RegisterPage() {
                         <Text className="dp-muted">Hoàn tất thông tin để tạo tài khoản mua sắm.</Text>
                     </div>
 
-                    <Form layout="vertical" onFinish={onFinish} className="dp-auth-form" disabled={submitting || googleSubmitting}>
+                    <Form
+                        layout="vertical"
+                        onFinish={onFinish}
+                        className="dp-auth-form"
+                        disabled={submitting || googleSubmitting || telegramSubmitting}
+                    >
                         <div className="dp-auth-register-grid">
                             <Form.Item
                                 label="Họ và tên"
@@ -157,25 +215,16 @@ export default function RegisterPage() {
 
                         <Divider plain>Hoặc đăng ký nhanh bằng</Divider>
 
-                        {googleClientId ? (
-                            <GoogleOAuthProvider clientId={googleClientId}>
-                                <div className="dp-auth-google">
-                                    <GoogleLogin
-                                        onSuccess={onGoogleSuccess}
-                                        onError={() => message.error("Đăng ký bằng Google thất bại")}
-                                        ux_mode="popup"
-                                        use_fedcm_for_button={false}
-                                        text="signup_with"
-                                        shape="rectangular"
-                                    />
-                                    {googleSubmitting && <Text className="dp-auth-note">Đang xác thực tài khoản Google...</Text>}
-                                </div>
-                            </GoogleOAuthProvider>
-                        ) : (
-                            <Text type="secondary" className="dp-auth-note">
-                                Chưa cấu hình mã ứng dụng Google.
-                            </Text>
-                        )}
+                        <SocialAuthMethods
+                            mode="register"
+                            googleSubmitting={googleSubmitting}
+                            telegramSubmitting={telegramSubmitting}
+                            onGoogleStart={handleGoogleStart}
+                            onGoogleSuccess={onGoogleSuccess}
+                            onGoogleError={handleGoogleError}
+                            onTelegramAuth={handleTelegramAuth}
+                            onTelegramError={handleTelegramError}
+                        />
 
                         <div className="dp-auth-switch">
                             Đã có tài khoản? <Link href="/login">Đăng nhập</Link>

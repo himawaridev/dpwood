@@ -42,7 +42,7 @@ const Banner = sequelize.define(
         sortOrder: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue: 0,
+            defaultValue: 1,
         },
         isActive: {
             type: DataTypes.BOOLEAN,
@@ -54,6 +54,7 @@ const Banner = sequelize.define(
         timestamps: true,
         indexes: [
             { fields: ["isActive", "sortOrder"] },
+            { unique: true, fields: ["sortOrder"] },
         ],
     },
 );

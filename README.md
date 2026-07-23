@@ -247,6 +247,7 @@ Tạo `client/.env.local`:
 ```dotenv
 BACKEND_API_URL=http://localhost:5000/api
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_oauth_web_client_id
+NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=dpwood_store_bot
 ```
 
 Sau đó chạy:
@@ -283,6 +284,9 @@ Không phải biến nào cũng bắt buộc. Chỉ cấu hình provider đang s
 | `REFRESH_TOKEN_PEPPER` | Pepper dùng khi băm refresh token |
 | `GOOGLE_CLIENT_ID` | Google OAuth Web Client ID phía backend |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Cùng Client ID cho frontend |
+| `TELEGRAM_BOT_TOKEN` | Bot API Token dùng để xác minh chữ ký Login Widget; chỉ đặt ở backend |
+| `TELEGRAM_AUTH_MAX_AGE_SECONDS` | Tuổi tối đa của dữ liệu xác thực Telegram, mặc định `300` giây |
+| `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` | Username bot công khai, không gồm hoặc có thể gồm ký tự `@` |
 | `CLIENT_URL`, `FRONTEND_URL` | Origin frontend được phép và URL dùng trong email |
 | `BACKEND_API_URL` | Backend mà Next API proxy gọi ở phía server; trình duyệt luôn dùng `/api` |
 
@@ -341,6 +345,7 @@ Các API quản trị được bảo vệ bằng `authMiddleware` và `roleMiddl
 3. Người dùng mở link; backend xác thực token và kích hoạt tài khoản.
 4. Đăng nhập trả access token và refresh token.
 5. Google Login xác minh credential bằng `GOOGLE_CLIENT_ID` và tạo/ghép tài khoản phù hợp.
+6. Telegram Login dùng Authorization Code + PKCE; backend xác minh ID token bằng JWKS trước khi cấp JWT DPWOOD.
 
 ### Đặt hàng COD
 
@@ -510,6 +515,7 @@ Backend hiện chưa có bộ test tự động hoàn chỉnh; script `pnpm test
 - Build command: `pnpm build`.
 - Cấu hình `BACKEND_API_URL=https://dpwood.onrender.com/api`.
 - Cấu hình `NEXT_PUBLIC_GOOGLE_CLIENT_ID` bằng Web Client ID.
+- Cấu hình `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=dpwood_store_bot`.
 - Domain: `https://dpwood.store` và tùy chọn `https://www.dpwood.store`.
 - Production browser gọi `/api`; không cấu hình URL API dạng `http://localhost:...`.
 
@@ -520,7 +526,7 @@ Backend hiện chưa có bộ test tự động hoàn chỉnh; script `pnpm test
 - Start command: `pnpm start`.
 - Đặt `NODE_ENV=production`.
 - `CLIENT_URL` và `FRONTEND_URL` phải chứa `https://dpwood.store`.
-- Cấu hình DB, JWT, Resend, PayOS, Cloudinary, Google và Gemini trong Environment.
+- Cấu hình DB, JWT, Resend, PayOS, Cloudinary, Google, Telegram và Gemini trong Environment.
 - Không đưa dấu nháy thừa vào giá trị biến môi trường trên dashboard.
 
 ### Database production
@@ -540,6 +546,25 @@ https://www.dpwood.store
 ```
 
 Google Identity Services dùng credential popup nên không cần tự thêm callback tùy ý. Nếu cấu hình redirect URI, URI phải khớp tuyệt đối và không dùng wildcard.
+
+### Telegram Login
+
+1. Mở BotFather Mini App và chọn bot đại diện cho DPWOOD.
+2. Vào **Login Widget**, nhập domain production:
+
+```text
+https://dpwood.store
+```
+
+3. Trên Vercel cấu hình `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=dpwood_store_bot`.
+4. Trên Render cấu hình `TELEGRAM_BOT_TOKEN` bằng Bot API Token và tùy chọn
+   `TELEGRAM_AUTH_MAX_AGE_SECONDS=300`.
+5. Không đặt Bot Token trong biến `NEXT_PUBLIC_*` và không commit token vào Git.
+
+Login Widget trả về ID, tên, username, ảnh, thời gian xác thực và chữ ký. Backend tự kiểm tra
+HMAC-SHA256 bằng Bot Token và từ chối dữ liệu quá hạn trước khi cấp JWT. Telegram không cung
+cấp email trong luồng này, vì vậy tài khoản mới sử dụng email kỹ thuật đuôi `.invalid` và được
+loại khỏi các chiến dịch email.
 
 ### PayOS
 

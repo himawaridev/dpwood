@@ -1,16 +1,12 @@
 import React, { useState } from "react";
-import { Table, Typography, Image, Flex, Popconfirm, Input, Space, Tag, Upload } from "antd";
+import { Table, Typography, Image, Flex, Popconfirm, Input, Space, Tag } from "antd";
 import {
     DeleteOutlined,
-    DownloadOutlined,
     EditOutlined,
     FireOutlined,
-    FileTextOutlined,
     PlusOutlined,
-    PictureOutlined,
     ReloadOutlined,
     SearchOutlined,
-    UploadOutlined,
 } from "@ant-design/icons";
 import { getKitchenCategoryLabel } from "@/utils/kitchenProduct";
 import { getProductSalesStats } from "@/utils/productStats";
@@ -26,13 +22,8 @@ export default function ProductTable({
     onEdit,
     onDelete,
     onRefresh,
-    onExportJson,
     onDeleteAll,
     deletingAll,
-    onImportJson,
-    onDownloadSample,
-    jsonLoading,
-    onManageCategories,
 }) {
     const [searchText, setSearchText] = useState("");
 
@@ -169,36 +160,6 @@ export default function ProductTable({
                         icon={<ReloadOutlined />}
                         onClick={onRefresh}
                         loading={loading}
-                    />
-                    <AdminIconButton
-                        label="Quản lý danh mục sản phẩm"
-                        tooltip="Quản lý danh mục"
-                        icon={<PictureOutlined />}
-                        onClick={onManageCategories}
-                    />
-                    <AdminIconButton
-                        label="Xuất sản phẩm ra JSON"
-                        icon={<DownloadOutlined />}
-                        onClick={onExportJson}
-                        disabled={loading || !products.length}
-                    />
-                    <Upload
-                        accept="application/json,.json"
-                        showUploadList={false}
-                        beforeUpload={onImportJson}
-                        disabled={jsonLoading}
-                    >
-                        <AdminIconButton
-                            label="Nhập sản phẩm từ JSON"
-                            icon={<UploadOutlined />}
-                            loading={jsonLoading}
-                        />
-                    </Upload>
-                    <AdminIconButton
-                        label="Tải file JSON mẫu"
-                        icon={<FileTextOutlined />}
-                        onClick={onDownloadSample}
-                        loading={jsonLoading}
                     />
                     <AdminIconButton
                         label="Xóa toàn bộ sản phẩm"

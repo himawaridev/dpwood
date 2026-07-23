@@ -27,7 +27,7 @@ const storage = {
 };
 
 const AUTH_KEYS = ["token", "refreshToken", "userName", "userRole", "avatarUrl"];
-const AUTH_ENDPOINT_PATTERN = /\/auth\/(login|register|google|refresh|forgot-password|resend-verification)/;
+const AUTH_ENDPOINT_PATTERN = /\/auth\/(login|register|google|telegram|refresh|forgot-password|resend-verification)/;
 let refreshPromise = null;
 let redirectingToLogin = false;
 

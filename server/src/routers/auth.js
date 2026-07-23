@@ -11,6 +11,7 @@ const {
     verifyEmail,
     logout,
     googleLogin,
+    telegramLogin,
 } = require("../controllers/authController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const { authLimiter, passwordLimiter } = require("../middlewares/securityMiddleware");
@@ -22,6 +23,7 @@ router.post("/register", authLimiter, register);
 router.post("/resend-verification", passwordLimiter, resendVerification);
 router.post("/login", authLimiter, login);
 router.post("/google", authLimiter, googleLogin);
+router.post("/telegram", authLimiter, telegramLogin);
 router.post("/refresh", refresh);
 router.post("/forgot", passwordLimiter, forgotPassword);
 router.post("/reset", passwordLimiter, resetPassword);

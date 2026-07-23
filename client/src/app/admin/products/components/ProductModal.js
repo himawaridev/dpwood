@@ -1,86 +1,31 @@
-import React, { useEffect, useState } from "react";
-import { App, Modal, Form, Input, InputNumber, Button, Flex, Typography, Row, Col, Select as AntSelect, Switch, Divider } from "antd";
-import { MinusCircleOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
+import { useEffect, useState } from "react";
+import { Button, Col, Flex, Form, Input, InputNumber, Modal, Row } from "antd";
 import {
     KITCHEN_COLOR_OPTIONS,
     KITCHEN_MATERIAL_OPTIONS,
 } from "@/utils/kitchenProduct";
-
-const createVariantId = () => `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+import CreatableSelect from "./product-form/CreatableSelect";
+import KitchenDetailsSection from "./product-form/KitchenDetailsSection";
+import ProductImagesSection from "./product-form/ProductImagesSection";
+import ProductVariantsSection from "./product-form/ProductVariantsSection";
 
 const mergeOptions = (...groups) =>
     [...new Set(groups.flat().filter(Boolean).map((item) => String(item).trim()).filter(Boolean))];
 
-function CreatableSelect({ options, onAddOption, addLabel, value, onChange, ...selectProps }) {
-    const { message } = App.useApp();
-    const [newOption, setNewOption] = useState("");
-    const [adding, setAdding] = useState(false);
-    const [open, setOpen] = useState(false);
-
-    const handleAdd = async () => {
-        const label = newOption.trim();
-        if (!label) {
-            message.warning(`Vui lòng nhập ${addLabel.toLowerCase()}.`);
-            return;
-        }
-
-        try {
-            setAdding(true);
-            const created = await onAddOption(label);
-            onChange?.(created?.value || label);
-            setNewOption("");
-            setOpen(false);
-        } catch (error) {
-            message.error(error.response?.data?.message || `Không thể thêm ${addLabel.toLowerCase()}.`);
-        } finally {
-            setAdding(false);
-        }
-    };
-
-    return (
-        <Flex gap={8} align="center">
-            <AntSelect
-                {...selectProps}
-                value={value}
-                onChange={onChange}
-                open={open}
-                onOpenChange={setOpen}
-                options={options}
-                style={{ flex: 1, minWidth: 0 }}
-                popupRender={(menu) => (
-                    <>
-                        {menu}
-                        <Divider style={{ margin: "8px 0" }} />
-                        <Flex gap={8} style={{ padding: "0 8px 8px" }}>
-                            <Input
-                                value={newOption}
-                                placeholder={`Nhập ${addLabel.toLowerCase()} mới`}
-                                onChange={(event) => setNewOption(event.target.value)}
-                                onKeyDown={(event) => event.stopPropagation()}
-                                onPressEnter={(event) => {
-                                    event.preventDefault();
-                                    handleAdd();
-                                }}
-                            />
-                            <Button
-                                type="text"
-                                icon={<PlusOutlined />}
-                                loading={adding}
-                                aria-label={`Thêm ${addLabel.toLowerCase()}`}
-                                onClick={handleAdd}
-                            />
-                        </Flex>
-                    </>
-                )}
-            />
-            <Button
-                icon={<PlusOutlined />}
-                aria-label={`Mở phần thêm ${addLabel.toLowerCase()}`}
-                onClick={() => setOpen(true)}
-            />
-        </Flex>
-    );
-}
+const getInitialValues = (product = {}) => ({
+    sold: 0,
+    dishwasherSafe: false,
+    microwaveSafe: false,
+    returnEligible: true,
+    returnWindowDays: 7,
+    ...product,
+    images: product.images?.length > 0
+        ? product.images
+        : [product.imageUrl].filter(Boolean).length
+            ? [product.imageUrl]
+            : [""],
+    variants: Array.isArray(product.variants) ? product.variants : [],
+});
 
 export default function ProductModal({
     isVisible,
@@ -110,50 +55,24 @@ export default function ProductModal({
     }, []);
 
     useEffect(() => {
-        if (isVisible && isMounted) {
-            setDynamicMaterials(
-                mergeOptions(KITCHEN_MATERIAL_OPTIONS, materialOptions, [editingProduct?.material, draftProduct?.material]),
-            );
-            setDynamicColors(
-                mergeOptions(
-                    KITCHEN_COLOR_OPTIONS,
-                    colorOptions,
-                    [editingProduct?.color, draftProduct?.color],
-                    (editingProduct?.variants || draftProduct?.variants || []).map((variant) => variant?.color),
-                ),
-            );
-            if (editingProduct) {
-                const currentImages =
-                    editingProduct.images?.length > 0
-                        ? editingProduct.images
-                        : [editingProduct.imageUrl].filter(Boolean);
+        if (!isVisible || !isMounted) return;
 
-                form.setFieldsValue({
-                    sold: 0,
-                    dishwasherSafe: false,
-                    microwaveSafe: false,
-                    returnEligible: true,
-                    returnWindowDays: 7,
-                    ...editingProduct,
-                    images: currentImages.length > 0 ? currentImages : [""],
-                    variants: Array.isArray(editingProduct.variants) ? editingProduct.variants : [],
-                });
-            } else {
-                form.resetFields();
-                const draftImages = draftProduct?.images?.length > 0 ? draftProduct.images : [""];
-                form.setFieldsValue({
-                    sold: 0,
-                    dishwasherSafe: false,
-                    microwaveSafe: false,
-                    returnEligible: true,
-                    returnWindowDays: 7,
-                    ...(draftProduct || {}),
-                    images: draftImages,
-                    variants: Array.isArray(draftProduct?.variants) ? draftProduct.variants : [],
-                });
-            }
-        }
-    }, [isVisible, editingProduct, draftProduct, form, isMounted, materialOptions, colorOptions]);
+        const product = editingProduct || draftProduct || {};
+        setDynamicMaterials(mergeOptions(
+            KITCHEN_MATERIAL_OPTIONS,
+            materialOptions,
+            [product.material],
+        ));
+        setDynamicColors(mergeOptions(
+            KITCHEN_COLOR_OPTIONS,
+            colorOptions,
+            [product.color],
+            (product.variants || []).map((variant) => variant?.color),
+        ));
+
+        if (!editingProduct) form.resetFields();
+        form.setFieldsValue(getInitialValues(product));
+    }, [isVisible, isMounted, editingProduct, draftProduct, form, materialOptions, colorOptions]);
 
     const categoryOptions = categories.map((item) => ({
         value: item.value,
@@ -170,6 +89,16 @@ export default function ProductModal({
         return { value: label, label };
     };
 
+    const syncVariantStock = (changedValues, allValues) => {
+        if (!Object.prototype.hasOwnProperty.call(changedValues, "variants")) return;
+        const variants = Array.isArray(allValues.variants) ? allValues.variants : [];
+        if (!variants.length) return;
+        form.setFieldValue(
+            "stock",
+            variants.reduce((sum, variant) => sum + Number(variant?.stock || 0), 0),
+        );
+    };
+
     if (!isMounted) return null;
 
     return (
@@ -182,23 +111,7 @@ export default function ProductModal({
             width={960}
             forceRender
         >
-            <Form
-                form={form}
-                layout="vertical"
-                onFinish={onSave}
-                onValuesChange={(changedValues, allValues) => {
-                    if (!Object.prototype.hasOwnProperty.call(changedValues, "variants")) return;
-                    const variants = Array.isArray(allValues.variants) ? allValues.variants : [];
-                    if (!variants.length) return;
-                    form.setFieldValue(
-                        "stock",
-                        variants.reduce(
-                            (sum, variant) => sum + Number(variant?.stock || 0),
-                            0,
-                        ),
-                    );
-                }}
-            >
+            <Form form={form} layout="vertical" onFinish={onSave} onValuesChange={syncVariantStock}>
                 <Row gutter={16}>
                     <Col xs={24} md={14}>
                         <Form.Item
@@ -271,12 +184,10 @@ export default function ProductModal({
                     <Col xs={24} md={8}>
                         <Form.Item
                             name="stock"
-                            extra={
-                                hasVariants
-                                    ? `Tổng ${variantStockTotal} sản phẩm, tự động tính từ từng biến thể bên dưới.`
-                                    : undefined
-                            }
                             label={hasVariants ? "Tổng tồn kho" : "Tồn kho mặc định"}
+                            extra={hasVariants
+                                ? `Tổng ${variantStockTotal} sản phẩm, tự động tính từ từng biến thể bên dưới.`
+                                : undefined}
                             rules={[{ required: true, message: "Nhập số lượng" }]}
                         >
                             <InputNumber
@@ -295,295 +206,27 @@ export default function ProductModal({
                             extra="Dữ liệu bán trước đây. Hệ thống sẽ tiếp tục tự tăng khi phát sinh đơn hàng và giảm khi đơn bị hủy."
                             rules={[{ required: true, message: "Nhập số lượng đã bán" }]}
                         >
-                            <InputNumber
-                                size="large"
-                                style={{ width: "100%" }}
-                                min={0}
-                                precision={0}
-                            />
+                            <InputNumber size="large" style={{ width: "100%" }} min={0} precision={0} />
                         </Form.Item>
                     </Col>
                 </Row>
 
-                <div className="dp-admin-form-block">
-                    <Typography.Text strong style={{ display: "block", marginBottom: 12 }}>
-                        Thông tin đồ gia dụng nhà bếp
-                    </Typography.Text>
-                    <Row gutter={16}>
-                        <Col xs={24} md={12}>
-                            <Form.Item name="brand" label="Thương hiệu">
-                                <Input placeholder="VD: Lock&Lock, Sunhouse, DPWOOD Kitchen" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item name="material" label="Chất liệu">
-                                <CreatableSelect
-                                    allowClear
-                                    showSearch
-                                    placeholder="Chọn chất liệu"
-                                    options={dynamicMaterials.map((item) => ({ value: item, label: item }))}
-                                    addLabel="Chất liệu"
-                                    onAddOption={addMaterialOption}
-                                />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item name="color" label="Màu mặc định">
-                                <CreatableSelect
-                                    allowClear
-                                    showSearch
-                                    placeholder="Chọn màu sắc"
-                                    options={dynamicColors.map((item) => ({ value: item, label: item }))}
-                                    addLabel="Màu sắc"
-                                    onAddOption={addColorOption}
-                                />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Form.Item name="capacity" label="Dung tích / kích thước mặc định">
-                                <Input placeholder="VD: 28cm, 1.8L, bộ 6 món" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Form.Item name="warranty" label="Bảo hành">
-                                <Input placeholder="VD: 12 tháng" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Form.Item name="origin" label="Xuất xứ">
-                                <Input placeholder="VD: Việt Nam" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Form.Item name="dimensions" label="Kích thước đóng gói">
-                                <Input placeholder="VD: 32 x 20 x 12 cm" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Form.Item name="weight" label="Khối lượng">
-                                <Input placeholder="VD: 1.2 kg" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Form.Item name="packageContents" label="Bộ sản phẩm gồm">
-                                <Input placeholder="VD: 1 nồi, 1 nắp kính, hướng dẫn" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item name="careInstructions" label="Hướng dẫn sử dụng và bảo quản">
-                                <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item name="safetyInstructions" label="Cảnh báo an toàn">
-                                <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                            <Form.Item
-                                name="dishwasherSafe"
-                                valuePropName="checked"
-                                label="An toàn với máy rửa chén"
-                                extra="Bật khi nhà sản xuất xác nhận sản phẩm có thể rửa bằng máy mà không biến dạng, bong lớp phủ hoặc giảm độ bền."
-                            >
-                                <Switch checkedChildren="Có" unCheckedChildren="Không" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                            <Form.Item
-                                name="microwaveSafe"
-                                valuePropName="checked"
-                                label="An toàn với lò vi sóng"
-                                extra="Bật khi sản phẩm được phép hâm nóng trong lò vi sóng. Không áp dụng cho kim loại và không đồng nghĩa với dùng được trong lò nướng."
-                            >
-                                <Switch checkedChildren="Có" unCheckedChildren="Không" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                            <Form.Item
-                                name="returnEligible"
-                                valuePropName="checked"
-                                label="Cho phép đổi trả"
-                                extra="Áp dụng khi sản phẩm còn nguyên trạng và đáp ứng chính sách của cửa hàng."
-                            >
-                                <Switch checkedChildren="Có" unCheckedChildren="Không" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                            <Form.Item name="returnWindowDays" label="Thời hạn đổi trả (ngày)">
-                                <InputNumber min={0} max={30} precision={0} style={{ width: "100%" }} />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                </div>
-
-                <div className="dp-admin-form-block" style={{ marginTop: 16 }}>
-                    <Typography.Text strong style={{ display: "block", marginBottom: 4 }}>
-                        Biến thể sản phẩm
-                    </Typography.Text>
-                    <Typography.Text type="secondary" style={{ display: "block", marginBottom: 14 }}>
-                        Dùng để bán cùng một sản phẩm với nhiều màu sắc, kích cỡ hoặc dung tích khác nhau.
-                    </Typography.Text>
-
-                    {hasVariants && (
-                        <Flex justify="flex-end" style={{ marginBottom: 12 }}>
-                            <Button
-                                size="small"
-                                icon={<StopOutlined />}
-                                onClick={() => {
-                                    const nextVariants = watchedVariants.map((variant) => ({
-                                        ...variant,
-                                        stock: 0,
-                                    }));
-                                    form.setFieldsValue({ variants: nextVariants, stock: 0 });
-                                }}
-                            >
-                                Đặt tất cả biến thể hết hàng
-                            </Button>
-                        </Flex>
-                    )}
-
-                    <Form.List name="variants">
-                        {(fields, { add, remove }) => (
-                            <>
-                                {fields.map((field, index) => (
-                                    <div key={field.key} className="dp-admin-variant-row">
-                                        <Form.Item name={[field.name, "variantId"]} hidden>
-                                            <Input />
-                                        </Form.Item>
-                                        <Form.Item name={[field.name, "sku"]} hidden>
-                                            <Input />
-                                        </Form.Item>
-                                        <Row gutter={12} align="middle">
-                                            <Col xs={24} md={5}>
-                                                <Form.Item
-                                                    name={[field.name, "color"]}
-                                                    label="Màu"
-                                                    rules={[{ required: true, message: "Chọn màu" }]}
-                                                >
-                                                    <CreatableSelect
-                                                        showSearch
-                                                        placeholder="Màu"
-                                                        options={dynamicColors.map((item) => ({
-                                                            value: item,
-                                                            label: item,
-                                                        }))}
-                                                        addLabel="Màu sắc"
-                                                        onAddOption={addColorOption}
-                                                    />
-                                                </Form.Item>
-                                            </Col>
-                                            <Col xs={24} md={5}>
-                                                <Form.Item name={[field.name, "size"]} label="Kích cỡ / dung tích">
-                                                    <Input placeholder="28cm / 1.8L" />
-                                                </Form.Item>
-                                            </Col>
-                                            <Col xs={24} md={4}>
-                                                <Form.Item
-                                                    name={[field.name, "price"]}
-                                                    label="Giá"
-                                                    rules={[{ required: true, message: "Nhập giá" }]}
-                                                >
-                                                    <InputNumber min={0} step={1000} style={{ width: "100%" }} />
-                                                </Form.Item>
-                                            </Col>
-                                            <Col xs={24} md={4}>
-                                                <Form.Item
-                                                    name={[field.name, "stock"]}
-                                                    label="Tồn kho"
-                                                    rules={[{ required: true, message: "Nhập tồn kho" }]}
-                                                >
-                                                    <InputNumber min={0} style={{ width: "100%" }} />
-                                                </Form.Item>
-                                            </Col>
-                                            <Col xs={24} md={5}>
-                                                <Form.Item name={[field.name, "imageUrl"]} label="Ảnh riêng">
-                                                    <Input placeholder="URL ảnh biến thể" />
-                                                </Form.Item>
-                                            </Col>
-                                            <Col xs={24} md={1}>
-                                                <Button
-                                                    danger
-                                                    type="text"
-                                                    icon={<MinusCircleOutlined />}
-                                                    onClick={() => remove(field.name)}
-                                                    aria-label={`Xóa biến thể ${index + 1}`}
-                                                />
-                                            </Col>
-                                        </Row>
-                                    </div>
-                                ))}
-                                {fields.length > 0 && <Divider style={{ margin: "12px 0" }} />}
-                                <Button
-                                    type="dashed"
-                                    icon={<PlusOutlined />}
-                                    onClick={() =>
-                                        add({
-                                            variantId: createVariantId(),
-                                            color: form.getFieldValue("color") || undefined,
-                                            size: form.getFieldValue("capacity") || "",
-                                            price: form.getFieldValue("price") || 0,
-                                            stock: 0,
-                                            imageUrl: "",
-                                        })
-                                    }
-                                    block
-                                >
-                                    Thêm biến thể màu / kích cỡ
-                                </Button>
-                            </>
-                        )}
-                    </Form.List>
-                </div>
-
-                <div className="dp-admin-form-block" style={{ marginTop: 16 }}>
-                    <Typography.Text strong style={{ display: "block", marginBottom: 12 }}>
-                        Danh sách hình ảnh (URL)
-                    </Typography.Text>
-                    <Form.List name="images">
-                        {(fields, { add, remove }) => (
-                            <>
-                                {fields.map((field, index) => (
-                                    <div key={field.key} style={{ marginBottom: 12 }}>
-                                        <Flex gap="small" align="center">
-                                            <Form.Item
-                                                name={field.name}
-                                                isListField={field.isListField}
-                                                fieldKey={field.fieldKey}
-                                                validateTrigger={["onChange", "onBlur"]}
-                                                rules={[
-                                                    {
-                                                        type: "url",
-                                                        message: "Đường dẫn ảnh không hợp lệ",
-                                                    },
-                                                ]}
-                                                noStyle
-                                            >
-                                                <Input placeholder={`Nhập đường dẫn ảnh ${index + 1} (https://...)`} />
-                                            </Form.Item>
-                                            {fields.length > 1 ? (
-                                                <MinusCircleOutlined
-                                                    style={{ color: "#ff4d4f", fontSize: 20, cursor: "pointer" }}
-                                                    onClick={() => remove(field.name)}
-                                                />
-                                            ) : null}
-                                        </Flex>
-                                    </div>
-                                ))}
-                                <Form.Item style={{ margin: 0 }}>
-                                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                                        Thêm ảnh khác
-                                    </Button>
-                                </Form.Item>
-                            </>
-                        )}
-                    </Form.List>
-                </div>
+                <KitchenDetailsSection
+                    materials={dynamicMaterials}
+                    colors={dynamicColors}
+                    onAddMaterial={addMaterialOption}
+                    onAddColor={addColorOption}
+                />
+                <ProductVariantsSection
+                    form={form}
+                    variants={watchedVariants}
+                    colors={dynamicColors}
+                    onAddColor={addColorOption}
+                />
+                <ProductImagesSection />
 
                 <Flex justify="flex-end" gap="small" style={{ marginTop: 24 }} wrap="wrap">
-                    <Button size="large" onClick={onClose}>
-                        Hủy
-                    </Button>
+                    <Button size="large" onClick={onClose}>Hủy</Button>
                     <Button size="large" type="primary" htmlType="submit">
                         {editingProduct ? "Lưu cập nhật" : "Thêm mới"}
                     </Button>

@@ -11,6 +11,7 @@ const {
 const { Op } = require("sequelize");
 const AuditLog = require("../models/auditLog");
 const { hashRefreshToken } = require("../utils/tokenSecurity");
+const { verifyTelegramWidgetData } = require("../services/telegramAuthService");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const VERIFICATION_EMAIL_COOLDOWN_MS = 60 * 1000;
@@ -168,8 +169,10 @@ const login = async (req, res) => {
         }
 
         if (!user.password) {
+            const providerLabel =
+                user.authProvider === "telegram" ? "Telegram" : "Google";
             return res.status(400).json({
-                message: "This account uses Google sign-in. Please continue with Google.",
+                message: `This account uses ${providerLabel} sign-in. Please continue with ${providerLabel}.`,
             });
         }
 
@@ -445,6 +448,105 @@ const googleLogin = async (req, res) => {
     }
 };
 
+const createUniqueTelegramUsername = async (claims, telegramId) => {
+    const preferredUsername = String(claims.username || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 32);
+    const seed = preferredUsername || `telegram_${telegramId.slice(-10)}`;
+    let username = seed;
+    let suffix = 1;
+
+    while (await User.findOne({ where: { username } })) {
+        username = `${seed.slice(0, 28)}${suffix}`;
+        suffix += 1;
+    }
+    return username;
+};
+
+const telegramLogin = async (req, res) => {
+    try {
+        const claims = verifyTelegramWidgetData(req.body);
+        const telegramId = String(claims.id || "").trim();
+        if (!telegramId) {
+            return res.status(400).json({ message: "Telegram không trả về định danh tài khoản." });
+        }
+
+        let user = await User.findOne({ where: { telegramId } });
+        if (!user) {
+            const username = await createUniqueTelegramUsername(claims, telegramId);
+            const displayName = [claims.first_name, claims.last_name]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+            user = await User.create({
+                name: displayName || claims.username || `Telegram ${telegramId.slice(-6)}`,
+                username,
+                email: `telegram-${telegramId}@telegram.invalid`,
+                phone: null,
+                avatarUrl: claims.photo_url || null,
+                telegramId,
+                authProvider: "telegram",
+                isVerified: true,
+                role: "user",
+                password: null,
+            });
+            await AuditLog.create({
+                userId: user.id,
+                action: "REGISTER",
+                details: "Đăng ký thành viên thông qua Telegram Login Widget",
+            });
+        } else {
+            if (!user.avatarUrl && claims.photo_url) user.avatarUrl = claims.photo_url;
+            if (!user.isVerified) user.isVerified = true;
+            if (!user.password) user.authProvider = "telegram";
+            await user.save();
+        }
+
+        if (user.lockUntil && user.lockUntil > Date.now()) {
+            const timeLeftMinutes = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
+            return res.status(403).json({
+                message: `Tài khoản đang bị khóa. Vui lòng thử lại sau ${timeLeftMinutes} phút.`,
+                timeLeftMinutes,
+            });
+        }
+
+        user.loginAttempts = 0;
+        user.lockUntil = null;
+        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+            expiresIn: "15m",
+        });
+        const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
+            expiresIn: "7d",
+        });
+        user.refreshToken = hashRefreshToken(refreshToken);
+        await user.save();
+
+        await AuditLog.create({
+            userId: user.id,
+            action: "LOGIN",
+            details: "Đăng nhập bằng Telegram Login Widget",
+        });
+
+        return res.json({
+            token,
+            refreshToken,
+            user: {
+                name: user.name,
+                role: user.role,
+                avatarUrl: user.avatarUrl,
+            },
+        });
+    } catch (error) {
+        console.error("Telegram Auth Error:", error.message);
+        return res.status(error.statusCode || 500).json({
+            message: error.statusCode
+                ? error.message
+                : "Lỗi hệ thống khi xử lý đăng nhập Telegram.",
+        });
+    }
+};
+
 module.exports = {
     register,
     resendVerification,
@@ -455,4 +557,5 @@ module.exports = {
     verifyEmail,
     logout,
     googleLogin,
+    telegramLogin,
 };

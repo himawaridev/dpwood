@@ -255,6 +255,7 @@ const getVerifiedRecipients = async (req, res) => {
         const role = USER_ROLES.includes(req.query.role) ? req.query.role : null;
         const where = {
             isVerified: true,
+            email: { [Op.notLike]: "%.invalid" },
             ...(role ? { role } : {}),
             ...(search
                 ? {
@@ -282,7 +283,7 @@ const getVerifiedRecipients = async (req, res) => {
             newsletterStatus: subscriptionByEmail.get(normalizeEmail(user.email)) || null,
         }));
         const [verifiedUsers, subscribedNewsletter] = await Promise.all([
-            User.count({ where: { isVerified: true } }),
+            User.count({ where: { isVerified: true, email: { [Op.notLike]: "%.invalid" } } }),
             NewsletterSubscriber.count({ where: { status: "subscribed" } }),
         ]);
         return res.status(200).json({
@@ -337,7 +338,9 @@ const getSubscribers = async (req, res) => {
 const resolveCampaignDefinition = async ({ audience, target, userId, userIds, subscriberId, snapshotAt }) => {
     const Model = audience === "subscribers" ? NewsletterSubscriber : User;
     const baseWhere = {
-        ...(audience === "subscribers" ? { status: "subscribed" } : { isVerified: true }),
+        ...(audience === "subscribers"
+            ? { status: "subscribed" }
+            : { isVerified: true, email: { [Op.notLike]: "%.invalid" } }),
         createdAt: { [Op.lte]: snapshotAt },
     };
 

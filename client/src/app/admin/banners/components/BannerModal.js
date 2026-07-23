@@ -10,11 +10,18 @@ const DEFAULT_VALUES = {
     eyebrow: "Nổi bật cho gian bếp",
     buttonText: "XEM SẢN PHẨM",
     buttonLink: "/products",
-    sortOrder: 0,
+    sortOrder: 1,
     isActive: true,
 };
 
-export default function BannerModal({ open, banner, onClose, onSaved }) {
+const getNextAvailableOrder = (usedSortOrders = []) => {
+    const used = new Set(usedSortOrders.map(Number));
+    let nextOrder = 1;
+    while (used.has(nextOrder)) nextOrder += 1;
+    return nextOrder;
+};
+
+export default function BannerModal({ open, banner, usedSortOrders = [], onClose, onSaved }) {
     const { message } = App.useApp();
     const [form] = Form.useForm();
     const [saving, setSaving] = useState(false);
@@ -23,8 +30,12 @@ export default function BannerModal({ open, banner, onClose, onSaved }) {
 
     useEffect(() => {
         if (!open) return;
-        form.setFieldsValue(banner ? { ...DEFAULT_VALUES, ...banner } : DEFAULT_VALUES);
-    }, [banner, form, open]);
+        form.setFieldsValue(
+            banner
+                ? { ...DEFAULT_VALUES, ...banner }
+                : { ...DEFAULT_VALUES, sortOrder: getNextAvailableOrder(usedSortOrders) },
+        );
+    }, [banner, form, open, usedSortOrders]);
 
     const uploadImage = async (file) => {
         const formData = new FormData();
@@ -132,8 +143,28 @@ export default function BannerModal({ open, banner, onClose, onSaved }) {
                     >
                         <Input placeholder="/products hoặc /products/{id}" />
                     </Form.Item>
-                    <Form.Item name="sortOrder" label="Thứ tự">
-                        <InputNumber min={0} max={9999} style={{ width: "100%" }} />
+                    <Form.Item
+                        name="sortOrder"
+                        label="Vị trí hiển thị"
+                        extra={
+                            usedSortOrders.length
+                                ? `Vị trí đã dùng: ${usedSortOrders.slice().sort((a, b) => a - b).join(", ")}`
+                                : "Banner đầu tiên sẽ ở vị trí 1."
+                        }
+                        rules={[
+                            { required: true, message: "Hãy chọn vị trí hiển thị" },
+                            {
+                                validator: (_, value) => {
+                                    const isOwnOrder = banner && Number(value) === Number(banner.sortOrder);
+                                    if (!isOwnOrder && usedSortOrders.map(Number).includes(Number(value))) {
+                                        return Promise.reject(new Error(`Vị trí ${value} đã được sử dụng`));
+                                    }
+                                    return Promise.resolve();
+                                },
+                            },
+                        ]}
+                    >
+                        <InputNumber min={1} max={9999} precision={0} style={{ width: "100%" }} />
                     </Form.Item>
                     <Form.Item name="isActive" label="Hiển thị" valuePropName="checked">
                         <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
