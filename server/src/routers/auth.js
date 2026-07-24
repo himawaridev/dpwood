@@ -12,6 +12,10 @@ const {
     logout,
     googleLogin,
     telegramLogin,
+    verifyTwoFactor,
+    updateTwoFactor,
+    listSessions,
+    revokeSession,
 } = require("../controllers/authController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const { authLimiter, passwordLimiter } = require("../middlewares/securityMiddleware");
@@ -24,6 +28,7 @@ router.post("/resend-verification", passwordLimiter, resendVerification);
 router.post("/login", authLimiter, login);
 router.post("/google", authLimiter, googleLogin);
 router.post("/telegram", authLimiter, telegramLogin);
+router.post("/2fa/verify", authLimiter, verifyTwoFactor);
 router.post("/refresh", refresh);
 router.post("/forgot", passwordLimiter, forgotPassword);
 router.post("/reset", passwordLimiter, resetPassword);
@@ -33,5 +38,8 @@ router.get("/verify/:token", verifyEmail);
 // [CLIENT] ROUTES - Yêu cầu đăng nhập
 // ==========================================
 router.post("/logout", authMiddleware, logout);
+router.put("/2fa", authMiddleware, updateTwoFactor);
+router.get("/sessions", authMiddleware, listSessions);
+router.delete("/sessions/:id", authMiddleware, revokeSession);
 
 module.exports = router;

@@ -26,6 +26,34 @@ const Order = sequelize.define(
             type: DataTypes.STRING,
             defaultValue: "COD",
         },
+        paymentStatus: {
+            type: DataTypes.STRING(30),
+            allowNull: false,
+            defaultValue: "UNPAID",
+        },
+        fulfillmentStatus: {
+            type: DataTypes.STRING(30),
+            allowNull: false,
+            defaultValue: "UNFULFILLED",
+        },
+        shippingFee: {
+            type: DataTypes.DECIMAL(15, 0),
+            allowNull: false,
+            defaultValue: 0,
+        },
+        idempotencyKey: {
+            type: DataTypes.STRING(180),
+            allowNull: true,
+            unique: true,
+        },
+        stockReservedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        stockReservationExpiresAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
         paymentExpiresAt: {
             type: DataTypes.DATE,
             allowNull: true,

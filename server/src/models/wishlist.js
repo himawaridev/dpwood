@@ -17,6 +17,14 @@ const Wishlist = sequelize.define(
             type: DataTypes.UUID,
             allowNull: false,
         },
+        priceWhenAdded: {
+            type: DataTypes.DECIMAL(15, 2),
+            allowNull: true,
+        },
+        lastNotifiedPrice: {
+            type: DataTypes.DECIMAL(15, 2),
+            allowNull: true,
+        },
     },
     {
         timestamps: true,

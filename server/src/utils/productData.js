@@ -68,6 +68,9 @@ const normalizeProductPayload = (input = {}, current = {}) => {
         gtin: text(merged.gtin, 32) || null,
         mpn: text(merged.mpn, 100) || null,
         price: nonNegativeNumber(merged.price),
+        costPrice: merged.costPrice === null || merged.costPrice === ""
+            ? null
+            : nonNegativeNumber(merged.costPrice),
         rating: Math.min(5, nonNegativeNumber(merged.rating)),
         ratingCount: nonNegativeInteger(merged.ratingCount),
         stock: variants.length
@@ -84,6 +87,21 @@ const normalizeProductPayload = (input = {}, current = {}) => {
         capacity: text(merged.capacity, 100) || null,
         dimensions: text(merged.dimensions, 150) || null,
         weight: text(merged.weight, 100) || null,
+        packageWeightGrams: merged.packageWeightGrams === null || merged.packageWeightGrams === ""
+            ? null
+            : nonNegativeInteger(merged.packageWeightGrams),
+        packageLengthCm: merged.packageLengthCm === null || merged.packageLengthCm === ""
+            ? null
+            : nonNegativeNumber(merged.packageLengthCm),
+        packageWidthCm: merged.packageWidthCm === null || merged.packageWidthCm === ""
+            ? null
+            : nonNegativeNumber(merged.packageWidthCm),
+        packageHeightCm: merged.packageHeightCm === null || merged.packageHeightCm === ""
+            ? null
+            : nonNegativeNumber(merged.packageHeightCm),
+        googleProductCategory: text(merged.googleProductCategory, 255) || null,
+        seoTitle: text(merged.seoTitle, 180) || null,
+        seoDescription: text(merged.seoDescription, 500) || null,
         warranty: text(merged.warranty, 100) || null,
         origin: text(merged.origin, 100) || null,
         packageContents: text(merged.packageContents, 5000) || null,
@@ -106,6 +124,9 @@ const validateProductPayload = (product) => {
     if (!Number.isFinite(Number(product.price)) || Number(product.price) <= 0) errors.push("Giá phải lớn hơn 0.");
     if (!product.category) errors.push("Danh mục là bắt buộc.");
     if (!product.imageUrl) errors.push("Sản phẩm cần ít nhất một ảnh HTTPS hợp lệ.");
+    if (product.costPrice !== null && Number(product.costPrice) > Number(product.price)) {
+        errors.push("Giá vốn đang cao hơn giá bán. Vui lòng kiểm tra lại.");
+    }
     if (product.variants.some((item) => !item.color && !item.size)) {
         errors.push("Mỗi biến thể cần có màu sắc hoặc kích cỡ/dung tích.");
     }

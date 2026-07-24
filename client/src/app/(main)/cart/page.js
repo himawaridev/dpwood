@@ -10,6 +10,7 @@ import AddressSection from "./components/AddressSection";
 import CartTable from "./components/CartTable";
 import ConfirmOrderModal from "./components/ConfirmOrderModal";
 import PaymentQRModal from "./components/PaymentQRModal";
+import { trackCommerceEvent } from "@/utils/commerceAnalytics";
 
 const { Title, Text } = Typography;
 
@@ -46,6 +47,8 @@ export default function CartPage() {
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
     const [isAddingAddress, setIsAddingAddress] = useState(false);
+    const [shippingFee, setShippingFee] = useState(0);
+    const [checkoutRequestId, setCheckoutRequestId] = useState("");
     const [addressForm] = Form.useForm();
     const router = useRouter();
 
@@ -81,8 +84,29 @@ export default function CartPage() {
             setIsAuth(true);
             fetchCurrentUser();
             fetchAddresses();
+            if (storedCart.length) {
+                api.put("/commerce/cart", { items: storedCart }).catch(() => {});
+            } else {
+                api.get("/commerce/cart")
+                    .then((response) => {
+                        const recoveredItems = Array.isArray(response.data?.items)
+                            ? response.data.items.map((item) => ({
+                                ...item,
+                                cartItemId: item.variantId
+                                    ? `${item.productId}:${item.variantId}`
+                                    : item.productId,
+                            }))
+                            : [];
+                        if (!recoveredItems.length) return;
+                        setCartItems(recoveredItems);
+                        localStorage.setItem("cart", JSON.stringify(recoveredItems));
+                        window.dispatchEvent(new Event("cart-updated"));
+                        message.info("Đã khôi phục giỏ hàng từ tài khoản của bạn.");
+                    })
+                    .catch(() => {});
+            }
         }
-    }, [fetchAddresses, fetchCurrentUser]);
+    }, [fetchAddresses, fetchCurrentUser, message]);
 
     const handleSaveNewAddress = async (values) => {
         try {
@@ -125,6 +149,9 @@ export default function CartPage() {
         setCartItems(newCart);
         localStorage.setItem("cart", JSON.stringify(newCart));
         window.dispatchEvent(new Event("cart-updated"));
+        if (localStorage.getItem("token")) {
+            api.put("/commerce/cart", { items: newCart }).catch(() => {});
+        }
     };
 
     const handleQuantityChange = (cartItemId, value) => {
@@ -144,7 +171,7 @@ export default function CartPage() {
     const totalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
     const finalPrice = Math.max(0, totalPrice - (discountData?.amount || 0));
 
-    const handleCheckoutClick = () => {
+    const handleCheckoutClick = async () => {
         if (!isAuth) {
             message.warning("Vui l\u00f2ng \u0111\u0103ng nh\u1eadp \u0111\u1ec3 thanh to\u00e1n.");
             router.push("/login");
@@ -159,6 +186,27 @@ export default function CartPage() {
             message.error("Vui l\u00f2ng ch\u1ecdn ho\u1eb7c th\u00eam \u0111\u1ecba ch\u1ec9 giao h\u00e0ng.");
             return;
         }
+        try {
+            const quoteResponse = await api.post("/commerce/shipping/quote", {
+                subtotal: finalPrice,
+                address: selectedAddress.fullAddress,
+            });
+            setShippingFee(Number(quoteResponse.data?.shippingFee || 0));
+        } catch {
+            setShippingFee(0);
+            message.warning("Chưa thể tính phí giao hàng. Hệ thống sẽ xác nhận lại khi đặt đơn.");
+        }
+        setCheckoutRequestId(
+            typeof crypto !== "undefined" && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `checkout-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        );
+        trackCommerceEvent("begin_checkout", {
+            itemCount: cartItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+            value: finalPrice,
+            currency: "VND",
+            paymentMethod,
+        });
         setIsConfirmModalVisible(true);
     };
 
@@ -181,7 +229,9 @@ export default function CartPage() {
                 discountCode,
             };
 
-            const response = await api.post("/orders/checkout", payload);
+            const response = await api.post("/orders/checkout", payload, {
+                headers: { "Idempotency-Key": checkoutRequestId },
+            });
 
             setIsConfirmModalVisible(false);
             setOrderCode(response.data.orderCode);
@@ -191,10 +241,19 @@ export default function CartPage() {
                 setIsQrModalVisible(true);
             } else {
                 localStorage.removeItem("cart");
+                api.delete("/commerce/cart").catch(() => {});
                 window.dispatchEvent(new Event("cart-updated"));
                 setCartItems([]);
                 setIsSuccess(true);
+                trackCommerceEvent("purchase", {
+                    orderCode: String(response.data.orderCode || ""),
+                    value: Number(response.data.totalAmount || finalPrice + shippingFee),
+                    shipping: Number(response.data.shippingFee || shippingFee),
+                    currency: "VND",
+                    paymentMethod: "COD",
+                });
             }
+            setCheckoutRequestId("");
         } catch (error) {
             message.error(error.response?.data?.message || "L\u1ed7i khi t\u1ea1o \u0111\u01a1n h\u00e0ng.");
             setIsConfirmModalVisible(false);
@@ -205,14 +264,22 @@ export default function CartPage() {
 
     const completePaidOrder = useCallback(
         (paidOrderCode = orderCode) => {
+            trackCommerceEvent("purchase", {
+                orderCode: String(paidOrderCode || ""),
+                value: finalPrice + shippingFee,
+                shipping: shippingFee,
+                currency: "VND",
+                paymentMethod: "QR",
+            });
             message.success("Thanh to\u00e1n th\u00e0nh c\u00f4ng. \u0110ang chuy\u1ec3n \u0111\u1ebfn \u0111\u01a1n h\u00e0ng c\u1ee7a b\u1ea1n.");
             setIsQrModalVisible(false);
             localStorage.removeItem("cart");
+            api.delete("/commerce/cart").catch(() => {});
             window.dispatchEvent(new Event("cart-updated"));
             setCartItems([]);
-            router.push(`/profile?status=PAID&orderCode=${paidOrderCode}`);
+            router.push(`/orders?status=PAID&orderCode=${paidOrderCode}`);
         },
-        [message, orderCode, router],
+        [finalPrice, message, orderCode, router, shippingFee],
     );
 
     const closeCanceledPayment = useCallback(() => {
@@ -420,7 +487,9 @@ export default function CartPage() {
                 selectedAddress={selectedAddress}
                 paymentMethod={paymentMethod}
                 cartItems={cartItems}
-                totalPrice={finalPrice}
+                subTotal={finalPrice}
+                shippingFee={shippingFee}
+                totalPrice={finalPrice + shippingFee}
             />
 
             <PaymentQRModal

@@ -415,6 +415,7 @@ const toggleWishlist = async (req, res) => {
         await Wishlist.create({
             userId: req.user.id,
             productId: product.id,
+            priceWhenAdded: product.price,
         });
 
         res.status(201).json({ wished: true, productId: product.id });
@@ -552,11 +553,13 @@ const updateProduct = async (req, res) => {
         if (existingSku) return res.status(409).json({ message: "SKU đã tồn tại" });
 
         const editableFields = [
-            "name", "description", "sku", "gtin", "mpn", "price", "stock", "sold",
+            "name", "description", "sku", "gtin", "mpn", "price", "costPrice", "stock", "sold",
             "imageUrl", "images", "variants", "category", "material", "color", "brand",
             "capacity", "dimensions", "weight", "warranty", "origin", "packageContents",
             "careInstructions", "safetyInstructions", "specifications", "dishwasherSafe",
-            "microwaveSafe", "returnEligible", "returnWindowDays",
+            "microwaveSafe", "returnEligible", "returnWindowDays", "packageWeightGrams",
+            "packageLengthCm", "packageWidthCm", "packageHeightCm", "googleProductCategory",
+            "seoTitle", "seoDescription",
         ];
         const updates = Object.fromEntries(editableFields.map((field) => [field, payload[field]]));
         await product.update(updates);

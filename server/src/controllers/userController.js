@@ -1,6 +1,7 @@
 ﻿const AuditLog = require("../models/auditLog");
 const User = require("../models/user");
 const { Op } = require("sequelize");
+const { ADMIN_ROLES, ASSIGNABLE_ROLES, ROLES, hasRole } = require("../config/accessControl");
 
 const normalizeAccountPhone = (value = "") => {
     const digits = String(value).replace(/\D/g, "");
@@ -9,18 +10,34 @@ const normalizeAccountPhone = (value = "") => {
 };
 
 const isValidAccountPhone = (phone) => /^0\d{9,10}$/.test(phone);
-const ALLOWED_ROLES = new Set(["root", "admin", "user", "staff"]);
+const ALLOWED_ROLES = new Set(ASSIGNABLE_ROLES);
 
 // Lấy danh sách tất cả người dùng
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.findAll({
+        const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+        const query = {
             attributes: { exclude: ["password", "refreshToken"] },
             paranoid: false,
             order: [["createdAt", "DESC"]],
-            limit: 500,
+            ...(hasPagination ? { limit, offset: (page - 1) * limit } : { limit: 500 }),
+        };
+        if (!hasPagination) {
+            return res.json(await User.findAll(query));
+        }
+
+        const { rows, count } = await User.findAndCountAll(query);
+        return res.json({
+            items: rows,
+            pagination: {
+                page,
+                limit,
+                total: count,
+                totalPages: Math.max(1, Math.ceil(count / limit)),
+            },
         });
-        res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -39,11 +56,11 @@ const updateRole = async (req, res) => {
         const user = await User.findByPk(id);
         if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
-        if (user.role === "root" && req.user.role !== "root") {
+        if (user.role === ROLES.ROOT && req.user.role !== ROLES.ROOT) {
             return res.status(403).json({ message: "Không thể thay đổi tài khoản Root" });
         }
 
-        if (["root", "admin"].includes(role) && req.user.role !== "root") {
+        if (hasRole({ role }, ADMIN_ROLES) && req.user.role !== ROLES.ROOT) {
             return res.status(403).json({ message: "Chỉ Root mới có thể cấp quyền quản trị" });
         }
 
@@ -62,7 +79,7 @@ const deleteUser = async (req, res) => {
         const user = await User.findByPk(id);
 
         if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
-        if (user.role === "root")
+        if (user.role === ROLES.ROOT)
             return res.status(403).json({ message: "Không thể xóa tài khoản Root!" });
 
         await user.destroy();
@@ -96,7 +113,7 @@ const toggleBanUser = async (req, res) => {
         const AuditLog = require("../models/auditLog");
 
         if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
-        if (user.role === "root")
+        if (user.role === ROLES.ROOT)
             return res.status(403).json({ message: "Không thể khóa tài khoản Root!" });
 
         if (user.lockUntil && user.lockUntil > Date.now()) {
@@ -167,7 +184,7 @@ const getSystemLogs = async (req, res) => {
             queryOptions.where.userId = req.user.id;
         } else {
             // Nếu không phải xem cá nhân, bắt buộc phải là Admin
-            if (req.user.role !== "admin" && req.user.role !== "root") {
+            if (!hasRole(req.user, ADMIN_ROLES)) {
                 return res.status(403).json({ message: "Bạn không có quyền truy cập nhật ký này" });
             }
         }

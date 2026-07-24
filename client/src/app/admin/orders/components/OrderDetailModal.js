@@ -1,11 +1,62 @@
-import React from "react";
-import { Modal, Descriptions, Typography, Image, Button } from "antd";
+import React, { useEffect, useState } from "react";
+import {
+    App,
+    Modal,
+    Descriptions,
+    Typography,
+    Image,
+    Button,
+    Form,
+    Input,
+    Select,
+    DatePicker,
+    Row,
+    Col,
+    Divider,
+} from "antd";
+import dayjs from "dayjs";
+import api from "@/utils/axios";
 import { formatCurrency } from "@/utils/formatters";
 import OrderStatusTag from "@/components/order/OrderStatusTag";
 
 const { Title, Text } = Typography;
 
-export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) {
+export default function OrderDetailModal({ isVisible, onClose, selectedOrder, onRefresh }) {
+    const { message } = App.useApp();
+    const [form] = Form.useForm();
+    const [savingShipment, setSavingShipment] = useState(false);
+    const shipment = selectedOrder?.Shipment || selectedOrder?.shipment || {};
+
+    useEffect(() => {
+        if (!isVisible || !selectedOrder) return;
+        form.setFieldsValue({
+            carrier: shipment.carrier,
+            service: shipment.service,
+            trackingCode: shipment.trackingCode,
+            status: shipment.status || "READY",
+            estimatedDeliveryAt: shipment.estimatedDeliveryAt
+                ? dayjs(shipment.estimatedDeliveryAt)
+                : null,
+        });
+    }, [form, isVisible, selectedOrder, shipment.carrier, shipment.estimatedDeliveryAt, shipment.service, shipment.status, shipment.trackingCode]);
+
+    const saveShipment = async () => {
+        try {
+            const values = await form.validateFields();
+            setSavingShipment(true);
+            await api.put(`/commerce/orders/${selectedOrder.id}/shipment`, {
+                ...values,
+                estimatedDeliveryAt: values.estimatedDeliveryAt?.toISOString() || null,
+            });
+            message.success("Đã cập nhật vận đơn.");
+            await onRefresh?.();
+        } catch (error) {
+            if (error?.errorFields) return;
+            message.error(error.response?.data?.message || "Không thể cập nhật vận đơn.");
+        } finally {
+            setSavingShipment(false);
+        }
+    };
     const getModalDescriptionItems = () => [
         {
             key: "1",
@@ -54,6 +105,57 @@ export default function OrderDetailModal({ isVisible, onClose, selectedOrder }) 
                         size="small"
                         items={getModalDescriptionItems()}
                     />
+
+                    <Divider orientation="left">Vận chuyển</Divider>
+                    <Form form={form} layout="vertical">
+                        <Row gutter={12}>
+                            <Col xs={24} sm={12}>
+                                <Form.Item name="carrier" label="Đơn vị vận chuyển">
+                                    <Input placeholder="VD: GHN, GHTK, Viettel Post" />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <Form.Item name="service" label="Dịch vụ">
+                                    <Input placeholder="VD: Giao tiêu chuẩn" />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <Form.Item name="trackingCode" label="Mã vận đơn">
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <Form.Item name="status" label="Trạng thái vận chuyển">
+                                    <Select
+                                        options={[
+                                            { value: "READY", label: "Sẵn sàng bàn giao" },
+                                            { value: "PICKED_UP", label: "Đã lấy hàng" },
+                                            { value: "IN_TRANSIT", label: "Đang vận chuyển" },
+                                            { value: "DELIVERED", label: "Đã giao" },
+                                            { value: "FAILED", label: "Giao thất bại" },
+                                            { value: "RETURNED", label: "Hoàn về" },
+                                        ]}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <Form.Item name="estimatedDeliveryAt" label="Ngày giao dự kiến">
+                                    <DatePicker showTime style={{ width: "100%" }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} style={{ display: "flex", alignItems: "end" }}>
+                                <Button
+                                    type="primary"
+                                    block
+                                    loading={savingShipment}
+                                    onClick={saveShipment}
+                                    style={{ marginBottom: 24 }}
+                                >
+                                    Lưu vận đơn
+                                </Button>
+                            </Col>
+                        </Row>
+                    </Form>
 
                     <div>
                         <Title level={5} style={{ marginBottom: 16 }}>

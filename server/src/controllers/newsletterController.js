@@ -13,16 +13,17 @@ const {
     generateNewsletterWelcomeHtml,
 } = require("../templates/emailTemplates");
 const { wakeEmailCampaignWorker } = require("../services/emailCampaignService");
+const { ASSIGNABLE_ROLES } = require("../config/accessControl");
+const { getConfiguredFrontendUrl } = require("../config/appConfig");
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const WELCOME_COUPON_CODE = "DPWOODWELCOME10";
 const MAX_WELCOME_RECIPIENTS = 1000;
 const MAX_SELECTED_RECIPIENTS = 5000;
-const USER_ROLES = ["root", "admin", "staff", "user"];
+const USER_ROLES = ASSIGNABLE_ROLES;
 
-const frontendUrl = () =>
-    String(process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
+const frontendUrl = () => getConfiguredFrontendUrl();
 
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;

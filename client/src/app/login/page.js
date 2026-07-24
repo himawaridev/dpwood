@@ -16,6 +16,7 @@ import api from "@/utils/axios";
 import { waitForAuthLoading } from "@/utils/authLoading";
 import { persistAuthSession } from "@/utils/authSession";
 import SocialAuthMethods from "@/components/auth/SocialAuthMethods";
+import TwoFactorModal from "@/components/auth/TwoFactorModal";
 
 const { Title, Text, Paragraph } = Typography;
 const GOOGLE_AUTH_MESSAGE_KEY = "login-google-auth";
@@ -30,6 +31,9 @@ export default function LoginPage() {
     const [submitting, setSubmitting] = useState(false);
     const [googleSubmitting, setGoogleSubmitting] = useState(false);
     const [telegramSubmitting, setTelegramSubmitting] = useState(false);
+    const [twoFactorChallenge, setTwoFactorChallenge] = useState("");
+    const [twoFactorCode, setTwoFactorCode] = useState("");
+    const [twoFactorSubmitting, setTwoFactorSubmitting] = useState(false);
 
     useEffect(() => {
         if (window.location.hostname === "127.0.0.1") {
@@ -49,12 +53,39 @@ export default function LoginPage() {
     }, [resendCooldown]);
 
     const handleLoginSuccess = (data, messageKey) => {
+        if (data?.requiresTwoFactor) {
+            setTwoFactorChallenge(data.challengeToken);
+            setTwoFactorCode("");
+            message.info({
+                content: data.message || "Vui lòng nhập mã xác thực đã gửi qua email.",
+                ...(messageKey ? { key: messageKey } : {}),
+            });
+            return false;
+        }
         persistAuthSession(data);
         message.success({
             content: "Đăng nhập thành công.",
             ...(messageKey ? { key: messageKey } : {}),
         });
         router.push("/");
+        return true;
+    };
+
+    const verifyTwoFactorLogin = async () => {
+        if (twoFactorSubmitting || twoFactorCode.length !== 6) return;
+        try {
+            setTwoFactorSubmitting(true);
+            const response = await api.post("/auth/2fa/verify", {
+                challengeToken: twoFactorChallenge,
+                code: twoFactorCode,
+            });
+            setTwoFactorChallenge("");
+            handleLoginSuccess(response.data);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xác thực mã đăng nhập.");
+        } finally {
+            setTwoFactorSubmitting(false);
+        }
     };
 
     const onFinish = async (values) => {
@@ -69,7 +100,7 @@ export default function LoginPage() {
                 login: values.login,
                 password: values.password,
             });
-            handleLoginSuccess(response.data);
+            if (!handleLoginSuccess(response.data)) setSubmitting(false);
         } catch (error) {
             await waitForAuthLoading(startedAt);
             const errorMessage = error.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại.";
@@ -110,7 +141,9 @@ export default function LoginPage() {
                 duration: 0,
             });
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
-            handleLoginSuccess(response.data, GOOGLE_AUTH_MESSAGE_KEY);
+            if (!handleLoginSuccess(response.data, GOOGLE_AUTH_MESSAGE_KEY)) {
+                setGoogleSubmitting(false);
+            }
         } catch (error) {
             await waitForAuthLoading(startedAt);
             message.error({
@@ -149,7 +182,9 @@ export default function LoginPage() {
                 duration: 0,
             });
             const response = await api.post("/auth/telegram", telegramUser);
-            handleLoginSuccess(response.data, TELEGRAM_AUTH_MESSAGE_KEY);
+            if (!handleLoginSuccess(response.data, TELEGRAM_AUTH_MESSAGE_KEY)) {
+                setTelegramSubmitting(false);
+            }
         } catch (error) {
             await waitForAuthLoading(startedAt);
             setTelegramSubmitting(false);
@@ -170,6 +205,17 @@ export default function LoginPage() {
 
     return (
         <div className="dp-page dp-auth-page">
+            <TwoFactorModal
+                open={Boolean(twoFactorChallenge)}
+                value={twoFactorCode}
+                loading={twoFactorSubmitting}
+                onChange={setTwoFactorCode}
+                onSubmit={verifyTwoFactorLogin}
+                onCancel={() => {
+                    setTwoFactorChallenge("");
+                    setTwoFactorCode("");
+                }}
+            />
             <div className="dp-container dp-auth-layout dp-auth-shell">
                 <aside className="dp-auth-aside">
                     <div className="dp-auth-brand-mark">

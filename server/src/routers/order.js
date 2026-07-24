@@ -5,6 +5,7 @@ const orderController = require("../controllers/orderController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const roleMiddleware = require("../middlewares/roleMiddleware");
 const { orderStatusLimiter, paymentLimiter } = require("../middlewares/securityMiddleware");
+const { MANAGER_ROLES } = require("../config/accessControl");
 
 // ==========================================
 // [PUBLIC] ROUTES - Khách vãng lai & Hệ thống thứ 3
@@ -26,13 +27,13 @@ router.put("/:orderCode/cancel", authMiddleware, orderController.cancelOrder);
 router.get(
     "/admin",
     authMiddleware,
-    roleMiddleware("root", "admin", "staff"),
+    roleMiddleware(MANAGER_ROLES),
     orderController.getAllOrdersAdmin,
 );
 router.put(
     "/admin/:id/status",
     authMiddleware,
-    roleMiddleware("root", "admin", "staff"),
+    roleMiddleware(MANAGER_ROLES),
     orderController.updateOrderStatusAdmin,
 );
 

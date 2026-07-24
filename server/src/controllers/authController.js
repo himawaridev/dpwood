@@ -12,22 +12,15 @@ const { Op } = require("sequelize");
 const AuditLog = require("../models/auditLog");
 const { hashRefreshToken } = require("../utils/tokenSecurity");
 const { verifyTelegramWidgetData } = require("../services/telegramAuthService");
+const AuthSession = require("../models/authSession");
+const { ADMIN_ROLES, hasRole } = require("../config/accessControl");
+const { getFrontendUrlFromRequest } = require("../config/appConfig");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const VERIFICATION_EMAIL_COOLDOWN_MS = 60 * 1000;
-const getFrontendUrl = (req) => {
-    const configuredUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
-    if (configuredUrl) return configuredUrl.split(",")[0].trim().replace(/\/$/, "");
-
-    const origin = req.get("origin");
-    if (origin) return origin.replace(/\/$/, "");
-
-    const forwardedHost = req.get("x-forwarded-host");
-    const forwardedProto = req.get("x-forwarded-proto") || "https";
-    if (forwardedHost) return `${forwardedProto}://${forwardedHost}`.replace(/\/$/, "");
-
-    return "http://localhost:3000";
-};
+const TWO_FACTOR_TTL_MS = 5 * 60 * 1000;
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const getFrontendUrl = (req) => getFrontendUrlFromRequest(req);
 
 const getVerificationRetryAfter = (user) => {
     if (!user.emailVerifySentAt) return 0;
@@ -191,30 +184,8 @@ const login = async (req, res) => {
         user.loginAttempts = 0;
         user.lockUntil = null;
 
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-            expiresIn: "15m",
-        });
-        const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
-            expiresIn: "7d",
-        });
-
-        user.refreshToken = hashRefreshToken(refreshToken);
         await user.save();
-
-        await AuditLog.create({
-            userId: user.id,
-            action: "LOGIN",
-            details: "Đăng nhập thành công",
-        });
-        res.json({
-            token,
-            refreshToken,
-            user: {
-                name: user.name,
-                role: user.role,
-                avatarUrl: user.avatarUrl,
-            },
-        });
+        return respondAfterPrimaryAuth(req, res, user, "Đăng nhập thành công");
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -231,11 +202,21 @@ const logout = async (req, res) => {
         const user = await User.findByPk(req.user.id);
 
         if (user) {
-            // 1. Xóa refreshToken trong DB nếu có gửi lên
-            if (hashRefreshToken(refreshToken) === user.refreshToken) {
+            const refreshTokenHash = hashRefreshToken(refreshToken);
+            if (refreshTokenHash === user.refreshToken) {
                 user.refreshToken = null;
                 await user.save();
             }
+            await AuthSession.update(
+                { revokedAt: new Date() },
+                {
+                    where: {
+                        userId: user.id,
+                        refreshTokenHash,
+                        revokedAt: null,
+                    },
+                },
+            );
 
             // 2. LUÔN LUÔN ghi log vì ta đã biết chắc chắn ai đang gọi logout qua Access Token
             await AuditLog.create({
@@ -258,13 +239,33 @@ const refresh = async (req, res) => {
         if (!refreshToken) {
             return res.status(401).json({ message: "No refresh token" });
         }
-        const user = await User.findOne({ where: { refreshToken: hashRefreshToken(refreshToken) } });
-        if (!user) {
-            return res.status(403).json({ message: "Invalid refesh token" });
-        }
         try {
-            jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-            const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+            const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+            const refreshTokenHash = hashRefreshToken(refreshToken);
+            const session = decoded.sid
+                ? await AuthSession.findOne({
+                    where: {
+                        id: decoded.sid,
+                        userId: decoded.id,
+                        refreshTokenHash,
+                        revokedAt: null,
+                    },
+                })
+                : null;
+            const user = await User.findByPk(decoded.id);
+            const legacyMatch =
+                !decoded.sid && user && user.refreshToken === refreshTokenHash;
+            if (!user || (!session && !legacyMatch)) {
+                return res.status(403).json({ message: "Refresh token không hợp lệ." });
+            }
+            if (session && session.expiresAt <= new Date()) {
+                return res.status(403).json({ message: "Phiên đăng nhập đã hết hạn." });
+            }
+            if (session) {
+                session.lastUsedAt = new Date();
+                await session.save();
+            }
+            const token = jwt.sign({ id: user.id, role: user.role, sid: session?.id }, process.env.JWT_SECRET, {
                 expiresIn: "15m",
             });
             res.json({ token });
@@ -417,35 +418,173 @@ const googleLogin = async (req, res) => {
         user.loginAttempts = 0;
         user.lockUntil = null;
 
-        const jwtToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-            expiresIn: "15m",
-        });
-        const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
-            expiresIn: "7d",
-        });
-
-        user.refreshToken = hashRefreshToken(refreshToken);
         await user.save();
-
-        await AuditLog.create({
-            userId: user.id,
-            action: "LOGIN",
-            details: "Đăng nhập tự động bằng Google OAuth2",
-        });
-
-        res.json({
-            token: jwtToken,
-            refreshToken,
-            user: {
-                name: user.name,
-                role: user.role,
-                avatarUrl: user.avatarUrl,
-            },
-        });
+        return respondAfterPrimaryAuth(req, res, user, "Đăng nhập bằng Google OAuth2");
     } catch (error) {
         console.error("Google Auth Error:", error);
         res.status(500).json({ message: "Lỗi hệ thống khi xử lý đăng nhập Google." });
     }
+};
+
+const hashTwoFactorCode = (userId, code) =>
+    crypto
+        .createHmac("sha256", process.env.JWT_SECRET)
+        .update(`${userId}:${code}`)
+        .digest("hex");
+
+const createAuthSession = async (req, user) => {
+    const sessionId = crypto.randomUUID();
+    const refreshToken = jwt.sign(
+        { id: user.id, sid: sessionId },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: "7d" },
+    );
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+    await AuthSession.create({
+        id: sessionId,
+        userId: user.id,
+        refreshTokenHash,
+        deviceLabel: String(req.get("user-agent") || "Thiết bị không xác định").slice(0, 160),
+        ipAddress: String(req.ip || "").slice(0, 64) || null,
+        lastUsedAt: new Date(),
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    });
+    user.refreshToken = refreshTokenHash;
+    await user.save();
+    return { sessionId, refreshToken };
+};
+
+const issueAuthResponse = async (req, user) => {
+    const { sessionId, refreshToken } = await createAuthSession(req, user);
+    const token = jwt.sign(
+        { id: user.id, role: user.role, sid: sessionId },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" },
+    );
+    return {
+        token,
+        refreshToken,
+        user: {
+            id: user.id,
+            name: user.name,
+            role: user.role,
+            avatarUrl: user.avatarUrl,
+            twoFactorEnabled: user.twoFactorEnabled,
+        },
+    };
+};
+
+const sendTwoFactorChallenge = async (req, user) => {
+    const code = String(crypto.randomInt(100000, 1000000));
+    user.twoFactorCodeHash = hashTwoFactorCode(user.id, code);
+    user.twoFactorExpiresAt = new Date(Date.now() + TWO_FACTOR_TTL_MS);
+    await user.save();
+    await sendEmail(
+        user.email,
+        "[DPWOOD] Mã xác thực đăng nhập",
+        `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;border:1px solid #eee">
+            <h2 style="margin:0 0 12px;color:#222">Xác thực đăng nhập DPWOOD</h2>
+            <p>Mã xác thực của bạn là:</p>
+            <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#f09b90">${code}</div>
+            <p style="color:#666">Mã có hiệu lực trong 5 phút. Không cung cấp mã này cho bất kỳ ai.</p>
+        </div>`,
+    );
+    return jwt.sign(
+        { id: user.id, purpose: "two-factor-login" },
+        process.env.JWT_SECRET,
+        { expiresIn: "5m" },
+    );
+};
+
+const respondAfterPrimaryAuth = async (req, res, user, auditDetails) => {
+    if (user.twoFactorEnabled && hasRole(user, ADMIN_ROLES)) {
+        const challengeToken = await sendTwoFactorChallenge(req, user);
+        return res.status(202).json({
+            requiresTwoFactor: true,
+            challengeToken,
+            message: "Mã xác thực đã được gửi đến email quản trị.",
+        });
+    }
+
+    const response = await issueAuthResponse(req, user);
+    await AuditLog.create({
+        userId: user.id,
+        action: "LOGIN",
+        details: auditDetails,
+    });
+    return res.json(response);
+};
+
+const verifyTwoFactor = async (req, res) => {
+    try {
+        const { challengeToken, code } = req.body;
+        const decoded = jwt.verify(challengeToken, process.env.JWT_SECRET);
+        if (decoded.purpose !== "two-factor-login") {
+            return res.status(400).json({ message: "Phiên xác thực không hợp lệ." });
+        }
+        const user = await User.findByPk(decoded.id);
+        if (
+            !user ||
+            !user.twoFactorCodeHash ||
+            !user.twoFactorExpiresAt ||
+            user.twoFactorExpiresAt <= new Date()
+        ) {
+            return res.status(400).json({ message: "Mã xác thực đã hết hạn." });
+        }
+        const receivedHash = hashTwoFactorCode(user.id, String(code || "").trim());
+        const expected = Buffer.from(user.twoFactorCodeHash, "hex");
+        const received = Buffer.from(receivedHash, "hex");
+        if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
+            return res.status(400).json({ message: "Mã xác thực không chính xác." });
+        }
+        user.twoFactorCodeHash = null;
+        user.twoFactorExpiresAt = null;
+        await user.save();
+        const response = await issueAuthResponse(req, user);
+        await AuditLog.create({
+            userId: user.id,
+            action: "LOGIN",
+            details: "Đăng nhập quản trị với xác thực hai bước",
+        });
+        return res.json(response);
+    } catch {
+        return res.status(400).json({ message: "Phiên xác thực đã hết hạn hoặc không hợp lệ." });
+    }
+};
+
+const updateTwoFactor = async (req, res) => {
+    const enabled = req.body.enabled === true;
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Không tìm thấy tài khoản." });
+    if (!hasRole(user, ADMIN_ROLES)) {
+        return res.status(403).json({ message: "2FA quản trị chỉ áp dụng cho admin và root." });
+    }
+    user.twoFactorEnabled = enabled;
+    user.twoFactorCodeHash = null;
+    user.twoFactorExpiresAt = null;
+    await user.save();
+    return res.json({
+        message: enabled ? "Đã bật xác thực hai bước." : "Đã tắt xác thực hai bước.",
+        twoFactorEnabled: user.twoFactorEnabled,
+    });
+};
+
+const listSessions = async (req, res) => {
+    const sessions = await AuthSession.findAll({
+        where: { userId: req.user.id, revokedAt: null, expiresAt: { [Op.gt]: new Date() } },
+        attributes: ["id", "deviceLabel", "ipAddress", "lastUsedAt", "expiresAt", "createdAt"],
+        order: [["lastUsedAt", "DESC"]],
+    });
+    return res.json(sessions);
+};
+
+const revokeSession = async (req, res) => {
+    const [updated] = await AuthSession.update(
+        { revokedAt: new Date() },
+        { where: { id: req.params.id, userId: req.user.id, revokedAt: null } },
+    );
+    if (!updated) return res.status(404).json({ message: "Không tìm thấy phiên đăng nhập." });
+    return res.json({ message: "Đã thu hồi phiên đăng nhập." });
 };
 
 const createUniqueTelegramUsername = async (claims, telegramId) => {
@@ -513,30 +652,8 @@ const telegramLogin = async (req, res) => {
 
         user.loginAttempts = 0;
         user.lockUntil = null;
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-            expiresIn: "15m",
-        });
-        const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
-            expiresIn: "7d",
-        });
-        user.refreshToken = hashRefreshToken(refreshToken);
         await user.save();
-
-        await AuditLog.create({
-            userId: user.id,
-            action: "LOGIN",
-            details: "Đăng nhập bằng Telegram Login Widget",
-        });
-
-        return res.json({
-            token,
-            refreshToken,
-            user: {
-                name: user.name,
-                role: user.role,
-                avatarUrl: user.avatarUrl,
-            },
-        });
+        return respondAfterPrimaryAuth(req, res, user, "Đăng nhập bằng Telegram Login Widget");
     } catch (error) {
         console.error("Telegram Auth Error:", error.message);
         return res.status(error.statusCode || 500).json({
@@ -558,4 +675,8 @@ module.exports = {
     logout,
     googleLogin,
     telegramLogin,
+    verifyTwoFactor,
+    updateTwoFactor,
+    listSessions,
+    revokeSession,
 };

@@ -30,6 +30,9 @@ ${variant?.size ? `<g:size>${escapeXml(variant.size)}</g:size>` : ""}
 ${product.gtin ? `<g:gtin>${escapeXml(product.gtin)}</g:gtin>` : ""}
 ${product.mpn ? `<g:mpn>${escapeXml(product.mpn)}</g:mpn>` : ""}
 ${!product.gtin && !product.mpn ? "<g:identifier_exists>false</g:identifier_exists>" : ""}
+${product.googleProductCategory ? `<g:google_product_category>${escapeXml(product.googleProductCategory)}</g:google_product_category>` : ""}
+${product.packageWeightGrams ? `<g:shipping_weight>${escapeXml(product.packageWeightGrams)} g</g:shipping_weight>` : ""}
+<g:shipping><g:country>VN</g:country><g:service>Tiêu chuẩn</g:service><g:price>30000 VND</g:price></g:shipping>
 <g:product_type>${escapeXml(product.categoryLabel || product.category || "Đồ gia dụng nhà bếp")}</g:product_type>
 </item>`;
 };

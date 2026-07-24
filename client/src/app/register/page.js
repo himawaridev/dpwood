@@ -10,6 +10,7 @@ import api from "@/utils/axios";
 import { waitForAuthLoading } from "@/utils/authLoading";
 import { persistAuthSession } from "@/utils/authSession";
 import SocialAuthMethods from "@/components/auth/SocialAuthMethods";
+import TwoFactorModal from "@/components/auth/TwoFactorModal";
 
 const { Title, Text, Paragraph } = Typography;
 const GOOGLE_AUTH_MESSAGE_KEY = "register-google-auth";
@@ -21,6 +22,9 @@ export default function RegisterPage() {
     const [submitting, setSubmitting] = useState(false);
     const [googleSubmitting, setGoogleSubmitting] = useState(false);
     const [telegramSubmitting, setTelegramSubmitting] = useState(false);
+    const [twoFactorChallenge, setTwoFactorChallenge] = useState("");
+    const [twoFactorCode, setTwoFactorCode] = useState("");
+    const [twoFactorSubmitting, setTwoFactorSubmitting] = useState(false);
 
     useEffect(() => {
         if (window.location.hostname === "127.0.0.1") {
@@ -30,12 +34,38 @@ export default function RegisterPage() {
     }, []);
 
     const handleLoginSuccess = (data, messageKey) => {
+        if (data?.requiresTwoFactor) {
+            setTwoFactorChallenge(data.challengeToken);
+            message.info({
+                content: data.message || "Vui lòng nhập mã xác thực đã gửi qua email.",
+                ...(messageKey ? { key: messageKey } : {}),
+            });
+            return false;
+        }
         persistAuthSession(data);
         message.success({
             content: "Đăng ký và đăng nhập thành công.",
             ...(messageKey ? { key: messageKey } : {}),
         });
         router.push("/");
+        return true;
+    };
+
+    const verifyTwoFactorLogin = async () => {
+        if (twoFactorSubmitting || twoFactorCode.length !== 6) return;
+        try {
+            setTwoFactorSubmitting(true);
+            const response = await api.post("/auth/2fa/verify", {
+                challengeToken: twoFactorChallenge,
+                code: twoFactorCode,
+            });
+            setTwoFactorChallenge("");
+            handleLoginSuccess(response.data);
+        } catch (error) {
+            message.error(error.response?.data?.message || "Không thể xác thực mã đăng nhập.");
+        } finally {
+            setTwoFactorSubmitting(false);
+        }
     };
 
     const onFinish = async (values) => {
@@ -66,7 +96,9 @@ export default function RegisterPage() {
                 duration: 0,
             });
             const response = await api.post("/auth/google", { token: credentialResponse.credential });
-            handleLoginSuccess(response.data, GOOGLE_AUTH_MESSAGE_KEY);
+            if (!handleLoginSuccess(response.data, GOOGLE_AUTH_MESSAGE_KEY)) {
+                setGoogleSubmitting(false);
+            }
         } catch (error) {
             await waitForAuthLoading(startedAt);
             message.error({
@@ -105,7 +137,9 @@ export default function RegisterPage() {
                 duration: 0,
             });
             const response = await api.post("/auth/telegram", telegramUser);
-            handleLoginSuccess(response.data, TELEGRAM_AUTH_MESSAGE_KEY);
+            if (!handleLoginSuccess(response.data, TELEGRAM_AUTH_MESSAGE_KEY)) {
+                setTelegramSubmitting(false);
+            }
         } catch (error) {
             await waitForAuthLoading(startedAt);
             setTelegramSubmitting(false);
@@ -126,6 +160,17 @@ export default function RegisterPage() {
 
     return (
         <div className="dp-page dp-auth-page">
+            <TwoFactorModal
+                open={Boolean(twoFactorChallenge)}
+                value={twoFactorCode}
+                loading={twoFactorSubmitting}
+                onChange={setTwoFactorCode}
+                onSubmit={verifyTwoFactorLogin}
+                onCancel={() => {
+                    setTwoFactorChallenge("");
+                    setTwoFactorCode("");
+                }}
+            />
             <div className="dp-container dp-auth-register-shell">
                 <section className="dp-auth-register-intro">
                     <div className="dp-auth-brand-mark">

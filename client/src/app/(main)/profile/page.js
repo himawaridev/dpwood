@@ -7,13 +7,14 @@ import {
     HistoryOutlined,
     CheckCircleOutlined,
     WalletOutlined,
+    SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import api from "@/utils/axios";
 import { useRouter } from "next/navigation";
 import UserInfo from "./components/UserInfo";
 import EditProfileModal from "./components/EditProfileModal";
-import MyOrders from "./components/MyOrders";
 import TransactionHistory from "./components/TransactionHistory";
+import SecurityPanel from "./components/SecurityPanel";
 
 const { Title, Text } = Typography;
 
@@ -89,15 +90,6 @@ export default function UserProfilePage() {
 
     const tabItems = [
         {
-            key: "orders",
-            label: (
-                <span>
-                    <ShoppingOutlined /> Đơn hàng
-                </span>
-            ),
-            children: <MyOrders orders={orders} onRefresh={fetchData} hasError={ordersError} />,
-        },
-        {
             key: "transactions",
             label: (
                 <span>
@@ -105,6 +97,15 @@ export default function UserProfilePage() {
                 </span>
             ),
             children: <TransactionHistory logs={logs} hasError={logsError} />,
+        },
+        {
+            key: "security",
+            label: (
+                <span>
+                    <SafetyCertificateOutlined /> Bảo mật
+                </span>
+            ),
+            children: <SecurityPanel user={user} onRefresh={fetchData} />,
         },
     ];
 
@@ -174,7 +175,7 @@ export default function UserProfilePage() {
                 </Row>
 
                 <Card variant="outlined" className="dp-panel dp-profile-tabs-panel">
-                    <Tabs defaultActiveKey="orders" size="large" items={tabItems} className="dp-profile-tabs" />
+                    <Tabs defaultActiveKey="transactions" size="large" items={tabItems} className="dp-profile-tabs" />
                 </Card>
             </div>
 

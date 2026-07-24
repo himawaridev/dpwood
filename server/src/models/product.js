@@ -21,6 +21,10 @@ const Product = sequelize.define(
             type: DataTypes.DECIMAL(15, 2),
             allowNull: false,
         },
+        costPrice: {
+            type: DataTypes.DECIMAL(15, 2),
+            allowNull: true,
+        },
         stock: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -80,6 +84,34 @@ const Product = sequelize.define(
         },
         weight: {
             type: DataTypes.STRING(100),
+            allowNull: true,
+        },
+        packageWeightGrams: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        packageLengthCm: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+        },
+        packageWidthCm: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+        },
+        packageHeightCm: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+        },
+        googleProductCategory: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        },
+        seoTitle: {
+            type: DataTypes.STRING(180),
+            allowNull: true,
+        },
+        seoDescription: {
+            type: DataTypes.STRING(500),
             allowNull: true,
         },
         warranty: {

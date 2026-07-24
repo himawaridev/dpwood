@@ -25,7 +25,7 @@ export default function SuccessResult({ orderCode }) {
                             </Button>
                             <Button
                                 icon={<ProfileOutlined />}
-                                onClick={() => router.push("/profile")}
+                                onClick={() => router.push("/orders")}
                                 size="large"
                             >
                                 Xem đơn hàng

@@ -5,6 +5,8 @@ import "./globals.css";
 import Providers from "./Providers";
 import AppBootLoader from "@/components/AppBootLoader";
 import BackendKeepAlive from "@/components/BackendKeepAlive";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,9 +67,24 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="dpwood-ga4" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}',{send_page_view:false});`}
+            </Script>
+          </>
+        ) : null}
         <AppBootLoader />
         <BackendKeepAlive />
-        <Providers>{children}</Providers>
+        <Providers>
+          <AnalyticsTracker />
+          {children}
+        </Providers>
       </body>
     </html>
   );

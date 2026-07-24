@@ -11,6 +11,7 @@ import ProductInfo from "./components/ProductInfo";
 import ProductKitchenSpecs from "./components/ProductKitchenSpecs";
 import RelatedProducts from "./components/RelatedProducts";
 import ProductReviews from "./components/ProductReviews";
+import { trackCommerceEvent } from "@/utils/commerceAnalytics";
 
 const { Title } = Typography;
 
@@ -45,6 +46,13 @@ export default function ProductDetailPage() {
 
                 const data = productRes.data;
                 setProduct(data);
+                trackCommerceEvent("view_item", {
+                    productId: data.id,
+                    sku: data.sku || "",
+                    category: data.category || "",
+                    value: Number(data.price || 0),
+                    currency: "VND",
+                });
 
                 const token = localStorage.getItem("token");
                 if (token) {
@@ -119,6 +127,14 @@ export default function ProductDetailPage() {
 
         localStorage.setItem("cart", JSON.stringify(cart));
         window.dispatchEvent(new Event("cart-updated"));
+        trackCommerceEvent("add_to_cart", {
+            productId: product.id,
+            sku: variant?.sku || product.sku || "",
+            variantId,
+            quantity: safeQuantity,
+            value: itemPrice * safeQuantity,
+            currency: "VND",
+        });
 
         if (isBuyNow) {
             router.push("/cart");

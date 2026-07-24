@@ -7,11 +7,11 @@ const brand = {
     paper: "#f8f8f8",
 };
 
-const frontendUrl = () =>
-    (process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
+const { getConfiguredFrontendUrl } = require("../config/appConfig");
 
-const formatCurrency = (value) =>
-    `${new Intl.NumberFormat("vi-VN").format(Number(value || 0))} d`;
+const frontendUrl = () => getConfiguredFrontendUrl();
+
+const formatCurrency = (value) => `${new Intl.NumberFormat("vi-VN").format(Number(value || 0))} d`;
 
 const escapeHtml = (value = "") =>
     String(value)

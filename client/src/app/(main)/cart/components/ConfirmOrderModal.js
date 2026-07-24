@@ -13,6 +13,8 @@ export default function ConfirmOrderModal({
     selectedAddress,
     paymentMethod,
     cartItems,
+    subTotal,
+    shippingFee,
     totalPrice,
 }) {
     const descriptionItems = [
@@ -95,7 +97,14 @@ export default function ConfirmOrderModal({
                     ]}
                 />
 
-                <Flex justify="flex-end" style={{ marginTop: 16 }}>
+                <Flex vertical align="flex-end" gap={6} style={{ marginTop: 16 }}>
+                    <Text>
+                        Tạm tính: <Text strong>{formatCurrency(subTotal)}</Text>
+                    </Text>
+                    <Text>
+                        Phí giao hàng:{" "}
+                        <Text strong>{shippingFee ? formatCurrency(shippingFee) : "Miễn phí"}</Text>
+                    </Text>
                     <Title level={4} style={{ margin: 0 }}>
                         Tổng cộng:{" "}
                         <Text className="dp-price" style={{ fontSize: 24 }}>

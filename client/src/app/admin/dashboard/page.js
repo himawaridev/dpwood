@@ -73,6 +73,7 @@ export default function AdminDashboard() {
         loading: true,
         refreshing: false,
     });
+    const [commerceAnalytics, setCommerceAnalytics] = useState(null);
 
     const fetchDashboardData = useCallback(async (silent = false) => {
         try {
@@ -106,6 +107,12 @@ export default function AdminDashboard() {
         const timer = window.setTimeout(() => fetchDashboardData(), 0);
         return () => window.clearTimeout(timer);
     }, [fetchDashboardData]);
+
+    useEffect(() => {
+        api.get("/analytics/dashboard", { params: { days: period } })
+            .then((response) => setCommerceAnalytics(response.data))
+            .catch(() => setCommerceAnalytics(null));
+    }, [period]);
 
     const dashboard = useMemo(() => buildDashboardData(data, period), [data, period]);
 
@@ -279,6 +286,48 @@ export default function AdminDashboard() {
                     <Card className="dp-admin-kpi-card">
                         <Statistic title="Sản phẩm" value={data.products.length} prefix={<InboxOutlined />} />
                         <Text type="secondary">{dashboard.hotProducts.length} mặt hàng bán chạy</Text>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={[16, 16]} className="dp-admin-dashboard-row">
+                <Col xs={24} sm={12} xl={6}>
+                    <Card className="dp-admin-kpi-card">
+                        <Statistic
+                            title="Tỷ lệ chuyển đổi"
+                            value={Number(commerceAnalytics?.conversionRate || 0) * 100}
+                            precision={2}
+                            suffix="%"
+                        />
+                        <Text type="secondary">Từ bắt đầu thanh toán đến mua hàng</Text>
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} xl={6}>
+                    <Card className="dp-admin-kpi-card">
+                        <Statistic
+                            title="Lợi nhuận gộp ước tính"
+                            value={commerceAnalytics?.estimatedGrossProfit || 0}
+                            formatter={(value) => formatCurrency(value)}
+                        />
+                        <Text type="secondary">Doanh thu trừ giá vốn đã khai báo</Text>
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} xl={6}>
+                    <Card className="dp-admin-kpi-card">
+                        <Statistic
+                            title="Đã thêm vào giỏ"
+                            value={commerceAnalytics?.funnel?.add_to_cart || 0}
+                        />
+                        <Text type="secondary">Sự kiện trong {period} ngày gần nhất</Text>
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} xl={6}>
+                    <Card className="dp-admin-kpi-card">
+                        <Statistic
+                            title="Đã bắt đầu thanh toán"
+                            value={commerceAnalytics?.funnel?.begin_checkout || 0}
+                        />
+                        <Text type="secondary">Dữ liệu funnel không chứa thông tin cá nhân</Text>
                     </Card>
                 </Col>
             </Row>

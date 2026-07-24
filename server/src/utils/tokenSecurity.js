@@ -12,4 +12,3 @@ const hashRefreshToken = (token) => {
 };
 
 module.exports = { hashRefreshToken };
-

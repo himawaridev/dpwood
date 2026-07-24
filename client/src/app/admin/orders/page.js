@@ -150,6 +150,7 @@ export default function AdminOrdersPage() {
                 isVisible={isDetailVisible}
                 onClose={() => setIsDetailVisible(false)}
                 selectedOrder={selectedOrder}
+                onRefresh={fetchOrders}
             />
         </>
     );

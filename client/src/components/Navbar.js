@@ -101,6 +101,8 @@ export default function Navbar() {
         () => [
             { key: "/", label: "Trang chủ" },
             { key: "/products", label: "Sản phẩm" },
+            { key: "/orders", label: "Đơn hàng" },
+            { key: "/returns", label: "Đổi trả hàng" },
             { key: "/blogs", label: "Bài viết" },
             { key: "/support", label: "Liên hệ" },
         ],

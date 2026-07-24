@@ -23,11 +23,18 @@ const Coupon = require("./models/coupon");
 const UserCoupon = require("./models/userCoupon");
 const ProductRating = require("./models/productRating");
 const Wishlist = require("./models/wishlist");
+const InventoryMovement = require("./models/inventoryMovement");
+const Shipment = require("./models/shipment");
+const ReturnRequest = require("./models/returnRequest");
+const AnalyticsEvent = require("./models/analyticsEvent");
+const AuthSession = require("./models/authSession");
+const CartRecovery = require("./models/cartRecovery");
 require("./models/productCategory");
 require("./models/newsletterSubscriber");
 require("./models/emailCampaign");
 require("./models/banner");
 const { startEmailCampaignWorker } = require("./services/emailCampaignService");
+const { startGrowthAutomationWorker } = require("./services/growthAutomationService");
 
 // Routers
 const authRoutes = require("./routers/auth");
@@ -44,6 +51,11 @@ const discountRoutes = require("./routers/discountRoutes");
 const aiRoutes = require("./routers/aiRoutes");
 const newsletterRoutes = require("./routers/newsletterRoutes");
 const bannerRoutes = require("./routers/bannerRoutes");
+const commerceRoutes = require("./routers/commerceRoutes");
+const analyticsRoutes = require("./routers/analyticsRoutes");
+const { runMigrations } = require("./services/migrationService");
+const { requestMetricsMiddleware } = require("./services/requestMetricsService");
+const { getAllowedOrigins, normalizeUrl } = require("./config/appConfig");
 
 const app = express();
 const server = http.createServer(app);
@@ -77,29 +89,17 @@ const scheduleQrExpirationSweep = () => {
     qrExpirationSweepTimer.unref?.();
 };
 
-const normalizeOrigin = (value = "") => String(value).trim().replace(/\/$/, "");
-const configuredOrigins = [process.env.CLIENT_URL, process.env.FRONTEND_URL]
-    .filter(Boolean)
-    .flatMap((value) => value.split(","))
-    .map(normalizeOrigin)
-    .filter(Boolean);
-const allowedOrigins = new Set([
-    "https://dpwood.store",
-    "https://www.dpwood.store",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    ...configuredOrigins,
-]);
+const allowedOrigins = new Set(getAllowedOrigins());
 const corsOptions = {
     origin(origin, callback) {
-        if (!origin || allowedOrigins.has(normalizeOrigin(origin))) {
+        if (!origin || allowedOrigins.has(normalizeUrl(origin))) {
             return callback(null, true);
         }
         return callback(new Error(`CORS origin is not allowed: ${origin}`));
     },
     credentials: true,
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type", "X-Requested-With"],
+    allowedHeaders: ["Authorization", "Content-Type", "X-Requested-With", "Idempotency-Key"],
     optionsSuccessStatus: 204,
 };
 
@@ -149,6 +149,25 @@ const setupDatabaseAssociations = () => {
 
     Product.hasMany(Wishlist, { foreignKey: "productId", onDelete: "CASCADE" });
     Wishlist.belongsTo(Product, { foreignKey: "productId", onDelete: "CASCADE" });
+
+    Product.hasMany(InventoryMovement, { foreignKey: "productId" });
+    InventoryMovement.belongsTo(Product, { foreignKey: "productId" });
+    Order.hasMany(InventoryMovement, { foreignKey: "orderId" });
+    InventoryMovement.belongsTo(Order, { foreignKey: "orderId" });
+
+    Order.hasOne(Shipment, { foreignKey: "orderId" });
+    Shipment.belongsTo(Order, { foreignKey: "orderId" });
+    Order.hasMany(ReturnRequest, { foreignKey: "orderId" });
+    ReturnRequest.belongsTo(Order, { foreignKey: "orderId" });
+    User.hasMany(ReturnRequest, { foreignKey: "userId" });
+    ReturnRequest.belongsTo(User, { foreignKey: "userId" });
+
+    User.hasMany(AnalyticsEvent, { foreignKey: "userId" });
+    AnalyticsEvent.belongsTo(User, { foreignKey: "userId" });
+    User.hasMany(AuthSession, { foreignKey: "userId", onDelete: "CASCADE" });
+    AuthSession.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
+    User.hasOne(CartRecovery, { foreignKey: "userId", onDelete: "CASCADE" });
+    CartRecovery.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
 };
 
 // ==========================================
@@ -192,6 +211,7 @@ app.use(securityHeaders);
 app.use(generalLimiter);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(requestMetricsMiddleware);
 
 // Kích hoạt các cấu hình
 setupDatabaseAssociations();
@@ -269,6 +289,8 @@ const routes = {
     "/api/ai": aiRoutes,
     "/api/newsletter": newsletterRoutes,
     "/api/banners": bannerRoutes,
+    "/api/commerce": commerceRoutes,
+    "/api/analytics": analyticsRoutes,
 };
 
 Object.entries(routes).forEach(([path, route]) => {
@@ -303,6 +325,7 @@ const initializeDatabase = async () => {
 
         await connectDB();
         await sequelize.sync();
+        await runMigrations(sequelize);
 
         // Safely add missing columns using QueryInterface for TiDB to avoid UNIQUE constraint sync crash
         const queryInterface = sequelize.getQueryInterface();
@@ -610,6 +633,7 @@ const initializeDatabase = async () => {
         scheduleDataRetention();
         scheduleQrExpirationSweep();
         await startEmailCampaignWorker();
+        startGrowthAutomationWorker();
         console.log("✅ Database is ready");
     } catch (error) {
         dbState.ready = false;

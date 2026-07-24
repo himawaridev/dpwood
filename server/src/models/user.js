@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/connectSequelize");
+const { ROLES } = require("../config/accessControl");
 
 const User = sequelize.define(
     "User",
@@ -43,7 +44,7 @@ const User = sequelize.define(
             },
         },
         role: {
-            type: DataTypes.ENUM("root", "admin", "user", "staff"),
+            type: DataTypes.ENUM(...Object.values(ROLES)),
             defaultValue: "user",
         },
         authProvider: {
@@ -73,6 +74,19 @@ const User = sequelize.define(
         },
         refreshToken: {
             type: DataTypes.STRING,
+        },
+        twoFactorEnabled: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        twoFactorCodeHash: {
+            type: DataTypes.STRING(128),
+            allowNull: true,
+        },
+        twoFactorExpiresAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
         },
         resetPasswordToken: {
             type: DataTypes.STRING,

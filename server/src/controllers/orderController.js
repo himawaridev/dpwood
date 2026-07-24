@@ -7,13 +7,17 @@ const AuditLog = require("../models/auditLog");
 const User = require("../models/user");
 const Coupon = require("../models/coupon");
 const UserCoupon = require("../models/userCoupon");
+const Shipment = require("../models/shipment");
 const { syncLegacyDiscountsToCoupons } = require("../services/couponSyncService");
 const sendEmailInBackground = require("../utils/sendEmailInBackground");
 const { generateOrderHtml: buildOrderEmail } = require("../templates/emailTemplates");
 const paymentService = require("../services/paymentService");
+const { recordMovement } = require("../services/inventoryService");
+const { calculateShippingFee } = require("../services/shippingService");
+const { MANAGER_ROLES, hasRole } = require("../config/accessControl");
+const { getConfiguredFrontendUrl } = require("../config/appConfig");
 
-const getFrontendUrl = () =>
-    (process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
+const getFrontendUrl = () => getConfiguredFrontendUrl();
 
 const ORDER_STATUSES = new Set(["PENDING", "PAID", "SHIPPING", "COMPLETED", "CANCELED"]);
 const PAYMENT_METHODS = new Set(["COD", "QR"]);
@@ -185,6 +189,7 @@ const markOrderAsPaid = async (order, paymentInfo = {}) => {
 
         if (paidOrder.status === "PENDING") {
             paidOrder.status = "PAID";
+            paidOrder.paymentStatus = "PAID";
             await paidOrder.save({ transaction: t });
 
             const transaction = paymentInfo.transactions?.[0] || {};
@@ -291,9 +296,25 @@ const cancelPendingOrderLocally = async ({ orderCode, userId, reason }) => {
             }
             product.sold = Math.max(0, Number(product.sold || 0) - Number(item.quantity || 0));
             await product.save({ transaction: t });
+            await recordMovement(
+                {
+                    product,
+                    orderId: order.id,
+                    actorId: userId || order.userId,
+                    variantId: item.variantId,
+                    type: "RELEASE",
+                    quantity: Number(item.quantity || 0),
+                    reference: `ORDER:${order.orderCode}`,
+                    note: reason || "Hủy đơn và hoàn tồn kho",
+                    idempotencyKey: `release:${order.id}:${item.id}`,
+                },
+                { transaction: t },
+            );
         }
 
         order.status = "CANCELED";
+        order.paymentStatus = order.paymentStatus === "PAID" ? "REFUND_PENDING" : "CANCELED";
+        order.fulfillmentStatus = "CANCELED";
         await order.save({ transaction: t });
         await AuditLog.create(
             {
@@ -374,10 +395,35 @@ const expireStaleQrOrders = async () => {
 const checkout = async (req, res) => {
     // 1. Khởi tạo Transaction để đảm bảo tính toàn vẹn dữ liệu (Nếu lỗi ở bất kỳ bước nào, Database sẽ quay xe - Rollback)
     const t = await sequelize.transaction();
+    let requestIdempotencyKey = "";
     try {
         const { items, paymentMethod, shippingInfo, discountCode } = req.body;
         const userId = req.user.id;
         const normalizedPaymentMethod = String(paymentMethod || "COD").toUpperCase();
+        requestIdempotencyKey = String(
+            req.get("Idempotency-Key") || req.body.idempotencyKey || "",
+        )
+            .trim()
+            .slice(0, 180);
+
+        if (requestIdempotencyKey) {
+            const existingOrder = await Order.findOne({
+                where: { userId, idempotencyKey: requestIdempotencyKey },
+                transaction: t,
+            });
+            if (existingOrder) {
+                await t.rollback();
+                return res.status(200).json({
+                    message: "Yêu cầu đặt hàng này đã được xử lý.",
+                    orderCode: existingOrder.orderCode,
+                    payosData:
+                        existingOrder.paymentMethod === "QR"
+                            ? readStoredPaymentData(existingOrder)
+                            : null,
+                    idempotent: true,
+                });
+            }
+        }
 
         if (!items || items.length === 0) {
             const error = new Error("Giỏ hàng không được để trống");
@@ -406,6 +452,7 @@ const checkout = async (req, res) => {
 
         let subTotal = 0;
         const orderItemsData = [];
+        const inventorySnapshots = [];
 
         // 2. DUYỆT GIỎ HÀNG VÀ TÍNH TOÁN GIÁ TRỊ THỰC TẾ TỪ DATABASE
         for (const item of items) {
@@ -416,7 +463,10 @@ const checkout = async (req, res) => {
                 throw error;
             }
 
-            const product = await Product.findByPk(item.productId, { transaction: t });
+            const product = await Product.findByPk(item.productId, {
+                transaction: t,
+                lock: t.LOCK.UPDATE,
+            });
 
             if (!product || product.isActive === false) {
                 throw new Error(`Sản phẩm với ID ${item.productId} không tồn tại`);
@@ -463,6 +513,11 @@ const checkout = async (req, res) => {
             }
             product.sold += quantity;
             await product.save({ transaction: t });
+            inventorySnapshots.push({
+                product,
+                variantId: selectedVariant?.variantId || null,
+                quantity,
+            });
         }
 
         // 3. XỬ LÝ MÃ GIẢM GIÁ (BẢO MẬT TRÊN SERVER)
@@ -545,7 +600,11 @@ const checkout = async (req, res) => {
             await coupon.save({ transaction: t });
         }
 
-        const finalTotalAmount = subTotal - discountAmount;
+        const shippingFee = calculateShippingFee({
+            subtotal: subTotal - discountAmount,
+            address: shippingInfo.fullAddress,
+        });
+        const finalTotalAmount = subTotal - discountAmount + shippingFee;
 
         // Kiểm tra điều kiện PayOS (Tối thiểu 2,000đ)
         if (normalizedPaymentMethod === "QR" && finalTotalAmount < 2000) {
@@ -565,7 +624,13 @@ const checkout = async (req, res) => {
                 couponCode: finalAppliedCode,
                 discountAmount: discountAmount,
                 paymentMethod: normalizedPaymentMethod,
+                paymentStatus: "UNPAID",
+                fulfillmentStatus: "UNFULFILLED",
+                shippingFee,
+                idempotencyKey: requestIdempotencyKey || null,
                 paymentExpiresAt,
+                stockReservedAt: new Date(),
+                stockReservationExpiresAt: paymentExpiresAt,
                 status: "PENDING",
                 shippingName: shippingInfo.recipientName,
                 shippingPhone: shippingInfo.phoneNumber,
@@ -579,6 +644,23 @@ const checkout = async (req, res) => {
             orderItemsData.map((item) => ({ ...item, orderId: order.id })),
             { transaction: t },
         );
+        for (let index = 0; index < inventorySnapshots.length; index += 1) {
+            const snapshot = inventorySnapshots[index];
+            await recordMovement(
+                {
+                    product: snapshot.product,
+                    orderId: order.id,
+                    actorId: userId,
+                    variantId: snapshot.variantId,
+                    type: "RESERVE",
+                    quantity: -snapshot.quantity,
+                    reference: `ORDER:${order.orderCode}`,
+                    note: normalizedPaymentMethod === "QR" ? "Giữ tồn kho cho QR" : "Giữ tồn kho cho COD",
+                    idempotencyKey: `reserve:${order.id}:${index}`,
+                },
+                { transaction: t },
+            );
+        }
 
         // 5. XỬ LÝ THANH TOÁN QR (PAYOS)
         let payosData = null;
@@ -606,32 +688,57 @@ const checkout = async (req, res) => {
         // 6. HOÀN TẤT VÀ PHẢN HỒI
         await t.commit(); // Lưu vĩnh viễn mọi thay đổi vào Database
 
-        // Gửi email thông báo (Chạy ngầm không cần await để nhanh hơn nếu muốn)
-        const user = await User.findByPk(userId);
-        const orderInfo = {
-            orderCode: order.orderCode,
-            customerName: user?.name,
-            shippingName: order.shippingName,
-            shippingPhone: order.shippingPhone,
-            shippingAddress: order.shippingAddress,
-            totalAmount: order.totalAmount,
-        };
-        const emailHtml = buildOrderEmail(orderInfo, orderItemsData, normalizedPaymentMethod === "QR");
-        sendEmailInBackground(
-            user?.email,
-            `[DPWOOD] Xac nhan don hang #${orderCodeNum}`,
-            emailHtml,
-            `order confirmation #${orderCodeNum}`,
-        );
+        try {
+            const user = await User.findByPk(userId);
+            const orderInfo = {
+                orderCode: order.orderCode,
+                customerName: user?.name,
+                shippingName: order.shippingName,
+                shippingPhone: order.shippingPhone,
+                shippingAddress: order.shippingAddress,
+                totalAmount: order.totalAmount,
+            };
+            const emailHtml = buildOrderEmail(
+                orderInfo,
+                orderItemsData,
+                normalizedPaymentMethod === "QR",
+            );
+            sendEmailInBackground(
+                user?.email,
+                `[DPWOOD] Xac nhan don hang #${orderCodeNum}`,
+                emailHtml,
+                `order confirmation #${orderCodeNum}`,
+            );
+        } catch (emailError) {
+            console.warn(`Không thể xếp email xác nhận đơn #${orderCodeNum}:`, emailError.message);
+        }
 
         res.status(201).json({
             message: "Đặt hàng thành công",
             orderCode: orderCodeNum,
+            shippingFee,
+            totalAmount: finalTotalAmount,
             payosData: payosData, // Trả về link QR nếu thanh toán online
         });
     } catch (error) {
         // Nếu có bất kỳ lỗi nào, hủy bỏ toàn bộ quá trình (Trả lại tồn kho...)
-        await t.rollback();
+        if (!t.finished) await t.rollback();
+        if (requestIdempotencyKey && error.name === "SequelizeUniqueConstraintError") {
+            const existingOrder = await Order.findOne({
+                where: { userId: req.user.id, idempotencyKey: requestIdempotencyKey },
+            });
+            if (existingOrder) {
+                return res.status(200).json({
+                    message: "Yêu cầu đặt hàng này đã được xử lý.",
+                    orderCode: existingOrder.orderCode,
+                    payosData:
+                        existingOrder.paymentMethod === "QR"
+                            ? readStoredPaymentData(existingOrder)
+                            : null,
+                    idempotent: true,
+                });
+            }
+        }
         console.error("🔥 LỖI THANH TOÁN:", error);
         res.status(error.status || 500).json({ message: error.message || "Lỗi xử lý đặt hàng" });
     }
@@ -676,7 +783,7 @@ const getOrderStatus = async (req, res) => {
         if (!order) return res.status(404).json({ message: "Khong tim thay don hang" });
 
         const isOwner = String(order.userId) === String(req.user.id);
-        const isPrivileged = ["admin", "root", "staff"].includes(req.user.role);
+        const isPrivileged = hasRole(req.user, MANAGER_ROLES);
         if (!isOwner && !isPrivileged) {
             return res.status(403).json({ message: "Forbidden" });
         }
@@ -872,15 +979,28 @@ const cancelOrder = async (req, res) => {
 // 🔴 ĐÃ BỔ SUNG: Include OrderItem và Product vào dữ liệu lấy ra
 const getAllOrdersAdmin = async (req, res) => {
     try {
-        const orders = await Order.findAll({
+        const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+        const query = {
             order: [["createdAt", "DESC"]],
             include: [
                 { model: User, attributes: ["name", "email"] },
                 { model: OrderItem, include: [{ model: Product }] }, // Lấy chi tiết sản phẩm và Hình ảnh
+                { model: Shipment, required: false },
             ],
-            limit: 500,
+            distinct: true,
+            ...(hasPagination ? { limit, offset: (page - 1) * limit } : { limit: 500 }),
+        };
+        if (!hasPagination) {
+            const orders = await Order.findAll(query);
+            return res.status(200).json(orders.map(serializeOrder));
+        }
+        const { rows, count } = await Order.findAndCountAll(query);
+        return res.status(200).json({
+            items: rows.map(serializeOrder),
+            pagination: { page, limit, total: count, totalPages: Math.max(1, Math.ceil(count / limit)) },
         });
-        res.status(200).json(orders.map(serializeOrder));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -895,6 +1015,16 @@ const updateOrderStatusAdmin = async (req, res) => {
             return res.status(400).json({ message: "Trạng thái đơn hàng không hợp lệ" });
         }
         order.status = nextStatus;
+        if (["PAID", "SHIPPING", "COMPLETED"].includes(nextStatus)) {
+            order.paymentStatus = "PAID";
+        }
+        if (nextStatus === "SHIPPING") order.fulfillmentStatus = "SHIPPED";
+        if (nextStatus === "COMPLETED") order.fulfillmentStatus = "DELIVERED";
+        if (nextStatus === "CANCELED") {
+            order.fulfillmentStatus = "CANCELED";
+            if (order.paymentStatus === "PAID") order.paymentStatus = "REFUND_PENDING";
+            else order.paymentStatus = "CANCELED";
+        }
         await order.save();
         res.status(200).json({ message: "Cập nhật thành công", order });
     } catch (error) {
@@ -921,13 +1051,28 @@ const getMyOrders = async (req, res) => {
             }
         }
 
-        const orders = await Order.findAll({
+        const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+        const query = {
             where: { userId: req.user.id },
             order: [["createdAt", "DESC"]],
-            include: [{ model: OrderItem, include: [{ model: Product }] }],
-            limit: 100,
+            include: [
+                { model: OrderItem, include: [{ model: Product }] },
+                { model: Shipment, required: false },
+            ],
+            distinct: true,
+            ...(hasPagination ? { limit, offset: (page - 1) * limit } : { limit: 100 }),
+        };
+        if (!hasPagination) {
+            const orders = await Order.findAll(query);
+            return res.status(200).json(orders.map(serializeOrder));
+        }
+        const { rows, count } = await Order.findAndCountAll(query);
+        return res.status(200).json({
+            items: rows.map(serializeOrder),
+            pagination: { page, limit, total: count, totalPages: Math.max(1, Math.ceil(count / limit)) },
         });
-        res.status(200).json(orders.map(serializeOrder));
     } catch (error) {
         console.error("🔥 LỖI CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG:", error);
         res.status(500).json({ message: error.message });

@@ -28,12 +28,22 @@ const createTicket = async (req, res) => {
 
 const getMyTickets = async (req, res) => {
     try {
-        const tickets = await SupportTicket.findAll({
+        const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+        const query = {
             where: { userId: req.user.id },
             order: [["updatedAt", "DESC"]],
-            limit: 100,
+            ...(hasPagination ? { limit, offset: (page - 1) * limit } : { limit: 100 }),
+        };
+        if (!hasPagination) {
+            return res.status(200).json(await SupportTicket.findAll(query));
+        }
+        const { rows, count } = await SupportTicket.findAndCountAll(query);
+        return res.status(200).json({
+            items: rows,
+            pagination: { page, limit, total: count, totalPages: Math.max(1, Math.ceil(count / limit)) },
         });
-        res.status(200).json(tickets);
     } catch (error) {
         console.error("Lỗi getMyTickets:", error);
         res.status(500).json({ message: "Lỗi tải dữ liệu", error: error.message });
@@ -45,12 +55,22 @@ const getMyTickets = async (req, res) => {
 // ==========================================
 const getAllTickets = async (req, res) => {
     try {
-        const tickets = await SupportTicket.findAll({
+        const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+        const query = {
             include: [{ model: User, attributes: ["name", "email"] }],
             order: [["createdAt", "DESC"]],
-            limit: 200,
+            ...(hasPagination ? { limit, offset: (page - 1) * limit } : { limit: 200 }),
+        };
+        if (!hasPagination) {
+            return res.status(200).json(await SupportTicket.findAll(query));
+        }
+        const { rows, count } = await SupportTicket.findAndCountAll(query);
+        return res.status(200).json({
+            items: rows,
+            pagination: { page, limit, total: count, totalPages: Math.max(1, Math.ceil(count / limit)) },
         });
-        res.status(200).json(tickets);
     } catch (error) {
         console.error("Lỗi getAllTickets:", error);
         res.status(500).json({ message: "Lỗi tải dữ liệu", error: error.message });

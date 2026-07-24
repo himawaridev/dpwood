@@ -28,6 +28,8 @@ import {
     DatabaseOutlined,
     TagsOutlined,
     UnorderedListOutlined,
+    RetweetOutlined,
+    StockOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/utils/axios";
@@ -41,6 +43,7 @@ const ADMIN_ROUTE_KEYS = [
     "/admin/products",
     "/admin/reviews",
     "/admin/orders",
+    "/admin/returns",
     "/admin/notifications",
     "/admin/support",
     "/admin/blogs",
@@ -70,7 +73,7 @@ export default function AdminLayout({ children }) {
 
     useEffect(() => {
         if (adminRole !== "staff") return;
-        const staffRoutes = ["/admin/orders", "/admin/notifications", "/admin/support"];
+        const staffRoutes = ["/admin/orders", "/admin/returns", "/admin/notifications", "/admin/support"];
         if (!staffRoutes.some((route) => pathname.startsWith(route))) {
             router.replace("/admin/orders");
         }
@@ -133,11 +136,13 @@ export default function AdminLayout({ children }) {
                 { key: "/admin/products", icon: <UnorderedListOutlined />, label: "Danh sách sản phẩm" },
                 { key: "/admin/products/categories", icon: <TagsOutlined />, label: "Danh mục sản phẩm" },
                 { key: "/admin/products/data", icon: <DatabaseOutlined />, label: "Dữ liệu JSON" },
+                { key: "/admin/products/inventory", icon: <StockOutlined />, label: "Lịch sử tồn kho" },
             ],
         },
         { key: "/admin/banners", icon: <PictureOutlined />, label: "Banner trang chủ" },
         { key: "/admin/reviews", icon: <StarOutlined />, label: "Đánh giá" },
         { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
+        { key: "/admin/returns", icon: <RetweetOutlined />, label: "Đổi trả & hoàn tiền" },
         { key: "/admin/notifications", icon: <BellOutlined />, label: "Thông báo" },
         { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ" },
         { key: "/admin/blogs", icon: <EditOutlined />, label: "Bài viết" },
@@ -158,6 +163,7 @@ export default function AdminLayout({ children }) {
     ];
     const staffMenuItems = [
         { key: "/admin/orders", icon: <FileTextOutlined />, label: "Đơn hàng" },
+        { key: "/admin/returns", icon: <RetweetOutlined />, label: "Đổi trả & hoàn tiền" },
         { key: "/admin/notifications", icon: <BellOutlined />, label: "Thông báo" },
         { key: "/admin/support", icon: <CustomerServiceOutlined />, label: "Hỗ trợ khách hàng" },
     ];

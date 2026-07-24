@@ -1,4 +1,5 @@
 const { DataTypes, QueryTypes } = require("sequelize");
+const { ROLES, LEGACY_SELLER_ROLE } = require("../config/accessControl");
 
 const normalizeTableName = (table) => {
     if (typeof table === "string") return table;
@@ -35,15 +36,17 @@ const migrateSellerRole = async (sequelize, queryInterface) => {
         if (!String(description.role?.type || "").includes("seller")) return;
 
         await queryInterface.changeColumn("users", "role", {
-            type: DataTypes.ENUM("root", "admin", "user", "seller", "staff"),
+            type: DataTypes.ENUM(...Object.values(ROLES), LEGACY_SELLER_ROLE),
             allowNull: false,
-            defaultValue: "user",
+            defaultValue: ROLES.USER,
         });
-        const [, metadata] = await sequelize.query("UPDATE users SET role = 'staff' WHERE role = 'seller'");
+        const [, metadata] = await sequelize.query(
+            `UPDATE users SET role = '${ROLES.STAFF}' WHERE role = '${LEGACY_SELLER_ROLE}'`,
+        );
         await queryInterface.changeColumn("users", "role", {
-            type: DataTypes.ENUM("root", "admin", "user", "staff"),
+            type: DataTypes.ENUM(...Object.values(ROLES)),
             allowNull: false,
-            defaultValue: "user",
+            defaultValue: ROLES.USER,
         });
         if (metadata?.affectedRows) console.log(`Migrated ${metadata.affectedRows} seller account(s) to staff`);
     } catch (error) {
@@ -143,6 +146,13 @@ const optimizeDatabase = async (sequelize) => {
         ["SupportTickets", ["userId", "createdAt"], "idx_support_user_created"],
         ["SupportTickets", ["status", "createdAt"], "idx_support_status_created"],
         ["SupportTickets", ["orderCode"], "idx_support_order_code"],
+        ["InventoryMovements", ["productId", "createdAt"], "idx_inventory_product_created"],
+        ["InventoryMovements", ["orderId", "type"], "idx_inventory_order_type"],
+        ["ReturnRequests", ["status", "createdAt"], "idx_returns_status_created"],
+        ["Shipments", ["status", "estimatedDeliveryAt"], "idx_shipments_status_eta"],
+        ["AnalyticsEvents", ["sessionId", "createdAt"], "idx_analytics_session_created"],
+        ["AuthSessions", ["expiresAt", "revokedAt"], "idx_auth_sessions_expiry"],
+        ["CartRecoveries", ["lastActivityAt", "lastRemindedAt"], "idx_cart_recovery_activity"],
     ];
 
     for (const [tableName, fields, name] of indexDefinitions) {

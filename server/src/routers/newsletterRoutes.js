@@ -3,9 +3,10 @@ const newsletterController = require("../controllers/newsletterController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const roleMiddleware = require("../middlewares/roleMiddleware");
 const { newsletterLimiter } = require("../middlewares/securityMiddleware");
+const { ADMIN_ROLES } = require("../config/accessControl");
 
 const router = express.Router();
-const adminOnly = [authMiddleware, roleMiddleware("admin", "root")];
+const adminOnly = [authMiddleware, roleMiddleware(ADMIN_ROLES)];
 
 router.post("/subscribe", newsletterLimiter, newsletterController.subscribe);
 router.post("/confirm/:token", newsletterLimiter, newsletterController.confirmSubscription);

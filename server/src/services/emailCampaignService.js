@@ -7,6 +7,7 @@ const {
     generateAccountMarketingHtml,
     generateMarketingHtml,
 } = require("../templates/emailTemplates");
+const { getConfiguredFrontendUrl } = require("../config/appConfig");
 
 const BATCH_SIZE = Math.min(Math.max(Number(process.env.EMAIL_CAMPAIGN_BATCH_SIZE) || 20, 1), 100);
 const BATCH_DELAY_MS = Math.max(Number(process.env.EMAIL_CAMPAIGN_BATCH_DELAY_MS) || 1000, 250);
@@ -19,8 +20,7 @@ let wakeTimer = null;
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
 const sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
-const frontendUrl = () =>
-    String(process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
+const frontendUrl = () => getConfiguredFrontendUrl();
 
 const newsletterSecret = () => process.env.NEWSLETTER_SECRET || process.env.JWT_SECRET || "dpwood-newsletter";
 

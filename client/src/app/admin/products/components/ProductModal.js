@@ -8,6 +8,7 @@ import CreatableSelect from "./product-form/CreatableSelect";
 import KitchenDetailsSection from "./product-form/KitchenDetailsSection";
 import ProductImagesSection from "./product-form/ProductImagesSection";
 import ProductVariantsSection from "./product-form/ProductVariantsSection";
+import ProductCommerceSection from "./product-form/ProductCommerceSection";
 
 const mergeOptions = (...groups) =>
     [...new Set(groups.flat().filter(Boolean).map((item) => String(item).trim()).filter(Boolean))];
@@ -217,6 +218,7 @@ export default function ProductModal({
                     onAddMaterial={addMaterialOption}
                     onAddColor={addColorOption}
                 />
+                <ProductCommerceSection />
                 <ProductVariantsSection
                     form={form}
                     variants={watchedVariants}

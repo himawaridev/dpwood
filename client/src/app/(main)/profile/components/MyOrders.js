@@ -1,8 +1,29 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { App, Table, Tag, Button, Typography, Modal, Empty, Alert, Descriptions, Image, Steps, Tooltip } from "antd";
-import { CloseCircleOutlined, EyeOutlined, QrcodeOutlined } from "@ant-design/icons";
+import {
+    App,
+    Table,
+    Tag,
+    Button,
+    Typography,
+    Modal,
+    Empty,
+    Alert,
+    Descriptions,
+    Image,
+    Steps,
+    Tooltip,
+    Form,
+    Input,
+    Select,
+} from "antd";
+import {
+    CloseCircleOutlined,
+    EyeOutlined,
+    QrcodeOutlined,
+    RetweetOutlined,
+} from "@ant-design/icons";
 import api from "@/utils/axios";
 import PaymentQRModal from "@/app/(main)/cart/components/PaymentQRModal";
 import { formatCurrency } from "@/utils/formatters";
@@ -24,6 +45,9 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
     const [openingPaymentCode, setOpeningPaymentCode] = useState("");
     const [checkingPayment, setCheckingPayment] = useState(false);
     const [cancelingPayment, setCancelingPayment] = useState(false);
+    const [returnOrder, setReturnOrder] = useState(null);
+    const [returnSubmitting, setReturnSubmitting] = useState(false);
+    const [returnForm] = Form.useForm();
 
     const orderItems = useMemo(() => selectedOrder?.OrderItems || [], [selectedOrder]);
     const itemsSubtotal = orderItems.reduce(
@@ -31,6 +55,28 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
         0,
     );
     const discountAmount = Number(selectedOrder?.discountAmount || 0);
+    const shippingFee = Number(selectedOrder?.shippingFee || 0);
+    const shipment = selectedOrder?.Shipment || selectedOrder?.shipment || null;
+
+    const submitReturnRequest = async (values) => {
+        try {
+            setReturnSubmitting(true);
+            await api.post("/commerce/returns", {
+                orderId: returnOrder.id,
+                reason: values.reason,
+                description: values.description,
+            });
+            message.success("Đã gửi yêu cầu đổi trả. Bộ phận vận hành sẽ kiểm tra và phản hồi.");
+            returnForm.resetFields();
+            setReturnOrder(null);
+        } catch (error) {
+            message.error(
+                error.response?.data?.message || "Không thể gửi yêu cầu đổi trả lúc này.",
+            );
+        } finally {
+            setReturnSubmitting(false);
+        }
+    };
 
     const closePaymentModal = useCallback(() => {
         setPaymentOrder(null);
@@ -235,7 +281,7 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                 className="dp-profile-table"
                 dataSource={orders}
                 rowKey="id"
-                pagination={{ pageSize: 5, showSizeChanger: false }}
+                pagination={{ pageSize: 10, showSizeChanger: false }}
                 scroll={{ x: 860 }}
                 columns={columns}
                 locale={{
@@ -269,6 +315,19 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                                 icon={<CloseCircleOutlined />}
                                 aria-label="Hủy đơn hàng"
                                 onClick={() => handleCancelOrder(selectedOrder.orderCode)}
+                            />
+                        </Tooltip>
+                    ) : null,
+                    selectedOrder?.status === "COMPLETED" ? (
+                        <Tooltip key="return-order" title="Yêu cầu đổi trả">
+                            <Button
+                                type="text"
+                                icon={<RetweetOutlined />}
+                                aria-label="Yêu cầu đổi trả"
+                                onClick={() => {
+                                    setReturnOrder(selectedOrder);
+                                    setSelectedOrder(null);
+                                }}
                             />
                         </Tooltip>
                     ) : null,
@@ -360,6 +419,27 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                                     label: "Địa chỉ",
                                     children: selectedOrder.shippingAddress || "Chưa có",
                                 },
+                                {
+                                    key: "carrier",
+                                    label: "Đơn vị vận chuyển",
+                                    children: shipment?.carrier || "Đang chờ phân công",
+                                },
+                                {
+                                    key: "tracking",
+                                    label: "Mã vận đơn",
+                                    children: shipment?.trackingCode ? (
+                                        <Text copyable>{shipment.trackingCode}</Text>
+                                    ) : (
+                                        "Chưa có"
+                                    ),
+                                },
+                                {
+                                    key: "estimated",
+                                    label: "Dự kiến giao",
+                                    children: shipment?.estimatedDeliveryAt
+                                        ? new Date(shipment.estimatedDeliveryAt).toLocaleString("vi-VN")
+                                        : "Chưa có",
+                                },
                             ]}
                         />
 
@@ -419,6 +499,10 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                                     <Text strong>-{formatCurrency(discountAmount)}</Text>
                                 </div>
                             )}
+                            <div>
+                                <Text type="secondary">Phí giao hàng</Text>
+                                <Text strong>{shippingFee ? formatCurrency(shippingFee) : "Miễn phí"}</Text>
+                            </div>
                             {selectedOrder.discountCode && (
                                 <div>
                                     <Text type="secondary">Mã giảm giá</Text>
@@ -434,6 +518,49 @@ export default function MyOrders({ orders, onRefresh, hasError }) {
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            <Modal
+                title={returnOrder ? `Yêu cầu đổi trả đơn #${returnOrder.orderCode}` : "Yêu cầu đổi trả"}
+                open={Boolean(returnOrder)}
+                onCancel={() => setReturnOrder(null)}
+                onOk={() => returnForm.submit()}
+                confirmLoading={returnSubmitting}
+                okText="Gửi yêu cầu"
+                cancelText="Đóng"
+                destroyOnHidden
+            >
+                <Alert
+                    type="info"
+                    showIcon
+                    title="DPWOOD sẽ kiểm tra tình trạng sản phẩm trước khi duyệt hoàn tiền."
+                    style={{ marginBottom: 18 }}
+                />
+                <Form form={returnForm} layout="vertical" onFinish={submitReturnRequest}>
+                    <Form.Item
+                        name="reason"
+                        label="Lý do"
+                        rules={[{ required: true, message: "Vui lòng chọn lý do đổi trả." }]}
+                    >
+                        <Select
+                            options={[
+                                { value: "Sản phẩm bị lỗi", label: "Sản phẩm bị lỗi" },
+                                { value: "Giao sai sản phẩm", label: "Giao sai sản phẩm" },
+                                { value: "Hư hỏng khi vận chuyển", label: "Hư hỏng khi vận chuyển" },
+                                { value: "Không đúng mô tả", label: "Không đúng mô tả" },
+                                { value: "Lý do khác", label: "Lý do khác" },
+                            ]}
+                        />
+                    </Form.Item>
+                    <Form.Item name="description" label="Mô tả chi tiết">
+                        <Input.TextArea
+                            rows={4}
+                            maxLength={2000}
+                            showCount
+                            placeholder="Mô tả tình trạng sản phẩm và mong muốn xử lý..."
+                        />
+                    </Form.Item>
+                </Form>
             </Modal>
 
             <PaymentQRModal
