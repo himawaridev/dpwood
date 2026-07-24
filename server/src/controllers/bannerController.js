@@ -2,6 +2,7 @@ const Banner = require("../models/banner");
 const { Op } = require("sequelize");
 const { normalizeProductImageUrl } = require("../utils/productImageUrl");
 const { normalizeBannerPriceText } = require("../utils/bannerData");
+const { planBannerSortOrderRepairs } = require("../utils/bannerSortOrder");
 
 const cleanText = (value, maxLength) => String(value || "").trim().slice(0, maxLength);
 
@@ -53,21 +54,14 @@ const validatePayload = (payload) => {
 
 const normalizeExistingSortOrders = async () => {
     const banners = await Banner.findAll({ order: [["sortOrder", "ASC"], ["createdAt", "ASC"]] });
-    const usedOrders = new Set();
-    let nextOrder = 1;
+    const repairs = planBannerSortOrderRepairs(
+        banners.map((banner) => ({ id: banner.id, sortOrder: banner.sortOrder })),
+    );
+    const bannersById = new Map(banners.map((banner) => [String(banner.id), banner]));
 
-    for (const banner of banners) {
-        const currentOrder = Number(banner.sortOrder);
-        if (Number.isInteger(currentOrder) && currentOrder >= 1 && !usedOrders.has(currentOrder)) {
-            usedOrders.add(currentOrder);
-            while (usedOrders.has(nextOrder)) nextOrder += 1;
-            continue;
-        }
-
-        while (usedOrders.has(nextOrder)) nextOrder += 1;
-        await banner.update({ sortOrder: nextOrder });
-        usedOrders.add(nextOrder);
-        nextOrder += 1;
+    for (const repair of repairs) {
+        const banner = bannersById.get(String(repair.id));
+        if (banner) await banner.update({ sortOrder: repair.sortOrder });
     }
 };
 
@@ -82,7 +76,6 @@ const isSortOrderConstraintError = (error) =>
 
 const getActiveBanners = async (req, res) => {
     try {
-        await normalizeExistingSortOrders();
         const banners = await Banner.findAll({
             where: { isActive: true },
             order: [["sortOrder", "ASC"], ["createdAt", "DESC"]],
@@ -96,7 +89,6 @@ const getActiveBanners = async (req, res) => {
 
 const getAllBanners = async (req, res) => {
     try {
-        await normalizeExistingSortOrders();
         const banners = await Banner.findAll({
             order: [["sortOrder", "ASC"], ["createdAt", "DESC"]],
         });
